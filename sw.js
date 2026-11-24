@@ -1,6 +1,6 @@
 // يحفظ الموقع والأصوات والخطوط على الجهاز ليعمل دون إنترنت
 // من إنشاء م. كريم عادل اللوح
-const CACHE = "rehlat-v16";
+const CACHE = "rehlat-v17";
 const LETTER_IDS = "alif ba ta tha jim hha kha dal dhal ra zay sin shin sad dad tta dha ain ghain fa qaf kaf lam mim nun ha waw hamza ya".split(" ");
 const CORE = ["./", "index.html", "teacher.html", "about.html", "cert.js", "config.js", "manifest.webmanifest",
   "favicon.ico", "icons/rehla-32.png", "icons/rehla.svg", "icons/rehla-192.png", "icons/rehla-512.png", "icons/rehla-touch.png", "icons/wordmark-light.svg", "icons/wordmark-dark.svg", "icons/mark-stamp.svg", "lessons-meta.js", "vendor/qrcode.js", "report.html",

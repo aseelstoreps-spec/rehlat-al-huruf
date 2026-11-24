@@ -122,6 +122,11 @@ td .bar { margin-top: 4px; }
 .lhead { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: start; width: 100%; }
 .lhead .lt { flex: 1; display: flex; flex-direction: column; }
 .btn.gold { background: var(--gold); color: #1b1d45; align-self: flex-start; }
+.pick { display: inline-flex; vertical-align: middle; cursor: pointer; }
+.pick input { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
+.bulkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--gold-soft); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+.bulkbar select { width: auto; min-width: 140px; }
+.bar.hard i { background: var(--red); }
 .linkbox { display: flex; flex-direction: column; gap: 8px; background: #f5f6fd; border-radius: 12px; padding: 10px; margin-top: 8px; }
 .btn.wa { background: #1f8a4c; }
 textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafaff; resize: vertical; line-height: 1.7; }
@@ -163,7 +168,7 @@ function lessonOf(s, n) {
   return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
 }
 const passedList = (s) => LESSONS_T.filter(L => lessonOf(s, L.n).best >= 8).map(L => L.n);
-const NEED_VERSION = 7;
+const NEED_VERSION = 8;
 // عدد الخطوات المنجزة في درس (المراحل + اللعبتان + الاختبار)
 function stepsDone(s, L) {
   const x = lessonOf(s, L.n);
@@ -203,8 +208,8 @@ const ERR = {
 const errText = (e) => ERR[e] || ("خطأ: " + e);
 
 let cred = null; try { cred = JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) {}
-const UI = { tab: "students", sel: null, q: "", grp: "", sortBy: "lastSeen", lastCode: null, confirm: null, editT: null, editG: null };
-let wdata = null;
+const UI = { picked: new Set(), tab: "students", sel: null, q: "", grp: "", sortBy: "lastSeen", lastCode: null, confirm: null, editT: null, editG: null };
+let wdata = null, sdata = null, adata = null;
 let data = null, tdata = null, gdata = null, loginErr = "", offline = false, cachedAt = null;
 /* نسخة محفوظة من آخر بيانات، لعرضها دون إنترنت (على جهاز المعلم فقط) */
 async function sha(t) {
@@ -249,7 +254,7 @@ async function call(action, extra) {
 }
 function flash(id, text, good) { const el = $(id); if (el) { el.className = good ? "ok msg" : "err msg"; el.textContent = text || ""; } }
 async function busy(btn, fn) { if (btn) btn.disabled = true; try { return await fn(); } finally { if (btn && btn.isConnected) btn.disabled = false; } }
-function logout() { cred = null; data = tdata = gdata = wdata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
+function logout() { cred = null; data = tdata = gdata = wdata = sdata = adata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
 /* الخروج التلقائي بعد 30 دقيقة دون استعمال (لحماية السجل على الأجهزة المشتركة) */
 const IDLE_MIN = 30;
 let lastAct = Date.now();
@@ -270,6 +275,8 @@ async function load() {
   if (data.me.admin && UI.tab === "groups") await loadGroups();
   render();
 }
+async function loadStats() { const j = await call("stats"); sdata = j.error ? { error: j.error } : j; }
+async function loadAudit() { const j = await call("audit.list"); adata = j.error ? { error: j.error } : j; }
 async function loadWeekly() { const j = await call("weekly"); wdata = j.error ? { error: j.error } : j; }
 async function loadTeachers() { const j = await call("teachers.list"); if (!j.error) tdata = j; }
 async function loadGroups() { const j = await call("groups.list"); if (!j.error) gdata = j; }
@@ -283,8 +290,9 @@ function render() {
   if (!cred || !data) return renderLogin();
   const me = data.me;
   const tabs = me.admin
-    ? [["students", "👧 الطلاب"], ["weekly", "📊 الأسبوع"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"], ["account", "🔐 حسابي"]]
-    : [["students", "👧 طلابي"], ["weekly", "📊 الأسبوع"], ["account", "🔐 حسابي"]];
+    ? [["students", "👧 الطلاب"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"],
+       ...(me.main ? [["audit", "🧾 سجل التعديلات"]] : []), ["account", "🔐 حسابي"]]
+    : [["students", "👧 طلابي"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["account", "🔐 حسابي"]];
   if (!tabs.some(t => t[0] === UI.tab)) UI.tab = "students";
   let h = `<header><img class="logo" src="icons/rehla.svg" alt="" width="40" height="40"><h1>${me.admin ? "لوحة المدير" : "سجل المعلم"}</h1>
     <span class="who"><span class="chip ${me.admin ? "adm" : "grp"}">${me.main ? "المدير" : me.admin ? "مدير مساعد" : "معلم"}</span> <b>${esc(me.name)}</b>
@@ -298,7 +306,7 @@ function render() {
     <li>اختر الدالة <code>setup</code> واضغط «تنفيذ» (تُصلح السجلات القديمة من سجل النشاط).</li>
     <li>نشر ← إدارة عمليات النشر ← ✏️ ← الإصدار: <b>إصدار جديد</b> ← نشر.</li></ol></div>`;
   if (offline) h += `<div class="offbar">📴 غير متصل بالإنترنت — تعرض آخر بيانات محفوظة (${new Date(cachedAt).toLocaleString("ar-EG")}). التعديل يعود عند الاتصال.</div>`;
-  h += ({ students: studentsTab, weekly: weeklyTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
+  h += ({ students: studentsTab, weekly: weeklyTab, stats: statsTab, audit: auditTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
   h += credit();
   root.innerHTML = h;
   if (offline) root.querySelectorAll("form button[type=submit], #askreset, #askdel").forEach(b => b.disabled = true);
@@ -310,9 +318,11 @@ function render() {
     if (UI.tab === "teachers" && !tdata) await loadTeachers();
     if (UI.tab === "groups" && !gdata) await loadGroups();
     if (UI.tab === "weekly" && !wdata) { render(); await loadWeekly(); }
+    if (UI.tab === "stats" && !sdata) { render(); await loadStats(); }
+    if (UI.tab === "audit" && !adata) { render(); await loadAudit(); }
     render();
   });
-  ({ students: bindStudents, weekly: bindWeekly, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
+  ({ students: bindStudents, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
 }
 
 const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
@@ -373,7 +383,9 @@ function studentsTab() {
     </div>
     ${UI.lastCode ? `<p class="ok" style="margin-top:10px">اسم مستخدم ${esc(UI.lastCode.name)}: <b class="code">${esc(UI.lastCode.username)}</b>${UI.lastCode.renamed ? ` (كان «${esc(UI.lastCode.renamed)}» مستعملاً)` : ""} — أعطه للطالب ليدخل به («عندي اسم مستخدم»).</p>` : ""}
     <p class="msg" id="addmsg"></p>
+    <div class="actions" style="margin:6px 0 0"><button class="btn ghost small" type="button" id="impbtn" aria-expanded="${!!UI.imp}">📥 استيراد قائمة طلاب (من Excel)</button></div>
   </form>
+  ${UI.imp ? importPanel(groupOpts) : ""}
   <div class="panel">
     <div class="row rf">
       <input id="q" placeholder="ابحث بالاسم أو اسم المستخدم" value="${esc(UI.q)}" aria-label="بحث">
@@ -385,12 +397,16 @@ function studentsTab() {
         <option value="name" ${UI.sortBy === "name" ? "selected" : ""}>الاسم</option>
       </select>
     </div>
+    ${UI.picked.size ? `<div class="bulkbar"><b>محدّد: ${UI.picked.size}</b>
+      <label for="mvg" class="muted">نقل إلى</label><select id="mvg">${groupOpts("")}</select><button class="btn small" id="domove">نقل</button>
+      <button class="btn ghost small" id="pcards">🪪 بطاقات المحدّدين</button><button class="btn ghost small" id="unpick">إلغاء التحديد</button>
+      <span class="msg" id="mvmsg"></span></div>` : ""}
     <div class="actions" style="margin:10px 0"><button class="btn ghost small" id="cards" ${rows.length ? "" : "disabled"}>🪪 طباعة بطاقات الدخول (${rows.length})</button>
       <span class="muted">لكل طالب في القائمة المعروضة: اسمه، واسم المستخدم، ورمز QR يفتح الموقع ويُدخله مباشرة.</span></div>
     <div class="tablebox"><table class="students">
-      <thead><tr><th>الطالب</th><th>الحلقة</th><th>أين وصل</th>${LESSONS_T.map(L => `<th title="${esc(L.title)}">د${L.n}</th>`).join("")}<th>آخر نشاط</th></tr></thead>
+      <thead><tr><th><label class="pick" title="تحديد الكل"><input type="checkbox" id="pickall" ${rows.length && rows.every(s => UI.picked.has(s.sid)) ? "checked" : ""} aria-label="تحديد كل الطلاب المعروضين"></label> الطالب</th><th>الحلقة</th><th>أين وصل</th>${LESSONS_T.map(L => `<th title="${esc(L.title)}">د${L.n}</th>`).join("")}<th>آخر نشاط</th></tr></thead>
       <tbody>${rows.length ? rows.map(s => `<tr data-sid="${esc(s.sid)}" class="click ${s.sid === UI.sel ? "sel" : ""}">
-        <td data-l="الطالب"><b>${esc(s.name)}</b>${needsCare(s) ? ` <span class="chip bad" title="غاب أسبوعاً أو لم ينجح في اختبار">متابعة</span>` : ""}<br><span class="muted" dir="auto">@${esc(s.username || "—")}</span></td>
+        <td data-l="الطالب"><label class="pick" data-stop><input type="checkbox" data-pick="${esc(s.sid)}" ${UI.picked.has(s.sid) ? "checked" : ""} aria-label="تحديد ${esc(s.name)}"></label> <b>${esc(s.name)}</b>${needsCare(s) ? ` <span class="chip bad" title="غاب أسبوعاً أو لم ينجح في اختبار">متابعة</span>` : ""}<br><span class="muted" dir="auto">@${esc(s.username || "—")}</span></td>
         <td data-l="الحلقة">${esc(s.group) || "—"}</td><td data-l="أين وصل">${esc(s.position)}<div class="bar"><i style="width:${Number(s.progress) || 0}%"></i></div></td>
         ${LESSONS_T.map(L => { const z = lessonState(s, L); return `<td data-l="الدرس ${L.n}" class="num"><span class="ls ${z.k}" title="${z.title}">${z.t}</span></td>`; }).join("")}
         <td data-l="آخر نشاط" class="muted">${ago(s.lastSeen)}</td></tr>`).join("")
@@ -461,6 +477,18 @@ function bindStudents() {
     const d = root.querySelector(".detail"); if (d && window.innerWidth < 900) d.scrollIntoView({ behavior: "smooth" }); });
   $("carebtn").onclick = () => { UI.care = !UI.care; render(); };
   $("cards").onclick = () => printCards(rows());
+  root.querySelectorAll("[data-stop]").forEach(l => l.onclick = (e) => e.stopPropagation());
+  root.querySelectorAll("[data-pick]").forEach(c => c.onchange = () => { c.checked ? UI.picked.add(c.dataset.pick) : UI.picked.delete(c.dataset.pick); render(); });
+  $("pickall").onchange = (e) => { rows().forEach(s => e.target.checked ? UI.picked.add(s.sid) : UI.picked.delete(s.sid)); render(); };
+  if ($("unpick")) $("unpick").onclick = () => { UI.picked.clear(); render(); };
+  if ($("pcards")) $("pcards").onclick = () => printCards((data.students || []).filter(s => UI.picked.has(s.sid)));
+  if ($("domove")) $("domove").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("students.move", { sids: [...UI.picked], group: $("mvg").value });
+    if (j.error) return flash("mvmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 8)." : errText(j.error));
+    UI.picked.clear(); await load(); flash("addmsg", `نُقل ${j.moved} طالب ✓${j.refused ? ` (لم يُنقل ${j.refused} ليسوا من حلقاتك)` : ""}`, true);
+  });
+  $("impbtn").onclick = () => { UI.imp = !UI.imp; UI.impRes = null; render(); };
+  if (UI.imp) bindImport();
   if ($("backup")) $("backup").onclick = (e) => busy(e.currentTarget, async () => {
     const j = await call("backup");
     flash("repmsg", j.error ? (j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 7)." : "تعذّرت النسخة: " + errText(j.error)) : `حُفظت نسخة في Drive ✓ (${j.name})`, !j.error);
@@ -635,6 +663,95 @@ function bindGroups() {
     if (j.error) { render(); return flash("gmsg", errText(j.error)); }
     UI.editG = null; await loadGroups(); tdata = null; await load();
   });
+}
+
+/* ---------------- استيراد قائمة طلاب ---------------- */
+// كل سطر: الاسم [Tab أو فاصلة] اسم المستخدم (اختياري) [Tab أو فاصلة] الحلقة (اختياري)
+function parseImport(text) {
+  return String(text || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    .map(l => l.split(/\t|[,،;]/).map(x => x.trim()))
+    .filter(c => c[0] && !/^(الاسم|اسم الطالب|name)$/i.test(c[0]))
+    .map(c => ({ name: c[0].replace(/\s+/g, " ").slice(0, 40), username: c[1] || "", group: c[2] || "" }));
+}
+function importPanel(groupOpts) {
+  const list = parseImport(UI.impText);
+  const seen = {}, dup = new Set();
+  list.forEach(x => { const k = x.name; if (seen[k]) dup.add(k); seen[k] = 1; });
+  const res = UI.impRes;
+  return `<div class="panel stack" id="imppanel"><h2>📥 استيراد قائمة طلاب</h2>
+    <p class="muted" style="margin:0">انسخ الأعمدة من Excel أو Google Sheets والصقها هنا. كل سطر طالب: <b>الاسم</b>، ثم (اختياري) <b>اسم المستخدم</b>، ثم (اختياري) <b>الحلقة</b>. يمكن الفصل بفاصلة أيضاً. اسم المستخدم المأخوذ يُضاف إليه رقم.</p>
+    <textarea id="imptext" rows="7" placeholder="يوسف أحمد&#10;مريم سالم	مريم&#10;عمر خالد	عمر	حلقة الفجر">${esc(UI.impText || "")}</textarea>
+    <div class="row r2" style="grid-template-columns:auto 1fr auto;align-items:center"><label for="impg">الحلقة لمن لم تُكتب حلقته:</label><select id="impg">${groupOpts(UI.impG != null ? UI.impG : UI.grp)}</select>
+      <button class="btn" id="doimp" ${list.length ? "" : "disabled"}>➕ استيراد ${list.length} طالب</button></div>
+    ${list.length && !res ? `<div class="tablebox"><table><thead><tr><th>#</th><th>الاسم</th><th>اسم المستخدم المطلوب</th><th>الحلقة</th><th></th></tr></thead><tbody>
+      ${list.slice(0, 300).map((x, i) => `<tr><td class="num">${i + 1}</td><td>${esc(x.name)}</td><td dir="auto">${esc(x.username) || `<span class="muted">من الاسم</span>`}</td>
+        <td>${esc(x.group) || `<span class="muted">الافتراضية</span>`}</td><td>${dup.has(x.name) ? `<span class="chip bad">مكرّر في القائمة</span>` : ""}</td></tr>`).join("")}</tbody></table></div>
+      ${list.length > 300 ? `<p class="err">الحد 300 طالب في المرة الواحدة.</p>` : ""}` : ""}
+    ${res ? `<div class="stack"><p class="ok">سُجّل ${res.added} طالب ✓</p><div class="tablebox"><table><thead><tr><th>الاسم</th><th>الحلقة</th><th>اسم المستخدم</th></tr></thead><tbody>
+      ${res.results.map(r => `<tr><td>${esc(r.name)}</td><td>${r.error ? "" : esc(r.group || "—")}</td><td>${r.error ? `<span class="chip bad">${esc(errText(r.error))}</span>`
+        : `<b class="code" dir="auto">${esc(r.username)}</b>${r.wanted && r.wanted !== r.username ? ` <span class="muted">(كان «${esc(r.wanted)}» مأخوذاً)</span>` : ""}`}</td></tr>`).join("")}</tbody></table></div>
+      <div class="actions" style="margin:0"><button class="btn" id="impcards">🪪 طباعة بطاقات دخولهم</button><button class="btn ghost" id="impnew">استيراد قائمة أخرى</button></div></div>` : ""}
+    <p class="msg" id="impmsg"></p></div>`;
+}
+function bindImport() {
+  const ta = $("imptext"); if (!ta) return;
+  ta.oninput = () => { UI.impText = ta.value; clearTimeout(UI.impT); UI.impT = setTimeout(() => { const pos = ta.selectionStart; render(); const n = $("imptext"); n.focus(); n.setSelectionRange(pos, pos); }, 500); };
+  $("impg").onchange = (e) => { UI.impG = e.target.value; };
+  $("doimp").onclick = (e) => busy(e.currentTarget, async () => {
+    const rowsIn = parseImport(UI.impText).slice(0, 300);
+    const j = await call("students.import", { rows: rowsIn, group: $("impg").value });
+    if (j.error) return flash("impmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 8)." : errText(j.error));
+    UI.impRes = j; UI.impText = ""; await load();
+  });
+  if ($("impcards")) $("impcards").onclick = () => printCards(UI.impRes.results.filter(r => r.username));
+  if ($("impnew")) $("impnew").onclick = () => { UI.impRes = null; render(); };
+}
+
+/* ---------------- الإحصاءات ---------------- */
+function statsTab() {
+  const S = (data.students || []), groups = [...new Set(S.map(s => s.group || "بدون حلقة"))].sort();
+  const wk = Date.now() - 7 * 864e5;
+  const rowsG = groups.map(g => {
+    const G = S.filter(s => (s.group || "بدون حلقة") === g);
+    const act = G.filter(s => s.lastSeen && new Date(s.lastSeen) >= wk).length;
+    const avg = G.length ? Math.round(G.reduce((t, s) => t + (Number(s.progress) || 0), 0) / G.length) : 0;
+    return { g, n: G.length, act, avg, pass: LESSONS_T.map(L => G.filter(s => lessonOf(s, L.n).best >= 8).length) };
+  }).sort((a, b) => b.avg - a.avg);
+  const H = sdata && sdata.hardest;
+  return `<div class="panel"><h2>مقارنة الحلقات</h2><div class="tablebox"><table>
+    <thead><tr><th>الحلقة</th><th>الطلاب</th><th>نشط هذا الأسبوع</th><th>متوسط الإنجاز</th>${LESSONS_T.map(L => `<th title="${esc(L.title)}">ناجح د${L.n}</th>`).join("")}</tr></thead>
+    <tbody>${rowsG.map(r => `<tr><td><b>${esc(r.g)}</b></td><td class="num">${r.n}</td><td class="num">${r.act} <span class="muted">(${r.n ? Math.round(r.act / r.n * 100) : 0}%)</span></td>
+      <td><div class="bar"><i style="width:${r.avg}%"></i></div><span class="muted">${r.avg}%</span></td>
+      ${r.pass.map(p => `<td class="num">${p ? `<span class="ls pass">${p}</span>` : "—"}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="9" class="muted">لا يوجد طلاب.</td></tr>`}</tbody></table></div></div>
+  <div class="panel"><h2>أصعب الأسئلة <span class="muted">(آخر 90 يوماً)</span></h2>
+    ${!sdata ? `<p class="muted">⏳ جارٍ الحساب...</p>` : sdata.error ? `<p class="err">${sdata.error === "unknown_action" ? "يحتاج نشر كود الجدول الجديد (الإصدار 8)." : esc(errText(sdata.error))}</p>`
+      : !H.length ? `<p class="muted">لا توجد بيانات كافية بعد. يبدأ الجمع من يوم تحديث الموقع، ويظهر السؤال بعد أن يُجاب 3 مرات على الأقل.</p>`
+      : `<p class="muted" style="margin-top:0">نسبة الإجابات الخاطئة من أول محاولة. ما فوق 40% يستحق شرحاً في الحلقة.</p>
+      <div class="tablebox"><table><thead><tr><th>السؤال</th><th>الدرس</th><th>الخطأ</th><th>عدد الإجابات</th><th>الطلاب</th></tr></thead><tbody>
+      ${H.map(x => `<tr><td><b>${esc(x.q)}</b></td><td>${x.lesson ? "الدرس " + ORD[x.lesson - 1] : "—"}</td>
+        <td><div class="bar hard"><i style="width:${x.rate}%"></i></div><span class="${x.rate >= 40 ? "err" : "muted"}">${x.rate}%</span></td>
+        <td class="num">${x.n}</td><td class="num">${x.students}</td></tr>`).join("")}</tbody></table></div>`}
+    <div class="actions"><button class="btn ghost small" id="sref">↻ تحديث</button></div></div>`;
+}
+function bindStats() { if ($("sref")) $("sref").onclick = (e) => busy(e.currentTarget, async () => { await loadStats(); render(); }); }
+
+/* ---------------- سجل التعديلات (للمدير الرئيسي) ---------------- */
+function auditTab() {
+  if (!adata) return `<div class="panel"><p class="muted">⏳ جارٍ التحميل...</p></div>`;
+  if (adata.error) return `<div class="panel"><p class="err">${adata.error === "unknown_action" ? "يحتاج نشر كود الجدول الجديد (الإصدار 8)." : esc(errText(adata.error))}</p></div>`;
+  const q = (UI.aq || "").trim();
+  const items = adata.items.filter(i => !q || [i.name, i.action, i.target, i.details].join(" ").includes(q));
+  return `<div class="panel stack"><div class="row r2" style="grid-template-columns:1fr auto"><input id="aq" placeholder="ابحث: اسم معلم، أو طالب، أو عملية" value="${esc(q)}" aria-label="بحث في سجل التعديلات">
+    <button class="btn ghost" id="aref">↻ تحديث</button></div>
+    <p class="muted" style="margin:0">كل تعديل قام به المدير أو المعلمون: التسجيل، والتعديل، والنقل، والحذف، وإعادة الضبط... آخر 400 عملية. السجل الكامل في ورقة «سجل التعديلات» في الجدول.</p>
+    <div class="tablebox"><table><thead><tr><th>الوقت</th><th>من</th><th>العملية</th><th>على</th><th>التفاصيل</th></tr></thead><tbody>
+    ${items.map(i => `<tr><td class="muted" title="${esc(new Date(i.ts).toLocaleString("ar-EG"))}">${ago(i.ts)}</td><td><b>${esc(i.name)}</b> <span class="chip ${i.role === "معلم" ? "grp" : "adm"}">${esc(i.role)}</span></td>
+      <td>${esc(i.action)}</td><td>${esc(i.target)}</td><td class="muted">${esc(i.details)}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">لا توجد تعديلات بعد.</td></tr>`}</tbody></table></div></div>`;
+}
+function bindAudit() {
+  if (!$("aq")) return;
+  $("aq").oninput = (e) => { UI.aq = e.target.value; const pos = e.target.selectionStart; render(); const n = $("aq"); n.focus(); n.setSelectionRange(pos, pos); };
+  $("aref").onclick = (e) => busy(e.currentTarget, async () => { await loadAudit(); render(); });
 }
 
 /* ---------------- بطاقات الدخول (QR) ---------------- */

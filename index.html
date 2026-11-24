@@ -800,10 +800,10 @@ function progressPct() {
   for (let n = 1; n <= AVAILABLE; n++) { const st = stepsOf(n); all += st.length; done += st.filter(s => stepDone(s, n)).length; }
   return Math.round(done / all * 100);
 }
-function report(activity, score, total, silent) {
+function report(activity, score, total, silent, answers) {
   if (!P || TEACHER) return;
   if (silent) DB.queue = DB.queue.filter(ev => !(ev.silent && ev.sid === P.id));
-  DB.queue.push({ silent: !!silent,
+  DB.queue.push({ silent: !!silent, answers: Array.isArray(answers) ? answers.slice(0, 30) : undefined,
     sid: P.id, name: P.name, group: P.group || "", username: P.username || "", lesson: CUR, activity,
     score: score == null ? "" : score, total: total == null ? "" : total,
     position: position(), progress: progressPct(), best: P.l1.best, tries: P.l1.tries,
@@ -1333,7 +1333,7 @@ const qSame = (t, options) => ({ hint: "same", ask: `<div class="target">${t.c}<
 // الدرس الثاني
 const CLASS_OPTS = [opt("heavy", `🐘<small>مفخّم</small>`, "cls"), opt("light", `🐦<small>مرقّق</small>`, "cls")];
 const qClass = (t) => ({ hint: "class", ask: `<div class="target">${t.c}</div>`, speak: () => sayLetter(t),
-  opts: CLASS_OPTS, ans: isHeavy(t.c) ? "heavy" : "light", cols: 2 });
+  opts: CLASS_OPTS, ans: isHeavy(t.c) ? "heavy" : "light", cols: 2, key: `مفخّم أم مرقّق «${t.c}»` });
 function qPick(kind) {
   // kind: heavy = اختر المفخّم بين مرقّقات، light = العكس، var = اختر الحرف المتغيّر
   let ans, others;
@@ -1342,7 +1342,7 @@ function qPick(kind) {
   else { ans = byChar(pick([..."ارل"], 1)[0]); others = pick([...HEAVY, ..."بتسم"].map(byChar), 3); }
   const label = { heavy: "🐘 اختر الحرف المفخّم", light: "🐦 اختر الحرف المرقّق", var: "🔄 اختر الحرف الذي يتغيّر" }[kind];
   const say = { heavy: "اِخْتَرِ الْحَرْفَ الْمُفَخَّم", light: "اِخْتَرِ الْحَرْفَ الْمُرَقَّق", var: "اِخْتَرِ الْحَرْفَ الَّذِي يَتَغَيَّر" }[kind];
-  return { hint: "pick", ask: `<div class="asktext">${label}</div>`, speak: () => play(null, say),
+  return { hint: "pick", key: `${{ heavy: "اختر المفخّم", light: "اختر المرقّق", var: "اختر المتغيّر" }[kind]} «${ans.c}»`, ask: `<div class="asktext">${label}</div>`, speak: () => play(null, say),
     opts: shuffle([ans, ...others]).map(o => opt(o.c)), ans: ans.c };
 }
 function l2Practice(S) {
@@ -1362,7 +1362,7 @@ function qWordHas(r) {
   const w = pick(r.words, 1)[0];
   const others = pick(L3_ROWS.filter(x => x.t !== r.t).flatMap(x => x.words).filter(x => !hasLetter(x, r.t) && x.length <= 5), 2);
   return { hint: "wordhas", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => sayLetter(byChar(r.t)),
-    opts: shuffle([w, ...others]).map(x => opt(x, x, "word")), ans: w, cols: 3 };
+    opts: shuffle([w, ...others]).map(x => opt(x, x, "word")), ans: w, cols: 3, key: `أين الحرف «${r.t}»` };
 }
 
 /* --- الدرس الرابع: شبكة المقاطع + كلمات التدريب --- */
@@ -1464,7 +1464,7 @@ function qHListen(L, H, hs) {
 // ما اسم الحركة؟
 const HNAME_OPTS = HARAKAT.map(h => opt(h.k, `<span class="hm">ـ${h.m}ـ</span><small>${h.name}</small>`, "cls hname"));
 const qHName = (L, H) => ({ hint: "l4name", ask: `<div class="target">${sylOf(L, H)}</div>`, speak: () => play("audio/prompts/haraka.mp3", "مَا اسْمُ هَذِهِ الْحَرَكَة؟"),
-  opts: HNAME_OPTS, ans: H.k, cols: 3 });
+  opts: HNAME_OPTS, ans: H.k, cols: 3, key: `اسم الحركة «${sylOf(L, H)}»` });
 // المقطع الملوّن داخل الكلمة: ما هو؟
 function qHInWord(maxStage) {
   const w = pick(L4_WORDS.slice(0, maxStage + 1).flat(), 1)[0];
@@ -1480,7 +1480,10 @@ function l4Practice(i) {
   return shuffle([...pick(L4_LETTERS.slice(0, 28), 3).map(L => qSylListen(L, H)), qHListen(randL4(), H, hs), qHName(randL4(), H)]);
 }
 
-function startQuiz(cfg) { cfg.lesson = cfg.lesson || CUR; go("quiz", { cfg, q: 0, score: 0, firstTry: true }); }
+function startQuiz(cfg) { cfg.lesson = cfg.lesson || CUR; go("quiz", { cfg, q: 0, score: 0, firstTry: true, answers: [], answered: false }); }
+// اسم السؤال في إحصاء «أصعب الأسئلة» (يراه المعلم)
+const QKEY = { listen: "اسمع واختر", same: "طابق الشكل", shape: "الحرف الملوّن", l4listen: "اسمع المقطع", l4haraka: "اسمع الحركة", l4word: "المقطع الملوّن" };
+const qKey = (Q) => Q.key || `${QKEY[Q.hint] || Q.hint} «${Q.ans}»`;
 function Quiz() {
   const { cfg } = screen;
   const Q = cfg.questions[screen.q];
@@ -1500,6 +1503,7 @@ function Quiz() {
   const optsEl = document.getElementById("opts");
   optsEl.querySelectorAll(".opt").forEach(b => b.onclick = () => {
     const ok = Q.opts[+b.dataset.i].k === Q.ans;
+    if (!screen.answered) { screen.answered = true; (screen.answers = screen.answers || []).push([qKey(Q), ok ? 1 : 0]); }
     if (ok) {
       if (screen.firstTry) screen.score++;
       b.classList.add("right"); optsEl.classList.add("lock"); sfx("ok");
@@ -1518,12 +1522,12 @@ function Quiz() {
   });
   function nextQ() {
     spellToken++;
-    if (screen.q + 1 < cfg.questions.length) { screen.q++; screen.firstTry = true; stopAudio(); render(); }
-    else finish(cfg, screen.score, cfg.questions.length);
+    if (screen.q + 1 < cfg.questions.length) { screen.q++; screen.firstTry = true; screen.answered = false; stopAudio(); render(); }
+    else finish(cfg, screen.score, cfg.questions.length, screen.answers);
   }
 }
 
-function finish(cfg, score, total) {
+function finish(cfg, score, total, answers) {
   const n = cfg.lesson || CUR, L = LP(n);
   if (cfg.mode === "practice") { L.stages[cfg.stage] = true; }
   if (cfg.mode === "game") { L.games[cfg.game] = true; }
@@ -1534,7 +1538,7 @@ function finish(cfg, score, total) {
   save();
   const label = "الدرس " + ORDINALS[n - 1] + " — " + (cfg.mode === "practice" ? stepName({ kind: "stage", i: cfg.stage }, n)
     : cfg.mode === "game" ? stepName({ kind: "game", i: cfg.game }, n) : "الاختبار");
-  report(label, score, total);
+  report(label, score, total, false, answers);
   go("result", { cfg, score, total });
 }
 

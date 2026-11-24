@@ -1,5 +1,5 @@
 /**
- * سجل المعلم — رحلة الحروف (الإصدار 7: الصلاحيات + تقرير ولي الأمر + التقرير الأسبوعي + النسخ الاحتياطي)
+ * سجل المعلم — رحلة الحروف (الإصدار 8: سجل التعديلات + النقل بالجملة + الاستيراد + الإحصاءات وأصعب الأسئلة)
  * بعد التحديث: شغّل setup، ثم (مرة واحدة) installTriggers للنسخة الاحتياطية والبريد الأسبوعي، ثم انشر «إصدار جديد»
  * من إنشاء م. كريم عادل اللوح · Created by Eng. Kareem Adel Allouh
  *
@@ -12,7 +12,7 @@
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "غير-هذه-الكلمة";
 
-const VERSION = 7;
+const VERSION = 8;
 const STUDENTS = "الطلاب";
 const EVENTS = "سجل النشاط";
 const TEACHERS = "المعلمون";
@@ -134,6 +134,27 @@ function repairFromLog_(S) {
     if (JSON.stringify(d.lx) !== before) { st.getRange(i + 2, 10).setValue(JSON.stringify(d)); fixed++; }
   });
   return fixed;
+}
+
+/* ---------- ورقتا «سجل التعديلات» و«الإجابات» (تُنشآن عند أول استعمال) ---------- */
+const AUDIT = "سجل التعديلات";
+const ANSWERS = "الإجابات";
+function extraSheet_(name, headers, color) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name); sh.appendRow(headers); sh.setFrozenRows(1); sh.setRightToLeft(true);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground(color);
+  }
+  return sh;
+}
+const auditSheet_ = () => extraSheet_(AUDIT, ["الوقت", "المستخدم", "الاسم", "الدور", "العملية", "على", "التفاصيل"], "#ffe2cc");
+const answersSheet_ = () => extraSheet_(ANSWERS, ["الوقت", "المعرّف الداخلي", "الحلقة", "النشاط", "السؤال", "صحيح؟ (1/0)"], "#e2f0ff");
+// كل تعديل يقوم به معلم أو مدير يُسجَّل هنا (يراه المدير الرئيسي)
+function audit_(t, action, target, details) {
+  try {
+    auditSheet_().appendRow([new Date(), t.user, t.name, t.main ? "المدير" : t.admin ? "مدير مساعد" : "معلم", action, clean_(target, 80), clean_(details || "", 300)]);
+  } catch (e) {}
 }
 
 /* ---------- أدوات ---------- */
@@ -321,6 +342,12 @@ function logEvent_(d) {
   const old = readStudent_(st, r);
   // الاسم والحلقة يحددهما السجل (يعدّلهما المدير أو المعلم). المزامنة الصامتة لا تُكتب في سجل النشاط
   if (!d.silent) ev.appendRow([now, old.name, old.group, clean_(d.activity, 60), num_(d.score), num_(d.total), clean_(d.position, 80), sid]);
+  // إجابة كل سؤال (لإحصاء «أصعب الأسئلة»)
+  if (!d.silent && Array.isArray(d.answers) && d.answers.length) {
+    const rows = d.answers.slice(0, 30).filter(a => Array.isArray(a) && a[0])
+      .map(a => [now, sid, old.group, clean_(d.activity, 60), clean_(a[0], 60), a[1] ? 1 : 0]);
+    if (rows.length) { const an = answersSheet_(); an.getRange(an.getLastRow() + 1, 1, rows.length, 6).setValues(rows); }
+  }
 
   const od = old.detail || {}, nd = d.detail || {};
   // إذا أعاد المعلم ضبط التقدّم، يُتجاهل تقدّم الأجهزة التي لم تعلم بذلك بعد
@@ -350,7 +377,7 @@ function command_(d) {
   try {
     switch (d.action) {
       case "verify": return { ok: true, me, version: VERSION };
-      case "repair": needAdmin(); return withLock_(() => ({ ok: true, fixed: repairFromLog_(S) }));
+      case "repair": needAdmin(); return withLock_(() => { const fixed = repairFromLog_(S); audit_(t, "إصلاح التقدّم من سجل النشاط", "", "أُصلح: " + fixed); return { ok: true, fixed }; });
       case "data": return dashboard_(S, t, me);
 
       /* --- الطلاب --- */
@@ -362,6 +389,7 @@ function command_(d) {
         const u = pickUsername_(d.username || first_(name), takenMap_(st));
         newRow_(st, code, name, group, u);
         ev.appendRow([new Date(), name, group, "سجّله " + t.name, "", "", "لم يبدأ بعد", code]);
+        audit_(t, "تسجيل طالب", name, "الحلقة: " + (group || "بدون") + " · اسم المستخدم: " + u);
         return { ok: true, code, username: u, wanted: cleanUsername_(d.username || "") };
       });
       case "student.update": return withLock_(() => {
@@ -384,6 +412,7 @@ function command_(d) {
         st.getRange(r, 11).setValue(u);
         const what = [name !== s.name ? "الاسم" : "", group !== s.group ? "الحلقة" : "", u !== s.username ? "اسم المستخدم" : ""].filter(Boolean).join(" و");
         if (what) ev.appendRow([new Date(), name, group, "عدّل " + t.name + " " + what, "", "", s.position, s.sid]);
+        if (what) audit_(t, "تعديل طالب", s.name, [name !== s.name ? "الاسم ← " + name : "", group !== s.group ? "الحلقة: " + (s.group || "بدون") + " ← " + (group || "بدون") : "", u !== s.username ? "اسم المستخدم: " + s.username + " ← " + u : ""].filter(Boolean).join(" · "));
         return { ok: true, username: u };
       });
       case "student.reset": return withLock_(() => {
@@ -395,6 +424,7 @@ function command_(d) {
         st.getRange(r, 4, 1, 4).setValues([["لم يبدأ بعد", 0, 0, 0]]);
         st.getRange(r, 10).setValue(JSON.stringify(det));
         ev.appendRow([new Date(), s.name, s.group, "أعاد " + t.name + " ضبط التقدّم", "", "", "لم يبدأ بعد", s.sid]);
+        audit_(t, "إعادة ضبط التقدّم", s.name, "كان: " + s.position);
         return { ok: true };
       });
       case "student.delete": needMain(); return withLock_(() => {
@@ -404,6 +434,7 @@ function command_(d) {
         st.deleteRow(r);
         markDeleted_(s.sid);
         ev.appendRow([new Date(), s.name, s.group, "حذفه " + t.name, "", "", "", s.sid]);
+        audit_(t, "حذف طالب", s.name, "الحلقة: " + (s.group || "بدون") + " · كان: " + s.position);
         return { ok: true };
       });
 
@@ -417,7 +448,7 @@ function command_(d) {
         if (!k || d.renew) {
           k = Utilities.getUuid().replace(/-/g, "").slice(0, 20);
           st.getRange(r, 12).setValue(k);
-          if (d.renew) ev.appendRow([new Date(), s.name, s.group, "جدّد " + t.name + " رابط ولي الأمر", "", "", s.position, s.sid]);
+          if (d.renew) { ev.appendRow([new Date(), s.name, s.group, "جدّد " + t.name + " رابط ولي الأمر", "", "", s.position, s.sid]); audit_(t, "تجديد رابط ولي الأمر", s.name, ""); }
         }
         return { ok: true, key: k };
       });
@@ -426,7 +457,78 @@ function command_(d) {
       case "weekly": return { ok: true, since: iso_(new Date(Date.now() - 7 * 864e5)), events: recentEvents_(ev, 7).filter(e => canSee_(t, e.group)) };
 
       /* --- النسخة الاحتياطية (للمدير) --- */
-      case "backup": needAdmin(); return { ok: true, name: backupNow() };
+      case "backup": needAdmin(); { const name = backupNow(); audit_(t, "نسخة احتياطية", name, ""); return { ok: true, name }; }
+
+      /* --- نقل عدة طلاب إلى حلقة --- */
+      case "students.move": return withLock_(() => {
+        const to = clean_(d.group || "", 40);
+        if (!canSee_(t, to) && !(t.admin && !to)) return { error: "not_your_group" };
+        const want = (d.sids || []).map(String).slice(0, 500);
+        const last = st.getLastRow(); if (last < 2) return { ok: true, moved: 0 };
+        const v = st.getRange(2, 1, last - 1, 3).getValues();
+        const names = []; let moved = 0, refused = 0;
+        v.forEach((r, i) => {
+          if (want.indexOf(String(r[0])) < 0 || String(r[2]) === to) return;
+          if (!canSee_(t, r[2])) { refused++; return; }
+          st.getRange(i + 2, 3).setValue(to); moved++; names.push(r[1]);
+          ev.appendRow([new Date(), r[1], to, "نقله " + t.name + " إلى " + (to || "بدون حلقة"), "", "", "", String(r[0])]);
+        });
+        if (moved) audit_(t, "نقل طلاب", to || "بدون حلقة", moved + " طالب: " + names.slice(0, 20).join("، ") + (names.length > 20 ? "…" : ""));
+        return { ok: true, moved, refused };
+      });
+
+      /* --- استيراد قائمة طلاب (من Excel) --- */
+      case "students.import": return withLock_(() => {
+        const rows = (d.rows || []).slice(0, 300), out = [], taken = takenMap_(st), now = new Date();
+        const newRows = [], evRows = [];
+        rows.forEach(x => {
+          const name = clean_(x.name, 40), group = clean_(x.group != null && x.group !== "" ? x.group : d.group || "", 40);
+          if (!name) return out.push({ name: x.name || "", error: "no_name" });
+          if (!canSee_(t, group) && !(t.admin && !group)) return out.push({ name, error: "not_your_group" });
+          let code; do { code = String(Math.floor(10000000 + Math.random() * 90000000)); } while (studentRow_(st, code) > 0 || isDeleted_(code) || newRows.some(r => r[0] === code));
+          const u = pickUsername_(x.username || first_(name), taken); taken[norm_(u)] = 1;
+          newRows.push([code, name, group, "لم يبدأ بعد", 0, 0, 0, now, 0, JSON.stringify(BLANK_DETAIL()), u, ""]);
+          evRows.push([now, name, group, "سجّله " + t.name + " (استيراد)", "", "", "لم يبدأ بعد", code]);
+          out.push({ name, group, username: u, wanted: cleanUsername_(x.username || ""), sid: code });
+        });
+        if (newRows.length) {
+          const r0 = st.getLastRow() + 1;
+          st.getRange(r0, 1, newRows.length, 1).setNumberFormat("@");
+          st.getRange(r0, 1, newRows.length, NCOL).setValues(newRows);
+          ev.getRange(ev.getLastRow() + 1, 1, evRows.length, 8).setValues(evRows);
+          audit_(t, "استيراد طلاب", newRows.length + " طالب", newRows.slice(0, 20).map(r => r[1]).join("، ") + (newRows.length > 20 ? "…" : ""));
+        }
+        return { ok: true, added: newRows.length, results: out };
+      });
+
+      /* --- الإحصاءات: أصعب الأسئلة (آخر 90 يوماً) --- */
+      case "stats": {
+        const an = answersSheet_(), last = an.getLastRow(), since = Date.now() - 90 * 864e5;
+        const agg = {};
+        if (last > 1) {
+          const n = Math.min(last - 1, 30000);
+          an.getRange(last - n + 1, 1, n, 6).getValues().forEach(r => {
+            const tm = r[0] instanceof Date ? r[0].getTime() : Date.parse(r[0]) || 0;
+            if (tm < since || !canSee_(t, r[2])) return;
+            const lm = /^الدرس (.+?) — /.exec(String(r[3])), lesson = lm ? ORD_.indexOf(lm[1]) + 1 : 0;
+            const k = lesson + "|" + r[4];
+            const a = agg[k] = agg[k] || { lesson, q: String(r[4]), n: 0, wrong: 0, kids: {} };
+            a.n++; if (!Number(r[5])) a.wrong++; a.kids[r[1]] = 1;
+          });
+        }
+        const list = Object.keys(agg).map(k => agg[k]).filter(a => a.n >= 3)
+          .map(a => ({ lesson: a.lesson, q: a.q, n: a.n, wrong: a.wrong, students: Object.keys(a.kids).length, rate: Math.round(a.wrong / a.n * 100) }))
+          .sort((a, b) => b.rate - a.rate || b.n - a.n);
+        return { ok: true, hardest: list.slice(0, 40), total: list.reduce((x, a) => x + a.n, 0) };
+      }
+
+      /* --- سجل التعديلات (للمدير الرئيسي) --- */
+      case "audit.list": needMain(); {
+        const au = auditSheet_(), last = au.getLastRow();
+        const n = Math.min(Math.max(last - 1, 0), 400);
+        return { ok: true, items: n ? au.getRange(last - n + 1, 1, n, 7).getValues().reverse()
+          .map(r => ({ ts: iso_(r[0]), user: String(r[1]), name: String(r[2]), role: String(r[3]), action: String(r[4]), target: String(r[5]), details: String(r[6]) })) : [] };
+      }
 
       /* --- المعلمون (للمدير) --- */
       case "teachers.list": needAdmin();
@@ -444,6 +546,7 @@ function command_(d) {
         if (!cur && pass.length < 4) return { error: "short_pass" };
         if (pass && pass.length < 4) return { error: "short_pass" };
         const row = [user, pass || cur.pass, name, groups.join("، "), d.admin ? "نعم" : "لا"];
+        audit_(t, cur ? "تعديل معلم" : "إضافة معلم", name, "اسم الدخول: " + user + " · الحلقات: " + (groups.join("، ") || "—") + (d.admin ? " · مدير مساعد" : "") + (cur && pass ? " · غُيّرت كلمة المرور" : ""));
         if (cur) te.getRange(cur.row, 1, 1, 5).setValues([row]);
         else { te.appendRow(row); te.getRange(te.getLastRow(), 1, 1, 2).setNumberFormat("@").setValues([[user, pass]]); }
         const known = groupList_(gr);
@@ -454,6 +557,7 @@ function command_(d) {
         const cur = teachers_(te).find(x => x.user === String(d.tUser));
         if (!cur) return { error: "not_found" };
         te.deleteRow(cur.row);
+        audit_(t, "حذف معلم", cur.name, "اسم الدخول: " + cur.user);
         return { ok: true };
       });
 
@@ -474,6 +578,7 @@ function command_(d) {
         const gl = groupList_(gr);
         const gi = orig ? gl.indexOf(orig) : -1;
         if (gi >= 0) gr.getRange(gi + 2, 1).setValue(name); else if (gl.indexOf(name) < 0) gr.appendRow([name]);
+        audit_(t, orig ? "تعديل حلقة" : "إنشاء حلقة", name, (orig && orig !== name ? "الاسم القديم: " + orig + " · " : "") + "المعلمون: " + ((d.teachers || []).join("، ") || "—"));
         if (orig && orig !== name && st.getLastRow() > 1) {
           const rg = st.getRange(2, 3, st.getLastRow() - 1, 1), v = rg.getValues();
           rg.setValues(v.map(r => [String(r[0]) === orig ? name : r[0]]));
@@ -496,6 +601,7 @@ function command_(d) {
           const rg = st.getRange(2, 3, st.getLastRow() - 1, 1), v = rg.getValues();
           rg.setValues(v.map(r => { if (String(r[0]) === name) { moved++; return [""]; } return r; }));
         }
+        audit_(t, "حذف حلقة", name, "طلابها صاروا بدون حلقة: " + moved);
         return { ok: true, moved };
       });
 
@@ -508,9 +614,11 @@ function command_(d) {
           if (!/^[A-Za-z0-9_.\-]{2,40}$/.test(nu)) return { error: "bad_user" };
           if (teachers_(te).some(x => x.user === nu)) return { error: "user_taken" };
           props_().setProperties({ ADMIN_USER: nu, ADMIN_PASS: np });
+          audit_(t, "تغيير حساب المدير", nu, "");
           return { ok: true, user: nu };
         }
         te.getRange(t.row, 2).setNumberFormat("@").setValue(np);
+        audit_(t, "تغيير كلمة المرور", t.name, "");
         return { ok: true, user: t.user };
       });
     }
