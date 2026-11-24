@@ -168,7 +168,8 @@ async function run() {
   for (let i = 0; i < LETTERS.length; i++) {
     await hop(from, LETTERS[i]); check(); from = LETTERS[i];
     const n = el.querySelectorAll(".ri-ltr")[i]; n.classList.add("ri-lit"); sfx("enter");
-    await Promise.all([audio(`audio/letters/${LETTERS[i].id}.mp3`), wait(700)]); check();
+    // اسم الحرف بصوت راوي القصة، وإن لم يوجد فبصوت الدروس
+    await Promise.all([audio(`audio/intro/l-${LETTERS[i].id}.mp3`).then(ok => ok || audio(`audio/letters/${LETTERS[i].id}.mp3`)), wait(700)]); check();
     n.classList.remove("ri-lit"); n.style.background = "#fff"; n.style.boxShadow = "0 0 0 4px #ffd23f";
     await wait(250);
   }
