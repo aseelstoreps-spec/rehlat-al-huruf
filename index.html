@@ -138,6 +138,45 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .connector { width: 6px; height: 18px; border-radius: 3px; background: #d5d7ee; margin-inline: 36px; }
 .station:nth-child(4n+3) + .connector { margin-inline-start: auto; }
 
+
+/* ===== داخل الدرس: عالم الجزر (المراحل، الأسئلة، الألعاب، النتيجة) ===== */
+body.scene { background: linear-gradient(180deg, #ffe3b8 0%, #fff1d8 38%, #e8f1ff 100%) fixed; }
+body.scene::before { content: ""; position: fixed; inset: 0; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22900%22%20height%3D%22700%22%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.75%22%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22120%22%20rx%3D%2270%22%20ry%3D%2226%22/%3E%3Cellipse%20cx%3D%22160%22%20cy%3D%22104%22%20rx%3D%2246%22%20ry%3D%2230%22/%3E%3Cellipse%20cx%3D%2290%22%20cy%3D%22110%22%20rx%3D%2240%22%20ry%3D%2224%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.55%22%3E%3Cellipse%20cx%3D%22720%22%20cy%3D%22300%22%20rx%3D%2290%22%20ry%3D%2230%22/%3E%3Cellipse%20cx%3D%22760%22%20cy%3D%22282%22%20rx%3D%2252%22%20ry%3D%2234%22/%3E%3Cellipse%20cx%3D%22690%22%20cy%3D%22290%22%20rx%3D%2244%22%20ry%3D%2226%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.6%22%3E%3Cellipse%20cx%3D%22260%22%20cy%3D%22560%22%20rx%3D%2280%22%20ry%3D%2226%22/%3E%3Cellipse%20cx%3D%22300%22%20cy%3D%22544%22%20rx%3D%2244%22%20ry%3D%2230%22/%3E%3C/g%3E%3Cg%20fill%3D%22%239b7653%22%20opacity%3D%22.18%22%3E%3Cpath%20d%3D%22M560%2C560%20h70%20q-10%2C26%20-35%2C34%20q-25%2C-8%20-35%2C-34z%22/%3E%3C/g%3E%3Cellipse%20cx%3D%22595%22%20cy%3D%22560%22%20rx%3D%2238%22%20ry%3D%229%22%20fill%3D%22%237cc7a2%22%20opacity%3D%22.35%22/%3E%3C/svg%3E") 0 0 / 900px 700px repeat; opacity: .9; pointer-events: none; z-index: 0; animation: skydrift 60s linear infinite; }
+@keyframes skydrift { to { background-position: 900px 0; } }
+body.scene #app { position: relative; z-index: 1; }
+body.scene .bar .pill { background: #fff; box-shadow: 0 3px 0 #e8d3a8; }
+/* بطاقة الحرف تقف على جزيرة */
+body.scene .card-letter { border: 0; box-shadow: 0 10px 0 #e8d3a8, 0 18px 30px #9b765333; margin-bottom: 56px; }
+body.scene .card-letter::after { content: ""; position: absolute; left: -6%; right: -6%; bottom: -66px; height: 86px; z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2030%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2C14%20Q200%2C-6%20400%2C14%20V30%20H0Z%22%20fill%3D%22%237cc7a2%22/%3E%3Cpath%20d%3D%22M10%2C16%20Q200%2C0%20390%2C16%20V22%20H10Z%22%20fill%3D%22%2393d6b4%22/%3E%3C/svg%3E") 0 0 / 100% 26px no-repeat, url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20120%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2C0%20H400%20Q380%2C40%20300%2C70%20Q240%2C120%20200%2C112%20Q150%2C120%20100%2C72%20Q20%2C40%200%2C0Z%22%20fill%3D%22%239b7653%22/%3E%3Cpath%20d%3D%22M150%2C100%20L175%2C120%20L190%2C104Z%20M215%2C104%20L235%2C118%20L250%2C96Z%22%20fill%3D%22%238a6646%22/%3E%3Cpath%20d%3D%22M0%2C0%20H400%20Q392%2C10%20380%2C14%20H20%20Q8%2C10%200%2C0Z%22%20fill%3D%22%237d5c3f%22%20opacity%3D%22.35%22/%3E%3C/svg%3E") 0 18px / 100% 68px no-repeat; }
+/* الحروف أسفل البطاقة: صخور صغيرة يقفز الطالب بينها */
+body.scene .chip { border-radius: 50% 50% 46% 46% / 40% 40% 60% 60%; background: #fff; box-shadow: 0 5px 0 #9b7653, 0 8px 12px #7d5c3f33; border: 3px solid #fff; }
+body.scene .chip.seen { background: #e4f3ec; border-color: #93d6b4; }
+body.scene .chip.cur { background: var(--gold); border-color: #fff; transform: translateY(-4px); }
+body.scene .arrow { background: #fff8ea; box-shadow: 0 5px 0 #c9a27a; }
+body.scene .speak { box-shadow: 0 6px 0 #15174a, 0 0 0 8px #ffd23f55; }
+/* شريط التقدّم: مسار من النقاط */
+body.scene .progress { height: 18px; background: transparent; box-shadow: none; overflow: visible; position: relative;
+  background-image: radial-gradient(circle, #ffffff 4px, transparent 5px); background-size: 18px 18px; background-position: center; }
+body.scene .progress i { height: 100%; background: radial-gradient(circle, #e06a00 4px, transparent 5px) right center / 18px 18px repeat-x; position: relative; border-radius: 0; }
+body.scene .progress i::after { content: ""; position: absolute; left: -11px; top: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px #fff; }
+/* الخيارات: جزر صغيرة تطفو */
+body.scene .opt { border: 0; box-shadow: 0 8px 0 #7cc7a2, 0 14px 0 #9b7653, 0 20px 22px #7d5c3f33; animation: floaty 3.2s ease-in-out infinite; margin-bottom: 14px; }
+body.scene .opt:nth-child(2) { animation-delay: -.8s; } body.scene .opt:nth-child(3) { animation-delay: -1.6s; } body.scene .opt:nth-child(4) { animation-delay: -2.4s; }
+body.scene .opt.right { background: #fff6d1; box-shadow: 0 8px 0 var(--gold), 0 14px 0 #9b7653, 0 0 0 6px #ffd23f88; }
+body.scene .opt.wrong { animation: shake .4s; }
+body.scene .opts.lock .opt { animation-play-state: paused; }
+@keyframes floaty { 50% { transform: translateY(-6px); } }
+body.scene .ask .target, body.scene .word-target { border: 0; box-shadow: 0 8px 0 #7cc7a2, 0 14px 0 #9b7653; }
+body.scene .asktext { box-shadow: 0 4px 0 #e8d3a8; }
+/* الكلمات والمقاطع (الدرسان 3 و4) */
+body.scene .l3word, body.scene .syl { box-shadow: 0 5px 0 #93d6b4, 0 9px 0 #9b7653; }
+body.scene .syl.now { box-shadow: 0 5px 0 var(--gold), 0 9px 0 #9b7653; }
+body.scene .l3head { border: 0; box-shadow: 0 8px 0 #7cc7a2, 0 14px 0 #9b7653; }
+body.scene .spell, body.scene .l4head, body.scene .l2note { background: #ffffffe6; }
+/* النتيجة: احتفال على الجزيرة */
+body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 18px 30px; box-shadow: 0 10px 0 #7cc7a2, 0 18px 0 #9b7653, 0 26px 30px #7d5c3f33; margin-bottom: 30px; }
+@media (prefers-reduced-motion: reduce) { body.scene::before, body.scene .opt { animation: none !important; } }
 /* الطريق المتعرّج: خريطة الدروس ومراحل الدرس */
 .trail { position: relative; container-type: inline-size; direction: ltr; margin-block: 30px 10px; }
 /* جزر في السماء */
@@ -749,6 +788,12 @@ function sfx(kind) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     // قفزة بين الجزر: صفير صاعد قصير + رنّة، ودخول الدرس: نغمتان صاعدتان
+    if (kind === "step") {
+      const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+      o.type = "triangle"; o.frequency.setValueAtTime(700, t0); o.frequency.exponentialRampToValueAtTime(1100, t0 + 0.08);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 0.16); return;
+    }
     if (kind === "hop" || kind === "enter") {
       const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
       o.type = "sine"; o.frequency.setValueAtTime(kind === "hop" ? 420 : 520, t0); o.frequency.exponentialRampToValueAtTime(kind === "hop" ? 980 : 1040, t0 + 0.28);
@@ -1017,6 +1062,7 @@ window.addEventListener("popstate", (e) => {
 });
 
 function render() {
+  document.body.classList.toggle("scene", ["stage", "quiz", "balloons", "result"].includes(screen.name));
   ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
   drawTrails();
 }
@@ -1371,7 +1417,7 @@ function Stage() {
   </div>`;
   $app.innerHTML = html;
   // في واجهة عربية: السهم الأيسر = التالي
-  const moveTo = (k) => { screen.idx = k; screen.seen.add(k); render(); sayLetter(letters[k]); };
+  const moveTo = (k) => { sfx("step"); screen.idx = k; screen.seen.add(k); render(); setTimeout(() => sayLetter(letters[k]), 160); };
   document.getElementById("say").onclick = () => { sayLetter(L); const c = document.getElementById("card"); c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); };
   document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
   document.getElementById("prev").onclick = () => moveTo(screen.idx - 1);
@@ -1410,7 +1456,7 @@ function Stage3() {
     ${allSeen ? `<button class="go gold" id="practice">🎯 هيا نتمرّن</button>` : ""}
   </div>`;
   $app.innerHTML = html;
-  const moveTo = (k) => { spellToken++; stopAudio(); screen.idx = k; screen.seen.add(k); render(); };
+  const moveTo = (k) => { spellToken++; stopAudio(); sfx("step"); screen.idx = k; screen.seen.add(k); render(); };
   const sayHead = () => R.t === "لا" ? spellWord("لا") : sayLetter(byChar(R.t));
   document.getElementById("sayhead").onclick = sayHead;
   document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
