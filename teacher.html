@@ -138,6 +138,10 @@ details.paste textarea { margin-top: 8px; }
 .linkbox { display: flex; flex-direction: column; gap: 8px; background: #f5f6fd; border-radius: 12px; padding: 10px; margin-top: 8px; }
 .btn.wa { background: #1f8a4c; }
 textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafaff; resize: vertical; line-height: 1.7; }
+.row.hwrow { grid-template-columns: 1fr 1.6fr 1.4fr 1fr; }
+.hwkids { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hwkids > div { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 760px) { .row.hwrow, .hwkids { grid-template-columns: 1fr; } }
 .certline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 @media (max-width: 760px) {
   .row.rf { grid-template-columns: 1fr 1fr; }
@@ -176,7 +180,7 @@ function lessonOf(s, n) {
   return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
 }
 const passedList = (s) => LESSONS_T.filter(L => lessonOf(s, L.n).best >= 8).map(L => L.n);
-const NEED_VERSION = 9;
+const NEED_VERSION = 10;
 // عدد الخطوات المنجزة في درس (المراحل + اللعبتان + الاختبار)
 function stepsDone(s, L) {
   const x = lessonOf(s, L.n);
@@ -210,6 +214,8 @@ const ERR = {
   main_only: "هذا للمدير الرئيسي فقط (المدير المساعد لا يحذف ولا يمنح صلاحية المدير).",
   username_taken: "اسم المستخدم هذا مستعمل من طالب آخر.",
   bad_username: "اسم المستخدم: حرفان على الأقل، حروف وأرقام فقط.",
+  no_group: "اختر الحلقة.",
+  bad_hw: "اختر الدرس والخطوة.",
   offline: "أنت غير متصل بالإنترنت. التعديل يحتاج اتصالاً.",
   network: "تعذّر الاتصال بالسجل. تأكد من الإنترنت، ومن نشر «إصدار جديد» من كود الجدول."
 };
@@ -217,7 +223,7 @@ const errText = (e) => ERR[e] || ("خطأ: " + e);
 
 let cred = null; try { cred = JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) {}
 const UI = { picked: new Set(), tab: "students", sel: null, q: "", grp: "", sortBy: "lastSeen", lastCode: null, confirm: null, editT: null, editG: null };
-let wdata = null, sdata = null, adata = null;
+let wdata = null, sdata = null, adata = null, hwdata = null;
 let data = null, tdata = null, gdata = null, loginErr = "", offline = false, cachedAt = null;
 /* نسخة محفوظة من آخر بيانات، لعرضها دون إنترنت (على جهاز المعلم فقط) */
 async function sha(t) {
@@ -247,6 +253,8 @@ function testChip(x) {
   if (!Number(x.tries)) return `<span class="chip idle">لم يختبر</span>`;
   return x.best >= 8 ? `<span class="chip ok">${x.best} من 10 · ناجح</span>` : `<span class="chip bad">${x.best} من 10</span>`;
 }
+// شهادات ختم المستوى التي استحقها الطالب
+const levelsOf = (s) => Certificate.levelsEarned(n => lessonOf(s, n), LESSONS_T.length);
 function certChips(s) {
   const p = passedList(s);
   return p.length ? p.map(n => `<span class="chip ok" title="شهادة الدرس ${ORD[n - 1]}">🏅 ${n}</span>`).join("") : `<span class="chip idle">لا شهادات بعد</span>`;
@@ -262,7 +270,7 @@ async function call(action, extra) {
 }
 function flash(id, text, good) { const el = $(id); if (el) { el.className = good ? "ok msg" : "err msg"; el.textContent = text || ""; } }
 async function busy(btn, fn) { if (btn) btn.disabled = true; try { return await fn(); } finally { if (btn && btn.isConnected) btn.disabled = false; } }
-function logout() { cred = null; data = tdata = gdata = wdata = sdata = adata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
+function logout() { cred = null; data = tdata = gdata = wdata = sdata = adata = hwdata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
 /* الخروج التلقائي بعد 30 دقيقة دون استعمال (لحماية السجل على الأجهزة المشتركة) */
 const IDLE_MIN = 30;
 let lastAct = Date.now();
@@ -284,6 +292,7 @@ async function load() {
   render();
 }
 async function loadStats() { const j = await call("stats"); sdata = j.error ? { error: j.error } : j; }
+async function loadHw() { const j = await call("hw.list"); hwdata = j.error ? { error: j.error } : j; }
 async function loadAudit() { const j = await call("audit.list"); adata = j.error ? { error: j.error } : j; }
 async function loadWeekly() { const j = await call("weekly"); wdata = j.error ? { error: j.error } : j; }
 async function loadTeachers() { const j = await call("teachers.list"); if (!j.error) tdata = j; }
@@ -298,9 +307,9 @@ function render() {
   if (!cred || !data) return renderLogin();
   const me = data.me;
   const tabs = me.admin
-    ? [["students", "👧 الطلاب"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"],
+    ? [["students", "👧 الطلاب"], ["hw", "📝 الواجبات"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"],
        ...(me.main ? [["audit", "🧾 سجل التعديلات"]] : []), ["account", "🔐 حسابي"]]
-    : [["students", "👧 طلابي"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["account", "🔐 حسابي"]];
+    : [["students", "👧 طلابي"], ["hw", "📝 الواجبات"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["account", "🔐 حسابي"]];
   if (!tabs.some(t => t[0] === UI.tab)) UI.tab = "students";
   let h = `<header><img class="logo" src="icons/rehla.svg" alt="" width="40" height="40"><h1>${me.admin ? "لوحة المدير" : "سجل المعلم"}</h1>
     <span class="who"><span class="chip ${me.admin ? "adm" : "grp"}">${me.main ? "المدير" : me.admin ? "مدير مساعد" : "معلم"}</span> <b>${esc(me.name)}</b>
@@ -308,13 +317,13 @@ function render() {
     <a class="btn ghost" href="index.html#teacher">👁️ استعراض الدروس</a>
     <button class="btn ghost" id="refresh">↻ تحديث</button><button class="btn ghost" id="out">خروج</button></header>
   <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${UI.tab === k ? "on" : ""}" role="tab" aria-selected="${UI.tab === k}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
-  if (!offline && !(Number(data.version) >= NEED_VERSION)) h += `<div class="warnbar"><b>⚠️ كود الجدول المنشور قديم${data.version ? " (الإصدار " + esc(data.version) + ")" : ""}.</b>
-    لذلك لا يُحفظ تقدّم الدروس من الثاني فما بعد، وتظهر الشهادات ناقصة. الحل (مرة واحدة):
+  if (!offline && !(Number(data.version) >= NEED_VERSION)) h += `<div class="warnbar"><b>⚠️ كود الجدول المنشور قديم${data.version ? " (الإصدار " + esc(data.version) + ")" : ""}، والمطلوب الإصدار ${NEED_VERSION}.</b>
+    ${Number(data.version) >= 6 ? "لذلك لا تعمل الميزات الجديدة (الواجبات)." : "لذلك لا يُحفظ تقدّم الدروس من الثاني فما بعد، وتظهر الشهادات ناقصة."} الحل (مرة واحدة):
     <ol><li>افتح الجدول ← الإضافات ← Apps Script، واحذف الكود، والصق محتوى <code>google-apps-script/Code.gs</code> الجديد، ثم احفظ.</li>
     <li>اختر الدالة <code>setup</code> واضغط «تنفيذ» (تُصلح السجلات القديمة من سجل النشاط).</li>
     <li>نشر ← إدارة عمليات النشر ← ✏️ ← الإصدار: <b>إصدار جديد</b> ← نشر.</li></ol></div>`;
   if (offline) h += `<div class="offbar">📴 غير متصل بالإنترنت — تعرض آخر بيانات محفوظة (${new Date(cachedAt).toLocaleString("ar-EG")}). التعديل يعود عند الاتصال.</div>`;
-  h += ({ students: studentsTab, weekly: weeklyTab, stats: statsTab, audit: auditTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
+  h += ({ students: studentsTab, hw: hwTab, weekly: weeklyTab, stats: statsTab, audit: auditTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
   h += credit();
   root.innerHTML = h;
   if (offline) root.querySelectorAll("form button[type=submit], #askreset, #askdel").forEach(b => b.disabled = true);
@@ -328,9 +337,10 @@ function render() {
     if (UI.tab === "weekly" && !wdata) { render(); await loadWeekly(); }
     if (UI.tab === "stats" && !sdata) { render(); await loadStats(); }
     if (UI.tab === "audit" && !adata) { render(); await loadAudit(); }
+    if (UI.tab === "hw" && !hwdata) { render(); await loadHw(); }
     render();
   });
-  ({ students: bindStudents, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
+  ({ students: bindStudents, hw: bindHw, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
 }
 
 const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
@@ -441,6 +451,8 @@ function studentsTab() {
           ${x.best >= 8 ? `<div class="certline"><button class="btn small gold" data-showcert="${L.n}">🏅 شهادة الدرس ${ORD[L.n - 1]}</button>
             <span class="muted">رقمها: <bdi dir="ltr">${esc(Certificate.serial(st.sid, L.n - 1, x.passedAt || st.lastSeen))}</bdi></span></div>` : ""}</div>`;
       }).join("")}
+      ${levelsOf(st).map(V => `<div class="lessonbox pass"><div class="certline"><button class="btn small gold" data-showlevel="${V.n}">🎖️ شهادة ختم المستوى ${ORD[V.n - 1]}</button>
+        <span class="muted">${esc(V.title)} · رقمها: <bdi dir="ltr">${esc(Certificate.levelSerial(st.sid, V.n, V.passedAt))}</bdi></span></div></div>`).join("")}
       <h3>تعديل</h3>
       <form class="row r4" id="editst" autocomplete="off">
         <div class="field"><label for="en">الاسم</label><input id="en" maxlength="40" value="${esc(st.name)}" required></div>
@@ -537,6 +549,7 @@ function bindStudents() {
   if ($("copyu")) $("copyu").onclick = (e) => { const u = (data.students || []).find(s => s.sid === sid).username;
     navigator.clipboard.writeText(u).then(() => { e.target.textContent = "نُسخ ✓"; }).catch(() => { e.target.textContent = u; }); };
   root.querySelectorAll("[data-showcert]").forEach(b => b.onclick = () => showCert((data.students || []).find(s => s.sid === sid), +b.dataset.showcert));
+  root.querySelectorAll("[data-showlevel]").forEach(b => b.onclick = () => showCert((data.students || []).find(s => s.sid === sid), 0, +b.dataset.showlevel));
   if ($("askdel")) $("askdel").onclick = () => { UI.confirm = { sid, kind: "delete" }; render(); };
   root.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { UI.confirm = null; render(); });
   if ($("doreset")) $("doreset").onclick = (e) => busy(e.currentTarget, async () => {
@@ -552,8 +565,9 @@ function bindStudents() {
 }
 
 /* ---------------- الشهادة ---------------- */
-async function showCert(s, n) {
+async function showCert(s, n, level) {
   n = n || 1; const x = lessonOf(s, n);
+  const V = level ? levelsOf(s).find(v => v.n === level) : null;
   const box = document.createElement("div");
   box.className = "modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "شهادة " + s.name);
   box.innerHTML = `<div class="modal-card"><div class="modal-head"><b>شهادة ${esc(s.name)}</b><button class="btn ghost small" data-x>✕ إغلاق</button></div>
@@ -563,11 +577,12 @@ async function showCert(s, n) {
   const close = () => box.remove();
   box.querySelector("[data-x]").onclick = close;
   box.onclick = (e) => { if (e.target === box) close(); };
-  const cv = await Certificate.render({ name: s.name, sid: s.sid, username: s.username, lessonIndex: n - 1, lessonName: LESSONS_T[n - 1].title,
+  const cv = await Certificate.render(V ? { name: s.name, sid: s.sid, level: V.n, score: V.avg, total: 10, teacher: s.teacher || "", group: s.group, date: V.passedAt || s.lastSeen }
+    : { name: s.name, sid: s.sid, username: s.username, lessonIndex: n - 1, lessonName: LESSONS_T[n - 1].title,
     score: x.best, total: 10, teacher: s.teacher || "", group: s.group, date: x.passedAt || s.lastSeen });
   box.querySelector("img").src = cv.toDataURL("image/png");
   box.querySelector(".muted").remove();
-  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, `certificate-lesson-${n}-${s.sid}.png`);
+  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, V ? `certificate-level-${V.n}-${s.sid}.png` : `certificate-lesson-${n}-${s.sid}.png`);
   box.querySelector("[data-pr]").onclick = () => Certificate.print(cv);
 }
 
@@ -759,6 +774,99 @@ function bindImport() {
     const j = await call("students.import", { rows: rowsIn, group: $("impg").value });
     if (j.error) return flash("impmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 8)." : errText(j.error));
     UI.impRes = j; UI.impText = ""; UI.impFile = null; await load();
+  });
+}
+
+/* ---------------- الواجبات ---------------- */
+// الخطوة: -1 = الدرس كاملاً (النجاح في الاختبار)، وإلا رقم الخطوة في L.steps
+function hwDone(s, h) {
+  const L = LESSONS_T.find(x => x.n === h.lesson); if (!L) return false;
+  const x = lessonOf(s, h.lesson), i = h.step;
+  if (i < 0 || i >= L.steps.length - 1) return x.best >= 8;
+  return i < L.stages ? !!x.stages[i] : !!x.games[i - L.stages];
+}
+const hwWhat = (h) => { const L = LESSONS_T.find(x => x.n === h.lesson);
+  return `الدرس ${ORD[h.lesson - 1]}${L ? ": " + L.title : ""}` + (h.step >= 0 && L && h.step < L.steps.length - 1 ? ` — ${L.steps[h.step]}` : h.step >= 0 ? " — الاختبار" : " (كاملاً حتى الاختبار)"); };
+const fmtDue = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" }) : "";
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+function hwShareText(h, kids) {
+  const done = kids.filter(s => hwDone(s, h));
+  let t = `📝 واجب ${h.group}\n${hwWhat(h)}${h.due ? "\n⏰ حتى " + fmtDue(h.due) : ""}${h.note ? "\n💬 " + h.note : ""}\n`;
+  if (done.length) t += `\n✅ أنجزه (${done.length}):\n${done.map(s => "• " + s.name).join("\n")}\n`;
+  const left = kids.filter(s => !hwDone(s, h));
+  if (left.length) t += `\n⏳ لم ينجزه بعد (${left.length}):\n${left.map(s => "• " + s.name).join("\n")}\n`;
+  return t + "\nيظهر الواجب للطالب في خريطته عند فتح «رحلة الحروف» 🌱";
+}
+function hwTab() {
+  const me = data.me;
+  const groups = [...new Set([...(me.groups || []), ...(data.students || []).map(s => s.group).filter(Boolean)])].sort();
+  const ed = UI.editHw && hwdata && hwdata.items ? hwdata.items.find(h => h.id === UI.editHw) : null;
+  const f = UI.hwf = UI.hwf || { group: UI.grp || groups[0] || "", lesson: 1, step: -1, due: "", note: "" };
+  if (ed && UI.hwfFor !== ed.id) { Object.assign(f, { group: ed.group, lesson: ed.lesson, step: ed.step, due: ed.due, note: ed.note }); UI.hwfFor = ed.id; }
+  const L = LESSONS_T.find(x => x.n === +f.lesson) || LESSONS_T[0];
+  let h = `<form class="panel stack" id="hwform" autocomplete="off"><h2>${ed ? "تعديل الواجب" : "واجب جديد للحلقة"}</h2>
+    ${groups.length ? "" : `<p class="err">ليست لك حلقة بعد. اطلب من المدير أن يضيفك إلى حلقة.</p>`}
+    <div class="row hwrow">
+      <div class="field"><label for="hwg">الحلقة</label><select id="hwg">${groups.map(g => `<option ${g === f.group ? "selected" : ""}>${esc(g)}</option>`).join("")}</select></div>
+      <div class="field"><label for="hwl">الدرس</label><select id="hwl">${LESSONS_T.map(x => `<option value="${x.n}" ${x.n === +f.lesson ? "selected" : ""}>الدرس ${ORD[x.n - 1]}: ${esc(x.title)}</option>`).join("")}</select></div>
+      <div class="field"><label for="hws">المطلوب</label><select id="hws"><option value="-1">الدرس كاملاً (حتى النجاح في الاختبار)</option>
+        ${L.steps.map((nm, i) => `<option value="${i}" ${i === +f.step ? "selected" : ""}>${i === L.steps.length - 1 ? "اختبار الدرس" : esc(nm)}</option>`).join("")}</select></div>
+      <div class="field"><label for="hwd">آخر موعد (اختياري)</label><input id="hwd" type="date" value="${esc(f.due)}" min="${today()}"></div>
+    </div>
+    <div class="field"><label for="hwn">ملاحظة للطلاب (اختياري)</label><input id="hwn" maxlength="200" value="${esc(f.note)}" placeholder="مثال: ردّدوا كل حرف ثلاث مرات بصوت مسموع"></div>
+    <div class="actions" style="margin:0"><button class="btn" type="submit" ${groups.length ? "" : "disabled"}>${ed ? "حفظ التعديل" : "📝 إرسال الواجب"}</button>${ed ? `<button class="btn ghost" type="button" id="hwcancel">إلغاء</button>` : ""}</div>
+    <p class="muted" style="margin:0">يظهر الواجب لكل طلاب الحلقة في خريطتهم، ويُحسب الإنجاز تلقائياً من تقدّمهم (لا يحتاج الطالب أن يضغط شيئاً).</p>
+    <p class="msg" id="hwmsg"></p></form>`;
+  if (!hwdata) return h + `<div class="panel"><p class="muted">⏳ جارٍ التحميل...</p></div>`;
+  if (hwdata.error) return h + `<div class="panel"><p class="err">${hwdata.error === "unknown_action" ? "الواجبات تحتاج نشر كود الجدول الجديد (الإصدار 10)." : esc(errText(hwdata.error))}</p></div>`;
+  const items = hwdata.items.filter(x => !UI.hwg || x.group === UI.hwg);
+  h += `<div class="panel stack"><div class="row r2" style="grid-template-columns:1fr auto"><select id="hwfilter" aria-label="الحلقة"><option value="">كل الحلقات</option>${groups.map(g => `<option ${g === UI.hwg ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>
+    <button class="btn ghost" id="hwref">↻ تحديث</button></div>
+    <h2 style="margin:0">الواجبات (${items.length})</h2>
+    ${items.length ? items.map(x => {
+      const kids = (data.students || []).filter(s => s.group === x.group), done = kids.filter(s => hwDone(s, x));
+      const late = x.due && x.due < today(), open = UI.hwOpen === x.id, pct = kids.length ? Math.round(done.length / kids.length * 100) : 0;
+      return `<div class="lessonbox hwbox ${pct === 100 && kids.length ? "pass" : ""}">
+        <button class="lhead" data-hwopen="${esc(x.id)}" aria-expanded="${open}"><span class="lt"><b>${esc(hwWhat(x))}</b>
+          <span class="muted"><span class="chip grp">${esc(x.group)}</span> ${x.due ? `<span class="chip ${late ? "bad" : "idle"}">⏰ ${late ? "انتهى " : "حتى "}${esc(fmtDue(x.due))}</span>` : ""} · ${esc(x.by || "")} · ${ago(x.ts)}</span>
+          ${x.note ? `<span>💬 ${esc(x.note)}</span>` : ""}
+          <div class="bar"><i style="width:${pct}%"></i></div><span class="muted">أنجزه ${done.length} من ${kids.length}</span></span>
+          <span class="muted">${open ? "▲" : "▼"}</span></button>
+        ${open ? `<div class="hwkids"><div><b class="ok">✅ أنجزه (${done.length})</b><div>${done.map(s => `<span class="chip ok">${esc(s.name)}</span>`).join("") || `<span class="muted">لا أحد بعد</span>`}</div></div>
+          <div><b class="err">⏳ لم ينجزه (${kids.length - done.length})</b><div>${kids.filter(s => !hwDone(s, x)).map(s => `<span class="chip bad">${esc(s.name)}</span>`).join("") || `<span class="muted">الكل أنجزه 🎉</span>`}</div></div></div>
+          <div class="actions" style="margin:0"><button class="btn small" data-hwcopy="${esc(x.id)}">📋 نسخ للمشاركة</button>
+            <a class="btn small wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(hwShareText(x, kids))}">واتساب</a>
+            <button class="btn ghost small" data-hwedit="${esc(x.id)}">✏️ تعديل</button><button class="btn ghost small" data-hwdel="${esc(x.id)}" style="color:var(--red)">🗑️ حذف</button></div>
+          ${UI.confirm && UI.confirm.kind === "hwdel" && UI.confirm.id === x.id ? `<div class="confirm"><b>حذف هذا الواجب؟</b><span class="muted">يختفي من خرائط الطلاب. تقدّمهم في الدروس لا يتأثر.</span>
+            <div class="actions" style="margin:0"><button class="btn danger small" id="dohwdel">نعم، احذف</button><button class="btn ghost small" data-cancel>إلغاء</button></div></div>` : ""}` : ""}</div>`;
+    }).join("") : `<p class="muted">لا توجد واجبات بعد. أرسل أول واجب من الأعلى.</p>`}</div>`;
+  return h;
+}
+function bindHw() {
+  const f = UI.hwf;
+  const keep = () => { f.group = $("hwg") ? $("hwg").value : f.group; f.lesson = +$("hwl").value; f.step = +$("hws").value; f.due = $("hwd").value; f.note = $("hwn").value; };
+  $("hwl").onchange = () => { keep(); f.step = -1; render(); };
+  ["hwg", "hws", "hwd", "hwn"].forEach(id => { if ($(id)) $(id).onchange = keep; });
+  $("hwform").onsubmit = (e) => { e.preventDefault(); keep(); busy(e.submitter, async () => {
+    const j = await call("hw.save", { id: UI.editHw || "", group: f.group, lesson: f.lesson, step: f.step, due: f.due, note: f.note.trim() });
+    if (j.error) return flash("hwmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 10)." : errText(j.error));
+    const was = UI.editHw; UI.editHw = null; UI.hwfFor = null; f.note = ""; f.due = ""; UI.hwOpen = j.id;
+    await loadHw(); render(); flash("hwmsg", was ? "حُفظ التعديل ✓" : "أُرسل الواجب ✓ سيظهر للطلاب عند فتح الموقع.", true);
+  }); };
+  if ($("hwcancel")) $("hwcancel").onclick = () => { UI.editHw = null; UI.hwfFor = null; UI.hwf = null; render(); };
+  if (!$("hwref")) return;
+  $("hwref").onclick = (e) => busy(e.currentTarget, async () => { await load(); await loadHw(); render(); });
+  $("hwfilter").onchange = (e) => { UI.hwg = e.target.value; render(); };
+  root.querySelectorAll("[data-hwopen]").forEach(b => b.onclick = () => { UI.hwOpen = UI.hwOpen === b.dataset.hwopen ? null : b.dataset.hwopen; UI.confirm = null; render(); });
+  root.querySelectorAll("[data-hwedit]").forEach(b => b.onclick = () => { UI.editHw = b.dataset.hwedit; render(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  root.querySelectorAll("[data-hwdel]").forEach(b => b.onclick = () => { UI.confirm = { kind: "hwdel", id: b.dataset.hwdel }; render(); });
+  root.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { UI.confirm = null; render(); });
+  root.querySelectorAll("[data-hwcopy]").forEach(b => b.onclick = () => { const x = hwdata.items.find(h => h.id === b.dataset.hwcopy);
+    navigator.clipboard.writeText(hwShareText(x, (data.students || []).filter(s => s.group === x.group))).then(() => { b.textContent = "نُسخ ✓"; }).catch(() => {}); });
+  if ($("dohwdel")) $("dohwdel").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("hw.delete", { id: UI.confirm.id }); UI.confirm = null;
+    if (j.error) { render(); return flash("hwmsg", errText(j.error)); }
+    if (UI.editHw) { UI.editHw = null; UI.hwfFor = null; } await loadHw(); render();
   });
 }
 

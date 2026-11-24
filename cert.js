@@ -68,6 +68,32 @@ function serial(sid, lessonIndex, date) {
   return `RH-${y}-${String(lessonIndex + 1).padStart(2, "0")}-${code}`;
 }
 
+/* المستويات: كل مستوى مجموعة دروس (نفس ألوان مناطق الخريطة). عند ختمها كلها تُمنح «شهادة ختم المستوى» */
+const LEVELS = [
+  { n: 1, from: 1, to: 3, title: "الحروف المفردة والمركبة" },
+  { n: 2, from: 4, to: 6, title: "الحركات والتنوين والسكون" },
+  { n: 3, from: 7, to: 10, title: "الهمس والقلقلة والشدة" },
+  { n: 4, from: 11, to: 12, title: "المد وأحكام النون الساكنة" },
+  { n: 5, from: 13, to: 15, title: "أحكام الميم والتدريبات الشاملة" }
+];
+// المستويات التي نجح الطالب في كل دروسها. lessonOf(n) ← { best, passedAt }، وavailable: آخر درس جاهز
+function levelsEarned(lessonOf, available) {
+  return LEVELS.filter(L => L.to <= available).map(L => {
+    let at = 0, sum = 0;
+    for (let n = L.from; n <= L.to; n++) { const x = lessonOf(n) || {}; if (!(Number(x.best) >= 8)) return null; sum += Number(x.best); at = Math.max(at, Number(x.passedAt) || 0); }
+    return Object.assign({}, L, { passedAt: at, avg: Math.round(sum / (L.to - L.from + 1) * 10) / 10 });
+  }).filter(Boolean);
+}
+function levelSerial(sid, level, date) {
+  if (!sid) return "RH-نموذج";
+  const str = String(sid) + ":L" + level;
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 + c, 2246822519) >>> 0; }
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let code = "";
+  for (let i = 0; i < 6; i++) code += A[((i < 3 ? h1 : h2) >>> ((i % 3) * 5 + 3)) & 31];
+  return `RH-${new Date(date || Date.now()).getFullYear()}-L${level}-${code}`;
+}
+
 // توقيع: الاسم بخط الرقعة (أو صورة توقيع) فوق خط، وتحته الصفة والاسم
 function signature(ctx, x, name, role, img) {
   if (img) { const h = 64, w = Math.min(220, img.width * h / img.height); ctx.drawImage(img, x - w / 2, 868, w, h); }
@@ -92,7 +118,9 @@ async function render(o) {
   const ctx = cv.getContext("2d");
   ctx.direction = "rtl";
   const X = W / 2;
-  const no = o.serial || serial(o.sid, o.lessonIndex || 0, o.date);
+  // o.level: شهادة ختم المستوى (رقم المستوى) بدل شهادة الدرس
+  const LV = o.level ? LEVELS[o.level - 1] : null;
+  const no = o.serial || (LV ? levelSerial(o.sid, LV.n, o.date) : serial(o.sid, o.lessonIndex || 0, o.date));
 
   // الورق والإطار الرسمي: إطار نيلي عريض، وخطان ذهبيان رفيعان، ونقاط في الزوايا
   ctx.fillStyle = CC.paper; ctx.fillRect(0, 0, W, H);
@@ -101,6 +129,11 @@ async function render(o) {
   ctx.strokeStyle = CC.gold; ctx.lineWidth = 3; ctx.strokeRect(40, 40, W - 80, H - 80);
   ctx.strokeStyle = CC.goldSoft; ctx.lineWidth = 1.5; ctx.strokeRect(50, 50, W - 100, H - 100);
   [[40, 40], [W - 40, 40], [40, H - 40], [W - 40, H - 40]].forEach(([x, y]) => { disc(ctx, x, y, 13, CC.paper, CC.gold, 3); disc(ctx, x, y, 5, CC.gold); });
+  if (LV) {
+    // شهادة المستوى: إطار ذهبي ثانٍ أعرض، ونجوم في الزوايا
+    ctx.strokeStyle = CC.gold; ctx.lineWidth = 6; ctx.strokeRect(62, 62, W - 124, H - 124);
+    [[62, 62], [W - 62, 62], [62, H - 62], [W - 62, H - 62]].forEach(([x, y]) => { disc(ctx, x, y, 18, CC.paper); star(ctx, x, y, 15, 5, .45, CC.gold); });
+  }
 
   // أعلى: رقم الشهادة (يسار) وشعار الجهة إن وُجد (يمين) وشعار الموقع (وسط)
   ctx.direction = "ltr"; ctx.font = `500 20px ${F_TITLE}`;
@@ -115,9 +148,17 @@ async function render(o) {
   text(ctx, "بسم الله الرحمن الرحيم", X, 214, `700 28px ${F_NAME}`, C.soft);
   if (cf.org) text(ctx, cf.org, X, 254, fit(ctx, cf.org, `700 {z}px ${F_TITLE}`, 28, 900), C.ink);
 
-  text(ctx, "شهادة إتمام", X, 326, `700 84px ${F_NAME}`, CC.navy);
+  text(ctx, LV ? "شهادة ختم المستوى" : "شهادة إتمام", X, 326, `700 ${LV ? 76 : 84}px ${F_NAME}`, CC.navy);
   ctx.save(); ctx.direction = "ltr"; if ("letterSpacing" in ctx) ctx.letterSpacing = "6px";
-  text(ctx, "CERTIFICATE OF COMPLETION", X, 392, `700 20px ${F_TITLE}`, CC.gold); ctx.restore();
+  text(ctx, LV ? "CERTIFICATE OF LEVEL COMPLETION" : "CERTIFICATE OF COMPLETION", X, 392, `700 20px ${F_TITLE}`, CC.gold); ctx.restore();
+  if (LV) {
+    // وسام المستوى (يمين، تحت شعار الجهة)
+    const mx = W - 230, my = 330;
+    star(ctx, mx, my, 92, 16, .86, CC.gold);
+    disc(ctx, mx, my, 70, CC.navy); disc(ctx, mx, my, 62, null, CC.gold, 2);
+    text(ctx, "المستوى", mx, my - 14, `700 22px ${F_TITLE}`, "#fff");
+    text(ctx, String(LV.n), mx, my + 40, `700 52px ${F_DISP}`, "#ffd23f");
+  }
   rule(ctx, X, 416, 150);
 
   const intro = cf.intro || (cf.org ? `يشهد ${cf.org} بأنّ الطالب/ـة` : "تشهد «رحلة الحروف» بأنّ الطالب/ـة");
@@ -126,12 +167,13 @@ async function render(o) {
   hline(ctx, X - 330, X + 330, 590, CC.goldSoft, 2);
   if (o.group) text(ctx, "الحلقة: " + o.group, X, 626, `500 22px ${F_TITLE}`, C.soft);
 
-  const ln = `الدرس ${ORD[o.lessonIndex] || ""}: ${o.lessonName}`;
-  text(ctx, "قد أتمّ بنجاح", X, 676, `500 28px ${F_TITLE}`, C.ink);
+  const ln = LV ? `المستوى ${ORD[LV.n - 1]}: ${LV.title}` : `الدرس ${ORD[o.lessonIndex] || ""}: ${o.lessonName}`;
+  text(ctx, LV ? "قد ختم بنجاح" : "قد أتمّ بنجاح", X, 676, `500 28px ${F_TITLE}`, C.ink);
   text(ctx, ln, X, 732, fit(ctx, ln, `700 {z}px ${F_NAME}`, 46, 1150), CC.navy);
-  text(ctx, "من منهج «القاعدة الذهبية لتعليم تلاوة القرآن الكريم»", X, 774, `500 22px ${F_TITLE}`, C.soft);
+  const src = LV ? `(الدروس من ${ORD[LV.from - 1]} إلى ${ORD[LV.to - 1]}) من منهج «القاعدة الذهبية لتعليم تلاوة القرآن الكريم»` : "من منهج «القاعدة الذهبية لتعليم تلاوة القرآن الكريم»";
+  text(ctx, src, X, 774, fit(ctx, src, `500 {z}px ${F_TITLE}`, 22, 1200), C.soft);
   const g = grade(o.score, o.total);
-  text(ctx, `بتقدير «${g.ar}» (${o.score} من ${o.total})`, X, 820, `700 30px ${F_TITLE}`, C.ink);
+  text(ctx, LV ? `بتقدير «${g.ar}» (معدّل الاختبارات ${o.score} من ${o.total})` : `بتقدير «${g.ar}» (${o.score} من ${o.total})`, X, 820, `700 30px ${F_TITLE}`, C.ink);
 
   // الصف السفلي: التاريخ يميناً، ثم التوقيعات إن وُجدت، والختم يساراً
   const d = o.date ? new Date(o.date) : new Date();
@@ -144,7 +186,8 @@ async function render(o) {
 
   const sigs = [];
   if (o.teacher || signT) sigs.push([o.teacher || "", "معلم الحلقة", signT]);
-  if (cf.director || signD) sigs.push([cf.director || "", cf.directorTitle || "المدير", signD]);
+  // شهادة المستوى تحمل توقيع المدير دائماً (إن لم يُكتب اسمه في config.js يبقى خط فارغ للتوقيع باليد)
+  if (cf.director || signD || LV) sigs.push([cf.director || "", cf.directorTitle || "المدير", signD]);
   const slots = sigs.length === 2 ? [980, 640] : [800];
   sigs.forEach((s, i) => signature(ctx, slots[i], s[0], s[1], s[2]));
 
@@ -190,5 +233,5 @@ function print(canvas) {
   setTimeout(go, 800);
 }
 
-window.Certificate = { render, download, print, grade, serial };
+window.Certificate = { render, download, print, grade, serial, levelSerial, levelsEarned, LEVELS };
 })();

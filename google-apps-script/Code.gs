@@ -1,5 +1,5 @@
 /**
- * سجل المعلم — رحلة الحروف (الإصدار 9: التسجيل للمعلم والمدير فقط + سجل التعديلات + النقل + الاستيراد + الإحصاءات)
+ * سجل المعلم — رحلة الحروف (الإصدار 10: الواجبات من المعلم + شهادة ختم المستوى)
  * بعد التحديث: شغّل setup، ثم (مرة واحدة) installTriggers للنسخة الاحتياطية والبريد الأسبوعي، ثم انشر «إصدار جديد»
  * من إنشاء م. كريم عادل اللوح · Created by Eng. Kareem Adel Allouh
  *
@@ -12,7 +12,7 @@
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "غير-هذه-الكلمة";
 
-const VERSION = 9;
+const VERSION = 10;
 const STUDENTS = "الطلاب";
 const EVENTS = "سجل النشاط";
 const TEACHERS = "المعلمون";
@@ -139,6 +139,8 @@ function repairFromLog_(S) {
 /* ---------- ورقتا «سجل التعديلات» و«الإجابات» (تُنشآن عند أول استعمال) ---------- */
 const AUDIT = "سجل التعديلات";
 const ANSWERS = "الإجابات";
+const HOMEWORK = "الواجبات";
+const HW_HEADERS = ["المعرّف", "الوقت", "الحلقة", "الدرس", "الخطوة (-1 = الدرس كاملاً)", "ملاحظة المعلم", "آخر موعد", "أنشأه", "اسم المعلم"];
 function extraSheet_(name, headers, color) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(name);
@@ -149,6 +151,7 @@ function extraSheet_(name, headers, color) {
   return sh;
 }
 const auditSheet_ = () => extraSheet_(AUDIT, ["الوقت", "المستخدم", "الاسم", "الدور", "العملية", "على", "التفاصيل"], "#ffe2cc");
+const hwSheet_ = () => { const sh = extraSheet_(HOMEWORK, HW_HEADERS, "#e3f7d8"); sh.getRange("A:A").setNumberFormat("@"); sh.getRange("G:G").setNumberFormat("@"); return sh; };
 const answersSheet_ = () => extraSheet_(ANSWERS, ["الوقت", "المعرّف الداخلي", "الحلقة", "النشاط", "السؤال", "صحيح؟ (1/0)"], "#e2f0ff");
 // كل تعديل يقوم به معلم أو مدير يُسجَّل هنا (يراه المدير الرئيسي)
 function audit_(t, action, target, details) {
@@ -299,7 +302,31 @@ function newRow_(st, sid, name, group, username) {
 }
 function publicStudent_(s, te) {
   return { sid: s.sid, username: s.username, name: s.name, group: s.group, best: s.best, tries: s.tries, detail: s.detail,
-    teacher: groupTeacher_(te)[s.group] || "" };
+    teacher: groupTeacher_(te)[s.group] || "", homework: hwFor_(s.group) };
+}
+
+/* ---------- الواجبات: يعطيها المعلم لحلقته، وإنجازها يُحسب من تقدّم الطالب نفسه ---------- */
+function hwDue_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const t = String(v || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : "";
+}
+function hwAll_() {
+  const sh = hwSheet_(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, 9).getValues().map((r, i) => ({ row: i + 2, id: String(r[0]), ts: iso_(r[1]), group: String(r[2] || ""),
+    lesson: Number(r[3]) || 1, step: r[4] === "" || r[4] == null ? -1 : Number(r[4]), note: String(r[5] || ""), due: hwDue_(r[6]), by: String(r[7] || ""), byName: String(r[8] || "") }))
+    .filter(h => h.id);
+}
+const hwPublic_ = (h) => ({ id: h.id, ts: h.ts, group: h.group, lesson: h.lesson, step: h.step, note: h.note, due: h.due, by: h.byName });
+// واجبات الحلقة التي يراها الطالب: الأحدث أولاً، وتختفي بعد أسبوعين من موعدها
+function hwFor_(group) {
+  group = String(group || "").trim();
+  if (!group) return [];
+  try {
+    const since = Utilities.formatDate(new Date(Date.now() - 14 * 864e5), Session.getScriptTimeZone(), "yyyy-MM-dd");
+    return hwAll_().filter(h => h.group === group && (!h.due || h.due >= since)).reverse().slice(0, 10).map(hwPublic_);
+  } catch (e) { return []; }
 }
 
 /* ---------- POST ---------- */
@@ -517,6 +544,42 @@ function command_(d) {
         return { ok: true, hardest: list.slice(0, 40), total: list.reduce((x, a) => x + a.n, 0) };
       }
 
+      /* --- الواجبات (المعلم لحلقاته، والمدير لكل الحلقات) --- */
+      case "hw.list": {
+        const items = hwAll_().filter(h => canSee_(t, h.group)).reverse().slice(0, 300)
+          .map(h => Object.assign(hwPublic_(h), { mine: h.by === t.user }));
+        return { ok: true, items };
+      }
+      case "hw.save": return withLock_(() => {
+        const group = clean_(d.group, 40), lesson = Math.round(Number(d.lesson)), step = Math.round(Number(d.step));
+        if (!group) return { error: "no_group" };
+        if (!canSee_(t, group)) return { error: "not_your_group" };
+        if (!(lesson >= 1 && lesson <= 15) || !(step >= -1 && step <= 9)) return { error: "bad_hw" };
+        const note = clean_(d.note || "", 200), due = hwDue_(d.due);
+        const sh = hwSheet_();
+        const what = "الدرس " + ORD_[lesson - 1] + (step >= 0 ? " · الخطوة " + (step + 1) : " كاملاً") + (due ? " · حتى " + due : "");
+        if (d.id) {
+          const h = hwAll_().find(x => x.id === String(d.id));
+          if (!h) return { error: "not_found" };
+          if (!canSee_(t, h.group)) return { error: "not_your_group" };
+          sh.getRange(h.row, 3, 1, 5).setValues([[group, lesson, step, note, due]]);
+          audit_(t, "تعديل واجب", group, what);
+          return { ok: true, id: h.id };
+        }
+        const id = Utilities.getUuid().replace(/-/g, "").slice(0, 10);
+        sh.appendRow([id, new Date(), group, lesson, step, note, due, t.user, t.name]);
+        audit_(t, "إضافة واجب", group, what + (note ? " · " + note : ""));
+        return { ok: true, id };
+      });
+      case "hw.delete": return withLock_(() => {
+        const h = hwAll_().find(x => x.id === String(d.id || ""));
+        if (!h) return { error: "not_found" };
+        if (!canSee_(t, h.group)) return { error: "not_your_group" };
+        hwSheet_().deleteRow(h.row);
+        audit_(t, "حذف واجب", h.group, "الدرس " + ORD_[h.lesson - 1] + (h.step >= 0 ? " · الخطوة " + (h.step + 1) : " كاملاً"));
+        return { ok: true };
+      });
+
       /* --- سجل التعديلات (للمدير الرئيسي) --- */
       case "audit.list": needMain(); {
         const au = auditSheet_(), last = au.getLastRow();
@@ -677,9 +740,15 @@ function parentReport_(st, te, key) {
     const best = n === 1 ? Number(s.best) || 0 : Number(((d.lx || {})[n] || {}).best) || 0;
     if (best >= 8) serials[n] = serial_(s.sid, n - 1, n === 1 ? d.passedAt : (d.lx[n] || {}).passedAt);
   }
+  // شهادات ختم المستوى: لكل مستوى نجح الطالب في كل دروسه
+  LEVELS_.forEach((L, i) => {
+    let at = 0;
+    for (let n = L[0]; n <= L[1]; n++) { if (!serials[n]) return; at = Math.max(at, Number(n === 1 ? d.passedAt : ((d.lx || {})[n] || {}).passedAt) || 0); }
+    serials["L" + (i + 1)] = levelSerial_(s.sid, i + 1, at);
+  });
   // لا يُرسل المعرّف الداخلي ولا اسم المستخدم: الرابط للاطلاع فقط
   return { student: { name: s.name, group: s.group, teacher: groupTeacher_(te)[s.group] || "", position: s.position, progress: s.progress,
-    best: s.best, tries: s.tries, lastSeen: s.lastSeen, detail: { stages: d.stages, games: d.games, passedAt: d.passedAt, lx: d.lx || {} }, serials }, events };
+    best: s.best, tries: s.tries, lastSeen: s.lastSeen, detail: { stages: d.stages, games: d.games, passedAt: d.passedAt, lx: d.lx || {} }, serials, homework: hwFor_(s.group) }, events };
 }
 // رقم الشهادة (نفس طريقة cert.js تماماً)
 function serial_(sid, lessonIndex, date) {
@@ -690,6 +759,17 @@ function serial_(sid, lessonIndex, date) {
   for (let i = 0; i < 6; i++) code += A[((i < 3 ? h1 : h2) >>> ((i % 3) * 5 + 3)) & 31];
   const y = new Date(Number(date) || Date.now()).getFullYear();
   return "RH-" + y + "-" + String(lessonIndex + 1).padStart(2, "0") + "-" + code;
+}
+// المستويات (نفس Certificate.LEVELS في cert.js): [أول درس، آخر درس]
+const LEVELS_ = [[1, 3], [4, 6], [7, 10], [11, 12], [13, 15]];
+// رقم شهادة ختم المستوى (نفس Certificate.levelSerial في cert.js)
+function levelSerial_(sid, level, date) {
+  const str = String(sid) + ":L" + level;
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 + c, 2246822519) >>> 0; }
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let code = "";
+  for (let i = 0; i < 6; i++) code += A[((i < 3 ? h1 : h2) >>> ((i % 3) * 5 + 3)) & 31];
+  return "RH-" + new Date(Number(date) || Date.now()).getFullYear() + "-L" + level + "-" + code;
 }
 // أنشطة آخر أيام (من أسفل «سجل النشاط» صعوداً)
 function recentEvents_(ev, days) {

@@ -400,6 +400,20 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 .certbtn { background: linear-gradient(135deg, #fff6d1, #ffe58a); border-radius: var(--r); padding: 14px 18px; display: flex; gap: 14px; align-items: center; text-align: start; font-size: 2rem; box-shadow: 0 5px 0 #e0bd3a; }
 .certbtn span { display: flex; flex-direction: column; font-size: 1rem; }
 .certbtn small { color: #1b1d45; }
+.certbtn.level { background: linear-gradient(135deg, #23266b, #3b3f9a); color: #fff; box-shadow: 0 5px 0 #15174a; }
+.certbtn.level small { color: #ffd23f; }
+/* الواجب من المعلم */
+.hwcard { background: var(--card); border-radius: var(--r); padding: 12px 14px; box-shadow: 0 4px 0 #d5d7ee; border: 3px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
+.hwcard h2 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+.hwcard h2 .cnt { background: var(--red); color: #fff; border-radius: 99px; min-width: 24px; height: 24px; display: inline-grid; place-items: center; font-size: .85rem; padding: 0 7px; }
+.hwitem { display: flex; gap: 10px; align-items: center; background: #fff8dc; border-radius: 12px; padding: 8px 10px; text-align: start; width: 100%; border: 0; font: inherit; color: inherit; cursor: pointer; }
+.hwitem.done { background: #e4f3ec; cursor: default; }
+.hwitem .ic { font-size: 1.6rem; flex: none; }
+.hwitem .tx { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.hwitem small { color: var(--ink-soft); }
+.hwitem .late { color: var(--red); font-weight: 700; }
+.hwitem .goarrow { font-weight: 800; color: var(--green); white-space: nowrap; }
+.hwflag { display: inline-block; background: var(--red); color: #fff; border-radius: 99px; padding: 1px 9px; font-size: .78rem; font-weight: 800; margin-top: 2px; }
 .certwrap { background: var(--card); border-radius: 18px; padding: 10px; box-shadow: 0 5px 0 #d5d7ee; }
 .certwrap img { width: 100%; height: auto; display: block; border-radius: 10px; }
 .certwrap img:not([src]) { aspect-ratio: 1600 / 1131; background: #f3f4fb; }
@@ -912,6 +926,27 @@ const stepOpen = (idx, n) => !!TEACHER || idx === 0 || stepDone(stepsOf(n || CUR
 const stepName = (s, n) => s.kind === "stage" ? "المرحلة " + STAGE_NAMES[s.i] : s.kind === "game" ? LDEF[n || CUR].games[s.i][0].replace("لعبة: ", "لعبة ") : "اختبار الدرس";
 const lessonPassed = (n) => n <= AVAILABLE && LP(n).best >= 8;
 const lessonOpen = (n) => n === 1 || !!TEACHER || lessonPassed(n - 1);
+/* الواجب من المعلم: step = -1 للدرس كاملاً (حتى النجاح في الاختبار)، وإلا رقم الخطوة في stepsOf */
+function hwDone(h) {
+  if (!(h.lesson >= 1 && h.lesson <= AVAILABLE)) return false;
+  const st = stepsOf(h.lesson), s = h.step >= 0 && h.step < st.length ? st[h.step] : st[st.length - 1];
+  return stepDone(s, h.lesson);
+}
+const hwList = () => (P && !TEACHER && Array.isArray(P.homework) ? P.homework : []).filter(h => h.lesson >= 1 && h.lesson <= 15);
+const hwWhat = (h) => {
+  const st = h.lesson <= AVAILABLE ? stepsOf(h.lesson) : [];
+  return "الدرس " + ORDINALS[h.lesson - 1] + (h.step >= 0 && st[h.step] ? " — " + stepName(st[h.step], h.lesson) : " كاملاً");
+};
+function hwDue(h) {
+  if (!h.due) return "";
+  const d = new Date(h.due + "T23:59:59"), left = Math.ceil((d - Date.now()) / 864e5);
+  if (left < 0) return `<span class="late">⏰ انتهى موعده</span>`;
+  if (left === 0) return `<span class="late">⏰ آخر يوم اليوم!</span>`;
+  return "⏰ حتى " + d.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
+}
+// شهادات ختم المستوى (المستوى الأول: الدروس 1–3، ...)
+const levelsDone = () => TEACHER ? Certificate.LEVELS.filter(V => V.to <= AVAILABLE).map(V => Object.assign({}, V, { avg: 10, passedAt: Date.now() }))
+  : Certificate.levelsEarned(n => LP(n), AVAILABLE);
 
 /* ---------- إرسال التقدم إلى سجل المعلم ---------- */
 function position() {
@@ -985,6 +1020,7 @@ function applyServer(me, s) {
   if (s.username) me.username = String(s.username);
   me.group = String(s.group || "");
   me.teacher = String(s.teacher || "");
+  if (Array.isArray(s.homework)) me.homework = s.homework.slice(0, 10);
   const reset = Number(d.reset || 0);
   if (reset > (me.l1.resetSeen || 0)) {
     me.l1 = Object.assign(blankL1(), { stages: (d.stages || []).slice(0, 4).map(Boolean).concat([false,false,false,false]).slice(0, 4),
@@ -1069,7 +1105,7 @@ function go(name, data, fromHistory) {
   screen = Object.assign({ name }, data || {});
   // زر «رجوع» في المتصفح يرجع داخل الموقع خطوة خطوة
   if (!fromHistory && name !== prev) {
-    const d = name === "stage" ? { i: screen.i } : name === "cert" ? { lesson: screen.lesson } : {};
+    const d = name === "stage" ? { i: screen.i } : name === "cert" ? { lesson: screen.lesson, level: screen.level } : {};
     try { history.pushState({ rh: name, l: CUR, d }, ""); } catch (e) {}
   }
   render(); window.scrollTo(0, 0);
@@ -1355,9 +1391,16 @@ function Home() {
       screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
       screen.fresh ? "اكتبه واحفظه: به يدخل الطالب من أي جهاز آخر." : "به تدخل من أي جهاز آخر."}</small>
     ${P.temp ? `<small class="tempnote">🔒 لن يُحفظ اسمك على هذا الجهاز: عند الخروج (🚪) يُزال، ويبقى تقدّمك عند المعلم. <button class="linkbtn" id="keepme">احفظني على هذا الجهاز</button></small>` : ""}</div>`;
+  const hws = hwList(), hwLeft = hws.filter(h => !hwDone(h));
+  if (hws.length) html += `<div class="hwcard"><h2>📝 واجب من معلمك ${hwLeft.length ? `<span class="cnt">${hwLeft.length}</span>` : "✓"}</h2>
+    ${hws.slice().sort((a, b) => hwDone(a) - hwDone(b)).map(h => { const ok = hwDone(h);
+      return `<button class="hwitem ${ok ? "done" : ""}" ${ok ? "" : `data-hw="${h.lesson}"`}><span class="ic">${ok ? "✅" : "📝"}</span>
+        <span class="tx"><b>${esc(hwWhat(h))}</b>${h.note ? `<small>💬 ${esc(h.note)}</small>` : ""}<small>${ok ? "أنجزته، أحسنت!" : hwDue(h)}${h.by ? " · " + esc(h.by) : ""}</small></span>
+        ${ok ? "" : `<span class="goarrow">ابدأ ⬅</span>`}</button>`; }).join("")}</div>`;
   const certs = [];
   for (let n = 1; n <= AVAILABLE; n++) if (lessonPassed(n) || TEACHER) certs.push(n);
-  if (certs.length) html += `<div class="certs">${certs.map(n => `<button class="certbtn" data-cert="${n - 1}">🏅 <span><b>شهادة الدرس ${ORDINALS[n - 1]}</b><small>${LESSONS[n - 1]}</small></span></button>`).join("")}</div>`;
+  const lvls = levelsDone();
+  if (certs.length || lvls.length) html += `<div class="certs">${lvls.map(V => `<button class="certbtn level" data-level="${V.n}">🎖️ <span><b>شهادة ختم المستوى ${ORDINALS[V.n - 1]}</b><small>${V.title}</small></span></button>`).join("")}${certs.map(n => `<button class="certbtn" data-cert="${n - 1}">🏅 <span><b>شهادة الدرس ${ORDINALS[n - 1]}</b><small>${LESSONS[n - 1]}</small></span></button>`).join("")}</div>`;
   html += `</aside><section class="mapcol" aria-label="خريطة الدروس">`;
   let curL = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1));
   if (curL < 0) curL = LESSONS.length;
@@ -1368,7 +1411,8 @@ function Home() {
     return { state: done ? "done" : open ? "cur" : "locked", zone: i < 3 ? 0 : i < 6 ? 1 : i < 10 ? 2 : i < 12 ? 3 : 4,
       node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">🔒</span>`}</button>`,
       label: `<button class="tlabel" data-lesson="${i}" tabindex="-1"><small>الدرس ${ORDINALS[i]}</small><b>${name}</b>
-        ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}</button>`
+        ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}
+        ${hwLeft.some(h => h.lesson === n) ? `<span class="hwflag">📝 واجب</span>` : ""}</button>`
     };
   }), curL, { sky: true, mood: "home" });
   html += `</section></div><p class="note" id="ttsnote" ${usingTTS ? "" : "hidden"}>🔈 بعض التعليمات بصوت آلي مؤقت.</p>` + credit();
@@ -1764,6 +1808,7 @@ function Balloons() {
 
 /* --- الشهادة --- */
 function Cert() {
+  if (screen.level) return LevelCert();
   const i = screen.lesson || 0;
   const best = LP(i + 1).best, total = 10;
   let html = bar("شهادة الدرس " + ORDINALS[i], "home");
@@ -1783,6 +1828,25 @@ function Cert() {
     document.getElementById("certimg").src = cv.toDataURL("image/png");
     document.getElementById("certwait").remove();
     document.getElementById("dl").onclick = () => Certificate.download(cv, `certificate-lesson-${i + 1}-${P.id}.png`);
+    document.getElementById("pr").onclick = () => Certificate.print(cv);
+  });
+}
+
+/* --- شهادة ختم المستوى --- */
+function LevelCert() {
+  const V = levelsDone().find(v => v.n === screen.level);
+  let html = bar("شهادة ختم المستوى " + ORDINALS[screen.level - 1], "home") + teacherBanner();
+  if (!V) { html += `<p class="note">تظهر الشهادة بعد النجاح في كل دروس المستوى.</p>`; $app.innerHTML = html; return; }
+  html += `<div class="certwrap"><img id="certimg" alt="شهادة ختم المستوى ${ORDINALS[V.n - 1]} باسم ${esc(P.name)}"><p class="note" id="certwait">⏳ جارٍ تجهيز الشهادة...</p></div>
+    <div class="certactions"><button class="go" id="dl">⬇️ تحميل الصورة</button><button class="go gold" id="pr">🖨️ طباعة</button></div>
+    <p class="note">على الآيفون: اضغط على الشهادة مطوّلاً ثم «حفظ الصورة».</p>`;
+  $app.innerHTML = html;
+  const teacher = P.teacher || (DB.groupTeachers || {})[P.group] || (TEACHER ? TEACHER.name : "");
+  Certificate.render({ name: P.name, sid: TEACHER ? "" : P.id, level: V.n, score: V.avg, total: 10, teacher, group: P.group, date: V.passedAt || Date.now() }).then(cv => {
+    if (screen.name !== "cert" || screen.level !== V.n) return;
+    document.getElementById("certimg").src = cv.toDataURL("image/png");
+    document.getElementById("certwait").remove();
+    document.getElementById("dl").onclick = () => Certificate.download(cv, `certificate-level-${V.n}-${P.id}.png`);
     document.getElementById("pr").onclick = () => Certificate.print(cv);
   });
 }
@@ -1849,6 +1913,16 @@ $app.addEventListener("click", (e) => {
   const g = e.target.closest("[data-go]"); if (g) return go(g.dataset.go);
   if (e.target.closest("#texit")) return exitTeacher();
   const cb = e.target.closest("[data-cert]"); if (cb) return go("cert", { lesson: +cb.dataset.cert });
+  const lv = e.target.closest("[data-level]"); if (lv) return go("cert", { level: +lv.dataset.level });
+  const hw = e.target.closest("[data-hw]");
+  if (hw) {
+    const n = +hw.dataset.hw;
+    if (n > AVAILABLE) return toast("الدرس " + ORDINALS[n - 1] + " قيد الإعداد ✨");
+    if (!lessonOpen(n)) return toast("🔒 أنهِ الدرس السابق أولاً، ثم يُفتح الواجب");
+    const tr = $app.querySelector(".trail");
+    if (tr) return travel(tr, +tr.dataset.cur, n - 1, () => { CUR = n; go("lesson", { enter: true }); });
+    CUR = n; return go("lesson");
+  }
   const kid = e.target.closest("[data-student]");
   if (kid) {
     TEACHER = null; P = DB.students[kid.dataset.student]; DB.current = P.id; setSession(P.id); P.seen = Date.now(); save();

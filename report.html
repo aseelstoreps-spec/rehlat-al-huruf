@@ -120,7 +120,15 @@ async function load() {
   render(j.student, j.events || []);
 }
 
+function hwDone(s, h) {
+  const M = L.find(x => x.n === h.lesson); if (!M) return false;
+  const x = lessonOf(s, h.lesson), i = h.step;
+  if (i < 0 || i >= M.steps.length - 1) return x.best >= 8;
+  return i < M.stages ? !!x.stages[i] : !!x.games[i - M.stages];
+}
+function hwWhat(h) { const M = L.find(x => x.n === h.lesson); return "الدرس " + ORD[h.lesson - 1] + (M ? ": " + M.title : "") + (M && h.step >= 0 ? " — " + M.steps[h.step] : ""); }
 function render(s, events) {
+  const levels = Certificate.levelsEarned(n => lessonOf(s, n), L.length), hw = Array.isArray(s.homework) ? s.homework : [];
   const passed = L.filter(M => lessonOf(s, M.n).best >= 8);
   const failing = L.find(M => { const x = lessonOf(s, M.n); return x.tries && x.best < 8; });
   const d = days(s.lastSeen);
@@ -146,16 +154,22 @@ function render(s, events) {
         <span class="muted">${ok ? `نجح في الاختبار بدرجة ${x.best} من 10` : x.tries ? `اختُبر ${x.tries} مرة، أفضل درجة ${x.best} من 10` : dn ? `أنهى ${dn} من ${M.steps.length} خطوات` : "لم يبدأ بعد"}</span>
         <div class="bar"><i style="width:${Math.round(dn / M.steps.length * 100)}%"></i></div>
         ${ok ? `<button class="btn" data-cert="${M.n}">🏅 شهادة الدرس ${ORD[M.n - 1]}</button>` : ""}</div></div>`; }).join("")}</div></section>
+  ${levels.length ? `<section class="card"><h2>🎖️ شهادات ختم المستوى</h2>${levels.map(V => `<p><b>المستوى ${ORD[V.n - 1]}: ${esc(V.title)}</b><br>
+    <button class="btn" data-level="${V.n}">🎖️ شهادة ختم المستوى ${ORD[V.n - 1]}</button></p>`).join("")}</section>` : ""}
+  ${hw.length ? `<section class="card"><h2>📝 واجبات المعلم</h2><ul class="feed">${hw.map(x => `<li><span>${hwDone(s, x) ? "✅" : "⏳"} ${esc(hwWhat(x))}${x.note ? ` <span class="muted">— ${esc(x.note)}</span>` : ""}</span>
+    <span class="when">${hwDone(s, x) ? "أنجزه" : x.due ? "حتى " + esc(new Date(x.due + "T12:00:00").toLocaleDateString("ar-EG", { day: "numeric", month: "long" })) : "لم ينجزه بعد"}</span></li>`).join("")}</ul></section>` : ""}
   <section class="card"><h2>آخر النشاط</h2><ul class="feed">${events.length ? events.map(e => {
     const sc = e.total !== "" && e.total != null ? `<span class="score ${Number(e.score) >= Number(e.total) * 0.8 ? "ok" : "bad"}">${esc(e.score)} من ${esc(e.total)}</span>` : "";
     return `<li><span>${esc(e.activity)} ${sc}</span><span class="when">${ago(e.ts)}</span></li>`; }).join("") : `<li class="muted">لا يوجد نشاط في آخر شهرين.</li>`}</ul></section>
   <p class="note">🔒 هذا الرابط خاص بالطالب وحده، فلا تنشره في المجموعات.</p>` + credit;
   root.innerHTML = h;
   root.querySelectorAll("[data-cert]").forEach(b => b.onclick = () => showCert(s, +b.dataset.cert));
+  root.querySelectorAll("[data-level]").forEach(b => b.onclick = () => showCert(s, 1, +b.dataset.level));
 }
 
-async function showCert(s, n) {
+async function showCert(s, n, level) {
   const M = L.find(x => x.n === n), x = lessonOf(s, n);
+  const V = level ? Certificate.levelsEarned(k => lessonOf(s, k), L.length).find(v => v.n === level) : null;
   const box = document.createElement("div");
   box.className = "modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "الشهادة");
   box.innerHTML = `<div class="modal-card"><div class="row"><b>شهادة ${esc(s.name)}</b><button class="btn ghost" data-x>✕ إغلاق</button></div>
@@ -164,11 +178,12 @@ async function showCert(s, n) {
   document.body.appendChild(box);
   box.querySelector("[data-x]").onclick = () => box.remove();
   box.onclick = (e) => { if (e.target === box) box.remove(); };
-  const cv = await Certificate.render({ name: s.name, lessonIndex: n - 1, lessonName: M.title, score: x.best, total: 10,
+  const cv = await Certificate.render(V ? { name: s.name, level: V.n, score: V.avg, total: 10, teacher: s.teacher || "", group: s.group, date: V.passedAt || s.lastSeen, serial: (s.serials || {})["L" + V.n] }
+    : { name: s.name, lessonIndex: n - 1, lessonName: M.title, score: x.best, total: 10,
     teacher: s.teacher || "", group: s.group, date: x.passedAt || s.lastSeen, serial: (s.serials || {})[n] });
   box.querySelector("img").src = cv.toDataURL("image/png");
   box.querySelector(".note").textContent = "على الآيفون: اضغط على الشهادة مطوّلاً ثم «حفظ الصورة».";
-  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, `certificate-lesson-${n}.png`);
+  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, V ? `certificate-level-${V.n}.png` : `certificate-lesson-${n}.png`);
   box.querySelector("[data-pr]").onclick = () => Certificate.print(cv);
 }
 
