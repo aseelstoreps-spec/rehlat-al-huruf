@@ -818,23 +818,23 @@ function sfxOut() { const a = ac(); if (!sfxBus) { sfxBus = a.createGain(); sfxB
 function sfx(kind) {
   try {
     const t = ac().currentTime + .01;
-    if (kind === "ok") { marimba(784, t); marimba(1175, t + .1); chirp(t + .22, 2600, 2, .05); }                      // صحيح: نغمتان صاعدتان وزقزقة
+    if (kind === "ok") { marimba(784, t); marimba(1175, t + .1); }                                                    // صحيح: نغمتان صاعدتان
     else if (kind === "bad") { tone(330, t, .22, "sine", .09, 247); tone(262, t + .14, .26, "sine", .08, 220); }          // خطأ: «أووه» ناعمة
-    else if (kind === "win") { [523, 659, 784, 1047, 1319].forEach((f, i) => marimba(f, t + i * .11, .14)); chirp(t + .65, 2800, 4, .06); [2093, 2637, 3136].forEach((f, i) => tone(f, t + .7 + i * .07, .4, "triangle", .04)); }
-    else if (kind === "hop") { tone(300, t, .32, "sine", .14, 900); marimba(1319, t + .3, .1); chirp(t + .42, 3000, 2, .045); } // قفزة مرنة بين الجزر
+    else if (kind === "win") { [523, 659, 784, 1047, 1319].forEach((f, i) => marimba(f, t + i * .11, .14)); [2093, 2637, 3136].forEach((f, i) => tone(f, t + .7 + i * .07, .4, "triangle", .04)); }
+    else if (kind === "hop") { tone(300, t, .32, "sine", .14, 900); marimba(1319, t + .3, .1); } // قفزة مرنة بين الجزر
     else if (kind === "enter") { [784, 988, 1175, 1568].forEach((f, i) => tone(f, t + i * .06, .5, "triangle", .06)); tone(2349, t + .26, .6, "sine", .03); } // لمعة سحرية
     else if (kind === "step") { marimba(880 + Math.random() * 220, t, .09); }                                              // نقرة خشبية خفيفة
     else if (kind === "pop") { pop(t); marimba(1568, t + .03, .06); }
   } catch (e) {}
 }
 
-/* زقزقة طيور هادئة في الخريطة وداخل الدرس (تتوقف أثناء نطق الحروف، ويمكن إيقافها) */
+/* زقزقة طيور هادئة ونادرة في خريطة الجزر فقط (لا داخل الدروس، ويمكن إيقافها) */
 let birdsTimer = 0;
 const birdsOn = () => DB.birds !== false;
 function birdsTick() {
   clearTimeout(birdsTimer);
-  birdsTimer = setTimeout(birdsTick, 2500 + Math.random() * 4500);
-  if (!birdsOn() || !actx || document.hidden || !["home", "lesson", "stage"].includes(screen.name) || (cur && !cur.paused) || (window.speechSynthesis && speechSynthesis.speaking)) return;
+  birdsTimer = setTimeout(birdsTick, 7000 + Math.random() * 8000);
+  if (!birdsOn() || !actx || document.hidden || screen.name !== "home" || (cur && !cur.paused) || (window.speechSynthesis && speechSynthesis.speaking)) return;
   const t = actx.currentTime + .05, base = 2200 + Math.random() * 1600;
   chirp(t, base, 2 + Math.floor(Math.random() * 3), .018);
   if (Math.random() < .4) chirp(t + .6 + Math.random() * .4, base * (.85 + Math.random() * .3), 2, .012);
