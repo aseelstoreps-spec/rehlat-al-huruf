@@ -1,0 +1,1726 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>رحلة الحروف</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#23266b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="icons/rehla-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/rehla-touch.png">
+<script src="config.js"></script>
+<script src="cert.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+/* Layout: one-screen app, a single centered column (max 560px) — map → lesson → stage/game/test */
+:root {
+  --bg: #f7f7fc;
+  --bg-2: #eceefa;
+  --ink: #1b1d45;
+  --ink-soft: #565a86;
+  --card: #ffffff;
+  --green: #23266b;
+  --green-dark: #15174a;
+  --gold: #ffd23f;
+  --gold-soft: #fff6d1;
+  --red: #c8233a;
+  --blue: #2a5fd0;
+  --ok: #17804f;
+  --bad: #d9485f;
+  --locked: #cfd1e6;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-letter: "Noto Naskh Arabic", "Amiri", "Traditional Arabic", serif;
+  --r: 22px;
+  --f-title: "Lalezar", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 20% 0%, #ffffff 0, var(--bg) 45%, var(--bg-2) 100%) fixed;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-ui);
+  font-size: 18px;
+  overflow-x: hidden;
+}
+#app {
+  max-width: 560px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
+
+/* top bar */
+.bar { display: flex; align-items: center; gap: 10px; min-height: 56px; }
+.bar h1 { flex: 1; margin: 0; font-family: var(--f-title); font-size: 1.5rem; font-weight: 400; text-wrap: balance; line-height: 1.2; }
+.bar h1 .wordmark { height: 36px; max-width: 100%; width: auto; display: block; }
+.icon-btn {
+  width: 52px; height: 52px; flex: none; border-radius: 16px; background: var(--card);
+  box-shadow: 0 3px 0 #d5d7ee; font-size: 1.5rem; display: grid; place-items: center;
+}
+.icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #d5d7ee; }
+.pill {
+  display: inline-flex; flex: none; white-space: nowrap; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+  background: var(--gold-soft); color: #1b1d45; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.hint {
+  direction: ltr; text-align: left; font-family: system-ui, sans-serif; font-size: .85rem;
+  color: var(--ink-soft); background: #ffffffaa; border-radius: 12px; padding: 6px 12px;
+}
+
+/* map */
+.hero {
+  background: var(--green); color: #fff; border-radius: var(--r); padding: 18px 20px;
+  display: flex; gap: 14px; align-items: center; position: relative; overflow: hidden;
+}
+.hero .big { white-space: nowrap; font-family: var(--f-letter); font-size: 2.8rem; line-height: 1; color: var(--gold); }
+.hero p { margin: 0; line-height: 1.5; }
+.hero .mark { width: 64px; height: 64px; flex: none; border-radius: 16px; box-shadow: 0 0 0 2px #ffffff33; }
+.hero b { font-family: var(--f-title); font-weight: 400; font-size: 1.5rem; }
+.map { display: flex; flex-direction: column; gap: 4px; padding-block: 6px; }
+.station { display: flex; align-items: center; gap: 14px; }
+.station:nth-child(even) { flex-direction: row-reverse; text-align: left; }
+.station:nth-child(even) .st-label { text-align: left; }
+.node {
+  width: 78px; height: 78px; flex: none; border-radius: 50%; font-size: 1.6rem; font-weight: 800;
+  display: grid; place-items: center; background: var(--locked); color: #fff; box-shadow: 0 6px 0 #b4b7d6;
+  position: relative;
+}
+.node.open { background: var(--gold); color: #1b1d45; box-shadow: 0 6px 0 #d9a800; animation: bob 2.2s ease-in-out infinite; }
+.node.done { background: var(--green); box-shadow: 0 6px 0 var(--green-dark); }
+.node .lock { font-size: 1.3rem; }
+.st-label { flex: 1; min-width: 0; }
+.st-label small { display: block; color: var(--ink-soft); font-size: .8rem; }
+.st-label span { font-weight: 700; line-height: 1.3; }
+.st-stars { font-size: .9rem; letter-spacing: 2px; }
+.connector { width: 6px; height: 18px; border-radius: 3px; background: #d5d7ee; margin-inline: 36px; }
+.station:nth-child(4n+3) + .connector { margin-inline-start: auto; }
+
+/* الطريق المتعرّج: خريطة الدروس ومراحل الدرس */
+.trail { position: relative; container-type: inline-size; direction: ltr; margin-block: 30px 10px; }
+.trail-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.trail-svg .road { fill: none; stroke: #e3e5f5; stroke-width: 30; stroke-linecap: round; }
+.trail-svg .road.done { stroke: var(--gold-soft); }
+.trail-svg .lane { fill: none; stroke: #ffffff; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 0 15; }
+.trail-svg .lane.done { stroke: #e06a00; }
+.tstop { position: absolute; left: calc(var(--x) * 100%); width: 0; height: 84px; }
+.tstop > .node, .tstop > .tnode { position: absolute; left: -39px; top: 3px; }
+.tstop.big > .tnode { left: -47px; top: -5px; width: 94px; height: 94px; font-size: 2.6rem; }
+.tlabel { position: absolute; top: 42px; transform: translateY(-50%); direction: rtl; background: none; padding: 4px 6px; border-radius: 14px;
+  width: min(calc(var(--x) * 100cqw - 56px), 240px); right: 50px; text-align: right; line-height: 1.3; }
+.tstop.r .tlabel { right: auto; left: 50px; width: min(calc((1 - var(--x)) * 100cqw - 56px), 240px); text-align: left; }
+.tdeco { position: absolute; top: 14px; left: 48px; font-family: var(--f-letter); font-size: 2.4rem; line-height: 1; color: var(--green); opacity: .16; pointer-events: none; }
+.tstop.r .tdeco { left: auto; right: 48px; }
+.tlabel small { display: block; color: var(--ink-soft); font-size: .8rem; }
+.tlabel b { display: block; font-size: 1.05rem; }
+.tlabel .ltrs { display: block; font-family: var(--f-letter); font-size: 1.15rem; letter-spacing: 2px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tlabel[disabled] { opacity: .55; }
+.tnode {
+  width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; line-height: 1;
+  background: var(--card); box-shadow: 0 6px 0 #d5d7ee; border: 4px solid var(--card);
+}
+.tnode .glyph { font-family: var(--f-letter); font-size: 2.2rem; line-height: 1.2; }
+.tnode.done { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 6px 0 var(--green-dark); }
+.tnode.open { background: var(--gold); border-color: var(--gold); color: #1b1d45; box-shadow: 0 6px 0 #d9a800; }
+.tnode[disabled] { background: var(--locked); border-color: var(--locked); box-shadow: 0 6px 0 #b4b7d6; filter: grayscale(.4); }
+.tnode:active:not([disabled]), .node:active { transform: translateY(4px); box-shadow: none; }
+.tstop .badge-ok { position: absolute; top: -2px; left: 18px; width: 26px; height: 26px; border-radius: 50%; background: var(--ok); color: #fff;
+  font-size: .85rem; display: grid; place-items: center; border: 3px solid var(--card); z-index: 1; pointer-events: none; }
+.here { position: absolute; left: 0; top: -30px; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: .8rem; font-weight: 800;
+  padding: 2px 10px; border-radius: 999px; white-space: nowrap; z-index: 2; pointer-events: none; animation: bob 2.2s ease-in-out infinite; }
+.here::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: var(--ink); }
+.tstop.cur > .node, .tstop.cur > .tnode { animation: none; outline: 4px solid var(--gold); outline-offset: 5px; }
+
+/* lesson steps */
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.step {
+  background: var(--card); border-radius: var(--r); padding: 14px 12px 12px; min-height: 132px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 5px 0 #d5d7ee; text-align: center; position: relative;
+}
+.step:active:not([disabled]) { transform: translateY(3px); box-shadow: 0 2px 0 #d5d7ee; }
+.step .ico { font-size: 2rem; line-height: 1; }
+.step .ltrs { font-family: var(--f-letter); font-size: 1.7rem; line-height: 1.3; letter-spacing: 4px; direction: rtl; }
+.step .lbl { font-weight: 800; font-size: 1rem; }
+.step.wide { grid-column: 1 / -1; min-height: 100px; flex-direction: row; gap: 14px; background: var(--gold-soft); }
+.step[disabled] { opacity: .45; cursor: not-allowed; }
+.step .tick {
+  position: absolute; top: 8px; inset-inline-start: 8px; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--ok); color: #fff; font-size: .95rem; display: grid; place-items: center;
+}
+.step.current { outline: 4px solid var(--gold); outline-offset: -4px; }
+
+/* learn card */
+.learn { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.card-letter {
+  width: min(100%, 360px); aspect-ratio: 1 / 1; max-width: 100%; background: var(--card); border-radius: 32px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+  box-shadow: 0 8px 0 #d5d7ee; border: 4px solid var(--green);
+}
+.card-letter .glyph { font-family: var(--f-letter); font-size: clamp(9rem, 48vw, 13rem); line-height: 1.05; }
+.card-letter .name { color: var(--red); font-size: 1.6rem; font-weight: 800; position: absolute; top: 12px; inset-inline-end: 22px; }
+.card-letter.pulse { animation: pulse .5s ease; }
+.speak {
+  width: 86px; height: 86px; border-radius: 50%; background: var(--green); color: #fff; font-size: 2.3rem;
+  box-shadow: 0 6px 0 #15174a; display: grid; place-items: center;
+}
+.speak:active { transform: translateY(3px); box-shadow: 0 3px 0 #15174a; }
+.speak.small { width: 64px; height: 64px; font-size: 1.7rem; }
+.navrow { display: flex; align-items: center; justify-content: center; gap: 22px; width: 100%; }
+.arrow {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--card); font-size: 1.8rem; font-weight: 800;
+  box-shadow: 0 4px 0 #d5d7ee; display: grid; place-items: center;
+}
+.arrow[disabled] { opacity: .3; }
+.strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.chip {
+  width: 50px; height: 50px; border-radius: 14px; background: var(--card); font-family: var(--f-letter);
+  font-size: 1.6rem; display: grid; place-items: center; box-shadow: 0 3px 0 #d5d7ee; border: 3px solid transparent;
+}
+.chip.seen { background: #e4f3ec; }
+.chip.cur { border-color: var(--gold); }
+.go {
+  background: var(--green); color: #fff; font-size: 1.3rem; font-weight: 800; padding: 14px 28px;
+  border-radius: 999px; box-shadow: 0 6px 0 var(--green-dark); display: inline-flex; gap: 10px; align-items: center;
+}
+.go:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--green-dark); }
+.go.gold { background: var(--gold); color: #1b1d45; box-shadow: 0 6px 0 #d9a800; }
+
+/* quiz */
+.progress { height: 14px; border-radius: 999px; background: #ffffff; overflow: hidden; box-shadow: inset 0 2px 0 #dcddf0; }
+.progress i { display: block; height: 100%; background: var(--gold); border-radius: 999px; transition: width .35s ease; }
+.ask { display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 120px; }
+.ask .target {
+  font-family: var(--f-letter); font-size: 6rem; line-height: 1; background: var(--card); border-radius: 26px;
+  width: 140px; height: 140px; display: grid; place-items: center; border: 4px dashed var(--blue);
+}
+.opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.opts.three { grid-template-columns: repeat(3, 1fr); }
+.opt {
+  background: var(--card); border-radius: 26px; aspect-ratio: 1 / 1; max-width: 100%;
+  font-family: var(--f-letter); font-size: clamp(3.6rem, 17vw, 5.2rem); line-height: 1;
+  display: grid; place-items: center; box-shadow: 0 6px 0 #d5d7ee; border: 4px solid transparent;
+  transition: background .2s, border-color .2s;
+}
+.opt:active { transform: translateY(3px); box-shadow: 0 3px 0 #d5d7ee; }
+.opt.right { background: #dff5e7; border-color: var(--ok); }
+.opt.wrong { background: #fde5e3; border-color: var(--bad); animation: shake .4s; }
+.opt.reveal { border-color: var(--ok); border-style: dashed; }
+.opts.lock .opt { pointer-events: none; }
+
+/* balloons */
+.sky {
+  position: relative; height: min(62vh, 520px); border-radius: var(--r); overflow: hidden;
+  background: linear-gradient(#bfe3ff, #e9f6ff 70%, #f6fbff);
+}
+.sky::after { content: ""; position: absolute; inset: auto 0 0 0; height: 36px; background: #9ed39f; border-radius: 50% 50% 0 0 / 30px 30px 0 0; }
+.balloon {
+  position: absolute; bottom: -150px; width: 92px; height: 112px; border-radius: 50% 50% 46% 46%;
+  display: grid; place-items: center; font-family: var(--f-letter); font-size: 3rem; color: #fff;
+  text-shadow: 0 2px 0 #0003; animation: rise linear infinite; z-index: 1;
+}
+.balloon::after { content: ""; position: absolute; top: 100%; left: 50%; width: 2px; height: 40px; background: #0004; }
+.balloon::before { content: ""; position: absolute; top: 18px; right: 20px; width: 16px; height: 24px; border-radius: 50%; background: #fff6; }
+.balloon.popped { animation: popb .3s forwards !important; pointer-events: none; }
+.balloon.nope { filter: grayscale(.6); }
+.boom { position: absolute; font-size: 2.6rem; pointer-events: none; animation: boom .6s forwards; z-index: 2; }
+
+/* result */
+.result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 20px; }
+.stars { font-size: 3.6rem; letter-spacing: 6px; }
+.stars .off { filter: grayscale(1); opacity: .35; }
+.result h2 { margin: 0; font-family: var(--f-title); font-weight: 400; font-size: 2.3rem; }
+.result p { margin: 0; color: var(--ink-soft); }
+.score { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.note { font-size: .85rem; color: var(--ink-soft); text-align: center; line-height: 1.6; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: #fff; padding: 12px 22px; border-radius: 999px; font-weight: 700; z-index: 20;
+  animation: fadeup .25s ease;
+}
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 15; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: fall 1.8s linear forwards; }
+
+/* lessons 2 & 3 */
+.l2head { border-radius: 14px; padding: 8px 14px; font-weight: 800; text-align: center; background: #e4f3ec; }
+.l2head.heavy { background: #fde5e3; color: var(--red); }
+.l2head.var { background: var(--gold-soft); color: #1b1d45; }
+.card-letter .glyph.heavy { color: var(--red); }
+.card-letter .badge { position: absolute; bottom: 12px; font-weight: 800; font-size: 1rem; padding: 2px 12px; border-radius: 999px; background: #e4f3ec; }
+.card-letter .badge.heavy { background: #fde5e3; color: var(--red); }
+.card-letter .badge.var { background: var(--gold-soft); color: #1b1d45; }
+.card-letter.k-heavy { border-color: var(--red); }
+.card-letter.k-var { border-color: var(--gold); }
+.l2note { margin: 0; background: var(--card); border-radius: 14px; padding: 10px 14px; line-height: 1.7; max-width: 420px; }
+.st-soon { font-size: .8rem; color: var(--ink-soft); }
+.step .lbl small { display: block; font-weight: 600; color: var(--ink-soft); font-size: .8rem; }
+.explain { background: var(--card); border-radius: 16px; padding: 10px 14px; box-shadow: 0 3px 0 #d5d7ee; }
+.explain summary { font-weight: 800; cursor: pointer; }
+.explain audio { width: 100%; margin-top: 10px; }
+.l3row { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.l3head { font-family: var(--f-letter); font-size: 4.2rem; line-height: 1.1; background: var(--card); border: 4px solid var(--blue); border-radius: 24px; padding: 6px 28px; display: flex; align-items: center; gap: 10px; color: var(--blue); box-shadow: 0 5px 0 #d5d7ee; }
+.l3head.heavy { border-color: var(--red); color: var(--red); }
+.l3head small { font-size: 1.4rem; }
+.l3words { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.l3word { background: var(--card); border-radius: 18px; padding: 10px 4px; font-family: var(--f-letter); font-size: clamp(1.9rem, 8vw, 2.5rem); line-height: 1.5; box-shadow: 0 4px 0 #d5d7ee; border: 3px solid transparent; }
+.l3word.on { border-color: var(--gold); }
+.hl { color: var(--blue); }
+.hl.red { color: var(--red); }
+.spell { margin: 0; min-height: 2.2em; background: var(--card); border-radius: 14px; padding: 8px 14px; text-align: center; font-size: 1.15rem; width: 100%; }
+.spell b { font-family: var(--f-letter); font-size: 1.4rem; }
+.spell span { padding: 0 4px; border-radius: 6px; }
+.spell span.now { background: var(--gold); }
+.asktext { font-size: 1.5rem; font-weight: 800; background: var(--card); border-radius: 18px; padding: 12px 20px; }
+.word-target { font-family: var(--f-letter); font-size: 4.5rem; line-height: 1.4; background: var(--card); border-radius: 26px; padding: 4px 26px; border: 4px dashed var(--blue); }
+.opt.word { font-size: clamp(2rem, 9vw, 2.8rem); aspect-ratio: auto; padding: 18px 4px; }
+.l4head { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 16px; padding: 8px 14px; width: 100%; box-shadow: 0 3px 0 #d5d7ee; }
+.l4head p { margin: 0; line-height: 1.7; }
+.l4mark { font-family: var(--f-letter); font-size: 3.4rem; line-height: 1.3; color: var(--blue); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.tab { background: var(--card); border-radius: 14px; padding: 10px; font-weight: 800; font-size: 1.1rem; border: 3px solid transparent; box-shadow: 0 3px 0 #d5d7ee; }
+.tab.on { border-color: var(--gold); background: var(--gold-soft); }
+.sylgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; width: 100%; }
+.syl { background: var(--card); border-radius: 16px; aspect-ratio: 1 / 1; font-family: var(--f-letter); font-size: 2.4rem; line-height: 1; display: grid; place-items: center; box-shadow: 0 4px 0 #d5d7ee; border: 3px solid transparent; }
+.syl.heavy { color: var(--red); }
+.syl.seen { background: #e4f3ec; }
+.syl.now { background: var(--gold); border-color: #d9a800; }
+.l4legend { margin: 0; }
+.hv { color: var(--red); }
+.l4words { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.l3word.seen { background: #e4f3ec; }
+.l3word span.now, .spell span.now { background: var(--gold); border-radius: 6px; }
+.opt.cls.hname { font-size: 2.6rem; }
+.opt .hm { line-height: 1.9; }
+.opt.cls { font-size: 3.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.opt.cls small { font-family: var(--f-ui); font-size: 1.2rem; font-weight: 800; }
+.certs { display: flex; flex-direction: column; gap: 10px; }
+/* credit, offline, certificate */
+.credit { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; color: var(--ink-soft); font-size: .82rem; text-align: center; padding-top: 8px; border-top: 1px dashed #d5d7ee; }
+.credit a { color: var(--green); font-weight: 700; }
+.offline { background: #fff6d1; color: #1b1d45; border-radius: 14px; padding: 10px 14px; font-weight: 700; font-size: .92rem; }
+.certbtn { background: linear-gradient(135deg, #fff6d1, #ffe58a); border-radius: var(--r); padding: 14px 18px; display: flex; gap: 14px; align-items: center; text-align: start; font-size: 2rem; box-shadow: 0 5px 0 #e0bd3a; }
+.certbtn span { display: flex; flex-direction: column; font-size: 1rem; }
+.certbtn small { color: #1b1d45; }
+.certwrap { background: var(--card); border-radius: 18px; padding: 10px; box-shadow: 0 5px 0 #d5d7ee; }
+.certwrap img { width: 100%; height: auto; display: block; border-radius: 10px; }
+.certwrap img:not([src]) { aspect-ratio: 1600 / 1131; background: #f3f4fb; }
+.certactions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+/* login */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #ffffff99; padding: 6px; border-radius: 18px; }
+.tab { padding: 10px; border-radius: 14px; font-weight: 800; }
+.tab.on { background: var(--green); color: #fff; }
+.newkid select { font: inherit; font-size: 1.1rem; padding: 12px 14px; border-radius: 14px; border: 2px solid #d5d7ee; background: #fafaff; color: var(--ink); width: 100%; }
+.formerr { margin: 0; color: var(--bad); font-weight: 700; }
+.linkbtn { align-self: center; color: var(--ink-soft); font-weight: 700; text-decoration: underline; padding: 8px; }
+.codecard { background: var(--card); border-radius: var(--r); padding: 12px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; box-shadow: 0 4px 0 #d5d7ee; }
+.codecard b { font-size: 1.5rem; letter-spacing: 3px; font-variant-numeric: tabular-nums; color: var(--blue); }
+.codecard small { flex-basis: 100%; color: var(--ink-soft); }
+.codecard.fresh { outline: 4px solid var(--gold); }
+.tbanner { background: #2b2350; color: #fff; border-radius: 16px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-weight: 700; font-size: .95rem; }
+.tb-actions { display: flex; gap: 8px; }
+.tbanner a, .tbanner button { color: #2b2350; background: #fff; border-radius: 10px; padding: 4px 12px; text-decoration: none; font-weight: 800; }
+.kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.kid {
+  background: var(--card); border-radius: var(--r); padding: 14px 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; box-shadow: 0 5px 0 #d5d7ee; border: 3px solid transparent; min-width: 0;
+}
+.kid.on { border-color: var(--gold); }
+.kidwrap { position: relative; display: grid; }
+.kidx { position: absolute; top: 6px; inset-inline-start: 6px; width: 34px; height: 34px; border-radius: 50%; background: var(--bg); color: var(--ink-soft); font-size: 1rem; font-weight: 800; }
+.kidx:hover, .kidx:focus-visible { background: #fde5e3; color: var(--red); }
+.confirmbox { background: var(--card); border: 3px solid var(--red); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.confirmbox p { margin: 0; line-height: 1.6; }
+.confirmrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.go.small { font-size: 1rem; padding: 10px 18px; }
+.go.danger { background: var(--red); box-shadow: 0 5px 0 #8f1526; }
+.go.ghost { background: var(--card); color: var(--ink); box-shadow: 0 5px 0 #d5d7ee; }
+.go[disabled] { opacity: .5; }
+.remember { display: flex; align-items: center; gap: 8px; font-weight: 600 !important; background: var(--bg); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.remember input { width: 22px !important; height: 22px; padding: 0 !important; margin: 0; flex: none; accent-color: var(--green); }
+.tempnote { display: block; background: var(--gold-soft); border-radius: 10px; padding: 6px 10px; margin-top: 4px; color: var(--ink) !important; }
+.tempnote .linkbtn { display: inline; padding: 0; margin-inline-start: 4px; }
+.kid .av { width: 58px; height: 58px; border-radius: 50%; color: #fff; font-size: 1.8rem; font-weight: 800; display: grid; place-items: center; }
+.kid .kn { font-weight: 800; overflow-wrap: anywhere; }
+.kid small { color: var(--ink-soft); font-size: .8rem; }
+.newkid { background: var(--card); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 5px 0 #d5d7ee; }
+.newkid label { font-weight: 700; }
+.newkid label small { color: var(--ink-soft); font-weight: 500; }
+.newkid input {
+  font: inherit; font-size: 1.15rem; padding: 12px 14px; border-radius: 14px; border: 2px solid #d5d7ee;
+  background: #fafaff; color: var(--ink); width: 100%;
+}
+.newkid input:focus { outline: none; border-color: var(--green); }
+.newkid .go { align-self: center; margin-top: 8px; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+@keyframes pulse { 40% { transform: scale(1.06); } }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+@keyframes rise { from { transform: translateY(0); } to { transform: translateY(calc(-1 * min(62vh, 520px) - 300px)); } }
+@keyframes popb { to { transform: scale(1.6); opacity: 0; } }
+@keyframes boom { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+@keyframes fadeup { from { opacity: 0; transform: translate(-50%, 10px); } }
+@keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .node.open, .card-letter.pulse, .here { animation: none; }
+  .confetti { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+
+<script>
+(function () {
+"use strict";
+document.documentElement.dir = "rtl";
+document.documentElement.lang = "ar";
+
+/* ---------- data: الدرس الأول — حروف الهجاء المفردة (بترتيب الكتاب) ---------- */
+const LETTERS = [
+  ["ا","ألف","أَلِف","alif"],["ب","با","بَاء","ba"],["ت","تا","تَاء","ta"],["ث","ثا","ثَاء","tha"],
+  ["ج","جيم","جِيم","jim"],["ح","حا","حَاء","hha"],["خ","خا","خَاء","kha"],["د","دال","دَال","dal"],
+  ["ذ","ذال","ذَال","dhal"],["ر","را","رَاء","ra"],["ز","زاي","زَاي","zay"],["س","سين","سِين","sin"],
+  ["ش","شين","شِين","shin"],["ص","صاد","صَاد","sad"],["ض","ضاد","ضَاد","dad"],["ط","طا","طَاء","tta"],
+  ["ظ","ظا","ظَاء","dha"],["ع","عين","عَيْن","ain"],["غ","غين","غَيْن","ghain"],["ف","فا","فَاء","fa"],
+  ["ق","قاف","قَاف","qaf"],["ك","كاف","كَاف","kaf"],["ل","لام","لَام","lam"],["م","ميم","مِيم","mim"],
+  ["ن","نون","نُون","nun"],["ه","ها","هَاء","ha"],["و","واو","وَاو","waw"],["ي","يا","يَاء","ya"],
+  ["ء","همزة","هَمْزَة","hamza"]
+].map(([c, name, say, id], i) => ({ c, name, say, id, i }));
+
+/* المراحل الأربع للدرس الأول */
+const STAGES = [[0,7],[7,14],[14,21],[21,29]].map(([a,b]) => LETTERS.slice(a,b));
+
+/* حروف متشابهة في الشكل — تستعمل كخيارات مُربكة في الألعاب والاختبار */
+const LOOKALIKE = ["بتثني","جحخ","دذ","رزو","سش","صض","طظ","عغ","فق","كل","مه","اء"];
+
+/* ---------- الدرس الثاني: التفخيم والترقيق ---------- */
+const HEAVY = "خصضغطقظ";
+// لكل حرف مفخّم نظيره المرقّق القريب منه (للألعاب)
+const LIGHT_TWIN = { "خ": "حه", "ص": "سز", "ض": "دذ", "غ": "عه", "ط": "تد", "ق": "كء", "ظ": "ذز" };
+const L2_STAGES = [
+  { title: "الحروف المفخّمة دائماً", short: "المفخّمة", tag: "🐘 مفخّم دائماً", kind: "heavy", letters: "خصضغطقظ" },
+  { title: "الحروف المرقّقة دائماً", short: "المرقّقة", tag: "🐦 مرقّق دائماً", kind: "light", letters: "ءبتثجحدذزسشعفكلمنهوي" },
+  { title: "حروف تُفخَّم أحياناً وتُرقَّق أحياناً", short: "المتغيّرة", tag: "🔄 يتغيّر", kind: "var", letters: "ارل" }
+];
+const L2_NOTES = {
+  "ا": "الألف تتبع الحرف الذي قبلها: تُفخَّم بعد حرف مفخّم مثل «قَال»، وتُرقَّق بعد حرف مرقّق مثل «بَاب».",
+  "ر": "الراء تُفخَّم إذا كانت مفتوحة أو مضمومة مثل «رَبّ»، وتُرقَّق إذا كانت مكسورة مثل «رِزْق».",
+  "ل": "اللام مرقّقة دائماً، إلا في لفظ الجلالة «الله»: تُفخَّم بعد فتح أو ضم مثل «قَالَ اللهُ»، وتُرقَّق بعد كسر مثل «بِسْمِ اللهِ».",
+  "ء": "الهمزة مرقّقة دائماً."
+};
+const isHeavy = (c) => HEAVY.includes(c);
+
+/* ---------- الدرس الثالث: حروف الهجاء المركّبة (بترتيب صفحات الكتاب 3–5) ---------- */
+const L3_PAGES = [
+  [ ["لا", ["لا","ـلا","لأ","ـلأ","لإ","ـإ"]],
+    ["ء", ["أنى","أخذ","إنى","إنما","رأى","يشأ"]],
+    ["ء", ["ءامن","دأب","مئاب","جزاء","خبء","شىء"]],
+    ["ء", ["هزؤا","هاؤم","يؤمن","بئر","هؤلاء","يشاء"]],
+    ["ب", ["برق","بحمد","حبل","ربى","وتب","عجاب"]],
+    ["ت", ["تحمل","تؤمن","شتى","مت","ثلة","ثبات"]],
+    ["ث", ["ثمرة","ثم","ثمر","مثنى","لبث","تحدث"]],
+    ["ج", ["جعل","مجيد","تجرى","عجب","نجنى","حجج"]],
+    ["ح", ["حم","يحق","يحكم","رحم","ملح","روح"]],
+    ["خ", ["خسر","خاشعة","بخل","أخت","نفخ","أخ"]],
+    ["د", ["جد","دمدم","صدق","عدن","سود","أحد"]] ],
+  [ ["ذ", ["ذق","عذت","كذب","إذا","خذ","أعوذ"]],
+    ["ر", ["رب","رفرف","عرف","فرش","بشر","منذر"]],
+    ["ز", ["زين","رزق","نجزى","نزد","عزما","عزيز"]],
+    ["س", ["سبق","عسق","بسط","طسم","يوسوس","يس"]],
+    ["ش", ["شرب","لشهيد","نشطا","خشى","يعش","فرش"]],
+    ["ص", ["صر","صراط","تصلى","عصا","نصبت","نقص"]],
+    ["ض", ["ضل","مضت","غضب","قضى","بعض","عرض"]],
+    ["ط", ["طه","طس","بطل","حبطت","يطع","يربط"]],
+    ["ظ", ["ظهر","ظل","يظن","يظلم","حظ","شواظ"]],
+    ["ع", ["عم","فعل","يبعث","يبع","مع","جذع"]] ],
+  [ ["غ", ["غير","بغى","صغت","يرغب","تبغ","يزغ"]],
+    ["ف", ["فطر","فوق","غفر","نفس","صحف","يخاف"]],
+    ["ق", ["قل","يقع","وقب","فقل","خلق","واق"]],
+    ["ك", ["كلا","كم","كل","يكن","ربك","تبارك"]],
+    ["ل", ["لهب","لهم","ألف","خلت","عجل","مال"]],
+    ["م", ["محمد","مما","نجمع","هم","علم","نوم"]],
+    ["ن", ["نزل","عنت","يمنى","منه","طسن","كان"]],
+    ["ه", ["هل","هب","يهب","بهم","به","دعاه"]],
+    ["و", ["واد","يحول","يوم","حدود","يدعو","عدو"]],
+    ["ي", ["يس","كريم","هين","عليم","يحيى","يهدى"]] ]
+].map((page, p) => page.map(([t, words], r) => ({ t, words, p, r })));
+// صوت الكلمة من فيديو الدرس الثالث إن وُجد: audio/l3/p<صفحة>-r<صف>-w<كلمة>.mp3، وإلا تُتهجّى بأسماء الحروف
+const l3File = (row, k) => `audio/l3/p${row.p + 1}-r${row.r + 1}-w${k + 1}.mp3`;
+async function sayL3Word(row, w, onLetter) {
+  const tok = ++spellToken;
+  const k = row.words.indexOf(w);
+  if (k >= 0 && await playFile(l3File(row, k))) { if (tok === spellToken && onLetter) onLetter(-1, spellOf(w)); return; }
+  if (tok === spellToken) return spellWord(w, onLetter);
+}
+// صور الحرف داخل الكلمة التي تُعدّ الحرفَ نفسه (كما يلوّنها الكتاب)
+const ALIAS = { "أ": "ء", "إ": "ء", "آ": "ء", "ؤ": "ء", "ئ": "ء", "ة": "ت", "ى": "ي", "ٱ": "ا" };
+const baseOf = (ch) => ALIAS[ch] || ch;
+const isMark = (ch) => /[ً-ٰٟـ]/.test(ch);
+const matchT = (ch, t) => t === "لا" ? (ch === "ل" || ch === "ا" || ch === "أ" || ch === "إ") : baseOf(ch) === t;
+const hasLetter = (w, t) => [...w].some(ch => matchT(ch, t));
+function hlWord(w, t) {
+  const cls = isHeavy(t) ? "hl red" : "hl";
+  return [...w].map(ch => matchT(ch, t) ? `<span class="${cls}">${ch}</span>` : ch).join("");
+}
+// تهجئة الكلمة بأسماء الحروف: «برق: با را قاف»
+function spellOf(w) {
+  return [...w].filter(ch => !isMark(ch)).map(ch => LETTERS.find(l => l.c === baseOf(ch))).filter(Boolean);
+}
+let spellToken = 0;
+async function spellWord(w, onLetter) {
+  const tok = ++spellToken;
+  const ls = spellOf(w);
+  for (let i = 0; i < ls.length; i++) {
+    if (tok !== spellToken) return;
+    if (onLetter) onLetter(i, ls);
+    await sayLetter(ls[i]);
+    await new Promise(r => setTimeout(r, 120));
+  }
+  if (tok === spellToken && onLetter) onLetter(-1, ls);
+}
+
+/* ---------- الدرس الرابع: الحركات — الفتحة والكسرة والضمة (بترتيب الكتاب وفيديو السلسلة) ---------- */
+const HARAKAT = [
+  { k: "fatha", m: "َ", name: "فتحة", say: "فَتْحَة", title: "الفتحة", hamza: "أ",
+    note: "الفتحة خطٌّ صغير <b>فوق</b> الحرف. نفتح بها الفم: بَ" },
+  { k: "kasra", m: "ِ", name: "كسرة", say: "كَسْرَة", title: "الكسرة", hamza: "إ",
+    note: "الكسرة خطٌّ صغير <b>تحت</b> الحرف. نخفض بها الفك: بِ" },
+  { k: "damma", m: "ُ", name: "ضمة", say: "ضَمَّة", title: "الضمة", hamza: "أ",
+    note: "الضمة واوٌ صغيرة <b>فوق</b> الحرف. نضمّ بها الشفتين: بُ" }
+];
+const TAM = { c: "ة", name: "تاء مربوطة", say: "تَاءٌ مَرْبُوطَة", id: "tam", i: 29 };
+// الهمزة أولاً كما في الكتاب، ثم الحروف من الباء إلى الياء، ثم التاء المربوطة
+const L4_LETTERS = [LETTERS[28], ...LETTERS.slice(1, 28), TAM];
+const sylOf = (L, H) => (L.c === "ء" ? H.hamza : L.c) + H.m;
+// كلمات التدريب (من الكتاب ومن فيديو كل حركة)
+const L4_WORDS = [
+  ["أَكَلَ","فَعَلَ","نَزَعَ","ذَهَبَ","حَسَدَ","وَجَدَ","وَهَبَ","وَلَدَ","جَعَلَ","سَبَقَ","نَظَرَ","دَخَلَ","فَرَضَ","صَدَفَ","طَرَقَ","غَلَبَ","بَسَطَ","أَخَذَ","ظَهَرَ","وَقَذَفَ"],
+  ["سَمِعَ","لَبِثَ","شَهِدَ","وَسِعَ","تَجِدَ","شِيَعِ","أَذِنَ","شَرِبَ","بِيَدِكَ","كَرِهَ","عَلِمَ","نَسِيَ","سَخِطَ","غَضِبَ","سَخِرَ","رَضِيَ","بَخِلَ"],
+  ["طُبِعَ","فَهُوَ","رُسُلُ","سُئِلَ","أُذُنُ","قُضِيَ","وُضِعَ","وَنُذُرِ","عُرِضَ","ضُرِبَ","قُتِلَ","خُلِقَ","وَجُمِعَ","أَعِظُكَ","صُحُفِ","ظُلِمَ","غُلِبَتِ","قُرِئَ"]
+];
+// أصوات الدرس من فيديو السلسلة (تُوضع لاحقاً، وإلى ذلك الحين: أسماء الحروف المسجّلة + صوت آلي)
+//   audio/l4/<fatha|kasra|damma>/<id>.mp3     «باء فتحة بَ»
+//   audio/l4/<fatha|kasra|damma>/<id>-s.mp3   «بَ» وحدها
+//   audio/l4/<fatha|kasra|damma>/w<رقم>.mp3   تهجئة الكلمة كاملة كما في الفيديو
+const l4File = (L, H, s) => `audio/l4/${H.k}/${L.id}${s ? "-s" : ""}.mp3`;
+const l4L = (ch) => ch === "ة" ? TAM : L4_LETTERS.find(l => l.c === baseOf(ch)) || null;
+const hOf = (m) => HARAKAT.find(h => h.m === m) || null;
+// تقسيم الكلمة إلى مقاطع: حرف + حركته
+function unitsOf(w) {
+  const out = [];
+  for (const ch of w) {
+    if (isMark(ch) && out.length) { out[out.length - 1].s += ch; const h = hOf(ch); if (h) out[out.length - 1].H = h; }
+    else out.push({ s: ch, L: l4L(ch), H: null });
+  }
+  return out;
+}
+async function saySyl(L, H) {
+  if (await playFile(l4File(L, H, true))) return;
+  await tts(sylOf(L, H));
+}
+// «باء فتحة بَ»
+async function sayFull(L, H) {
+  const tok = spellToken;
+  if (await playFile(l4File(L, H))) return;
+  if (tok !== spellToken) return;
+  await (L === TAM ? tts(TAM.say) : sayLetter(L));
+  if (tok !== spellToken) return;
+  await tts(H.say);
+  if (tok !== spellToken) return;
+  await saySyl(L, H);
+}
+// تهجئة الكلمة كما في الفيديو: «سين فتحة سَ، ميم كسرة مِ، سَمِ، عين فتحة عَ، سَمِعَ»
+async function spellH(w, file, onUnit) {
+  const tok = ++spellToken;
+  const us = unitsOf(w);
+  if (onUnit) onUnit(-2, us);
+  if (file && await playFile(file)) { if (tok === spellToken && onUnit) onUnit(-1, us); return; }
+  for (let i = 0; i < us.length; i++) {
+    if (tok !== spellToken) return;
+    if (onUnit) onUnit(i, us);
+    if (us[i].L && us[i].H) await sayFull(us[i].L, us[i].H);
+    if (tok !== spellToken) return;
+    if (i > 0) await tts(us.slice(0, i + 1).map(u => u.s).join(""));
+    await new Promise(r => setTimeout(r, 150));
+  }
+  if (tok === spellToken && onUnit) onUnit(-1, us);
+}
+// تلوين مقطع داخل الكلمة دون أن تنفصل الحروف: نضيف «واصلاً» غير مرئي (ZWJ) على أطراف المقطع
+const NOJOIN = "اأإآٱدذرزوؤةء";
+const joinsLeft = (u) => !!u && !NOJOIN.includes(u.s[0]);
+const unitsHtml = (us, cur, red) => us.map((u, k) => {
+  const cls = `${k === cur ? "now" : ""} ${red && u.L && isHeavy(u.L.c) ? "hv" : ""}`.trim();
+  const txt = (k > 0 && joinsLeft(us[k - 1]) ? "\u200D" : "") + u.s + (k < us.length - 1 && joinsLeft(u) ? "\u200D" : "");
+  return cls ? `<span class="${cls}">${txt}</span>` : txt;
+}).join("");
+
+/* مسار الكتاب كاملاً (15 درساً) */
+const LESSONS = [
+  "حروف الهجاء المفردة","التفخيم والترقيق","حروف الهجاء المركبة","الحركات: الفتحة والكسرة والضمة",
+  "التنوين","السكون","الهمس","القلقلة","الشدة","النون والميم المشددتان","حروف المد واللين",
+  "أحكام النون الساكنة والتنوين","أحكام الميم الساكنة","تنبيهات عامة","تدريبات شاملة"
+];
+const ORDINALS = ["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر"];
+
+/* التعليمات الصوتية — يُبحث أولاً عن ملف في audio/prompts/<key>.mp3 */
+const PROMPTS = {
+  listen: "اِسْمَعْ، وَاخْتَرِ الْحَرْف",
+  pop: "فَجِّرِ الْبَالُونَاتِ الَّتِي فِيهَا هَذَا الْحَرْف",
+  same: "اِخْتَرِ الْحَرْفَ الَّذِي يُشْبِهُهُ تَمَامًا",
+  great: "أَحْسَنْت",
+  again: "حَاوِلْ مَرَّةً أُخْرَى",
+  done: "مُمْتَاز! أَنْهَيْتَ الْمَرْحَلَة"
+};
+
+/* إرشادات لولي الأمر بلغته (الطفل يتعلم بالعربية دائماً) */
+const LANGS = ["ar","en"];
+const HINTS = {
+  en: {
+    login: "Returning on another device? Use the 8-digit student code. A parent or teacher types the child's name once. Progress is saved per child and sent to the teacher.",
+    home: "Each station is one lesson from the book. Finish a lesson's test to open the next one.",
+    lesson: "Do the 4 stages in order, then the two games, then the test (pass = 8/10).",
+    learn: "Tap 🔊 to hear the letter's name. Let your child repeat it out loud, then move on.",
+    listen: "Listen, then tap the letter you heard. Tap 🔊 to hear it again.",
+    same: "Find the letter that looks exactly the same.",
+    pop: "Pop only the balloons with the letter you hear.",
+    test: "Test: 10 questions, one try each.",
+    class: "Is this letter heavy (🐘) or light (🐦)? Tap 🔊 to hear it.",
+    pick: "Tap the letter that matches the instruction at the top.",
+    shape: "Which letter is coloured inside the word? Tap 🔊 to hear the word spelled.",
+    wordhas: "Listen to the letter, then tap the word that contains it.",
+    l3learn: "Tap a word to hear it spelled letter by letter, as in the book (برق: با را قاف).",
+    l4learn: "Tap each syllable to hear it read as in the book: letter name, vowel name, then the sound (با فتحة بَ). ▶️ plays them all.",
+    l4words: "Tap a word to hear it built syllable by syllable, as in the video (سين فتحة سَ، ميم كسرة مِ، سَمِ...). Listen to at least 5 words.",
+    l4listen: "Listen to the sound, then tap the matching letter.",
+    l4haraka: "Listen: is it with Fatha (بَ), Kasra (بِ) or Damma (بُ)? Tap the one you heard.",
+    l4name: "What is the name of the vowel mark on this letter?",
+    l4word: "Which syllable is coloured inside the word?",
+  }
+};
+
+/* ---------- storage: عدة طلاب على الجهاز نفسه + طابور إرسال للمعلم ---------- */
+const KEY = "rehlat-al-huruf-v2";
+const CFG = window.QAIDA_CONFIG || {};
+const blankL1 = () => ({ stages: [false,false,false,false], games: [false,false], best: 0, tries: 0 });
+let DB = { lang: "ar", current: null, lastGroup: "", students: {}, queue: [] };
+try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && s.students) DB = Object.assign(DB, s); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) {} };
+/* معرّف داخلي ثابت من 8 أرقام (لا يراه الطالب)، والطالب يدخل باسم المستخدم */
+const newCode = () => { let c; do { c = String(10000000 + Math.floor(Math.random() * 90000000)); } while (DB.students[c]); return c; };
+const isCode = (c) => /^[1-9]\d{7}$/.test(String(c));
+const fmtCode = (c) => String(c).replace(/^(\d{4})(\d{4})$/, "$1 $2");
+// نفس قواعد السجل: «أحمد» و«احمد» اسم واحد
+const normU = (u) => String(u || "").toLowerCase().replace(/[\u064B-\u0652\u0670\u0640]/g, "")
+  .replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+  .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[\s_.\-]/g, "");
+const cleanUsername = (u) => String(u || "").replace(/[\u064B-\u0652\u0670\u0640]/g, "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+  .replace(/[^A-Za-z0-9\u0621-\u064A]/g, "").slice(0, 20);
+const firstWord = (n) => String(n || "").trim().split(/\s+/)[0] || "";
+// ترحيل الطلاب القدامى (قبل الرموز) إلى رموز
+Object.keys(DB.students).forEach(id => {
+  if (isCode(id)) return;
+  const c = newCode(), st = DB.students[id];
+  st.id = c; DB.students[c] = st; delete DB.students[id];
+  if (DB.current === id) DB.current = c;
+  st.pending = true;
+});
+Object.values(DB.students).forEach(st => {
+  if (st.needsRegister) { st.pending = true; delete st.needsRegister; }
+  if (!st.username) { st.username = cleanUsername(firstWord(st.name)) || "طالب"; st.pending = true; }
+});
+save();
+let TEACHER = null; // وضع المعلم: يفتح كل الخطوات ولا يُسجَّل شيء
+let P = DB.students[DB.current] || null;
+const starsFor = (score) => score >= 10 ? 3 : score >= 9 ? 2 : score >= 8 ? 1 : 0;
+
+/* ---------- audio ---------- */
+const missing = new Set();
+let cur = null, usingTTS = false, arVoice = null;
+function pickVoice() {
+  if (!("speechSynthesis" in window)) return;
+  const vs = speechSynthesis.getVoices();
+  arVoice = vs.find(v => /^ar/i.test(v.lang) && /google|maged|tarik|laila|hoda|naayf/i.test(v.name)) || vs.find(v => /^ar/i.test(v.lang)) || null;
+}
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function stopAudio() {
+  if (cur) { try { cur.pause(); } catch (e) {} cur = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+function tts(text) {
+  return new Promise(res => {
+    usingTTS = true; markTTS();
+    if (!("speechSynthesis" in window)) return res();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ar-SA"; u.rate = 0.75; if (arVoice) u.voice = arVoice;
+    let done = false; const fin = () => { if (!done) { done = true; res(); } };
+    u.onend = fin; u.onerror = fin; setTimeout(fin, 3500);
+    speechSynthesis.speak(u);
+  });
+}
+function play(file, text) {
+  stopAudio();
+  return new Promise(res => {
+    if (!file || missing.has(file)) return tts(text).then(res);
+    const a = new Audio(file); cur = a;
+    let done = false;
+    const fail = () => { if (done) return; done = true; missing.add(file); tts(text).then(res); };
+    a.onended = () => { if (!done) { done = true; res(); } };
+    a.onerror = fail;
+    a.play().catch(fail);
+  });
+}
+// تشغيل ملف صوتي فقط (بلا صوت آلي): يعيد true إن اشتغل الملف
+function playFile(file) {
+  stopAudio();
+  return new Promise(res => {
+    if (!file || missing.has(file)) return res(false);
+    const a = new Audio(file); cur = a;
+    let done = false;
+    const end = (ok, real) => { if (done) return; done = true; if (!ok && real) missing.add(file); res(ok); };
+    a.onended = () => end(true);
+    a.onerror = () => end(false, true);
+    a.play().catch(e => end(false, !e || e.name !== "NotAllowedError"));
+  });
+}
+const sayLetter = (L) => play(`audio/letters/${L.id}.mp3`, L.say);
+const sayPrompt = (k) => play(`audio/prompts/${k}.mp3`, PROMPTS[k]);
+
+let actx = null;
+function sfx(kind) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = kind === "ok" ? [660, 880] : kind === "win" ? [523, 659, 784, 1046] : [220, 180];
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = kind === "bad" ? "square" : "sine"; o.frequency.value = f;
+      const t = actx.currentTime + i * 0.11;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === "bad" ? 0.05 : 0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.25);
+    });
+  } catch (e) {}
+}
+
+/* ---------- helpers ---------- */
+const $app = document.getElementById("app");
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick = (a, n) => shuffle(a).slice(0, n);
+const byChar = (c) => LETTERS.find(l => l.c === c);
+function distractors(L, n, pool) {
+  pool = pool || LETTERS;
+  const grp = LOOKALIKE.find(g => g.includes(L.c)) || "";
+  const like = shuffle([...grp].filter(c => c !== L.c).map(byChar).filter(x => pool.includes(x) || pool === LETTERS));
+  const rest = shuffle(pool.filter(x => x !== L && !like.includes(x)));
+  return like.concat(rest).slice(0, n);
+}
+function hint(key) {
+  if (DB.lang === "ar" || !HINTS[DB.lang] || !HINTS[DB.lang][key]) return "";
+  return `<div class="hint">ℹ️ ${HINTS[DB.lang][key]}</div>`;
+}
+function markTTS() { const n = document.getElementById("ttsnote"); if (n) n.hidden = false; }
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+}
+function confetti() {
+  const box = document.createElement("div"); box.className = "confetti";
+  const cols = ["#ffd23f","#23266b","#2a5fd0","#c8233a","#8bd17c"];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement("i");
+    p.style.left = Math.random() * 100 + "%"; p.style.background = cols[i % cols.length];
+    p.style.animationDelay = Math.random() * 0.6 + "s"; box.appendChild(p);
+  }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 2600);
+}
+const bar = (title, backTo, extra = "") => `
+  <div class="bar">
+    ${backTo ? `<button class="icon-btn" data-go="${backTo}" aria-label="رجوع">➜</button>` : ""}
+    <h1>${title}</h1>${extra}
+  </div>`;
+
+/* ---------- step model for lesson 1 ---------- */
+/* ---------- نموذج الدروس: كل درس = مراحل + لعبتان + اختبار ---------- */
+const STAGE_NAMES = ["الأولى","الثانية","الثالثة","الرابعة"];
+const LDEF = {
+  1: { stages: 4, games: [["لعبة: اسمع واختر", "👂"], ["لعبة: البالونات", "🎈"]],
+       stageChips: (i) => STAGES[i].map(l => l.c).join(" ") },
+  2: { stages: 3, games: [["لعبة: صنّف الحروف", "🐘"], ["لعبة: أين الحرف الثقيل؟", "🔍"]],
+       stageChips: (i) => [...L2_STAGES[i].letters].join(" "), stageSub: (i) => L2_STAGES[i].short,
+       explain: "audio/explain/lesson2.mp3" },
+  3: { stages: 3, games: [["لعبة: طابق الشكل", "🧩"], ["لعبة: أين الحرف؟", "🔎"]],
+       stageChips: (i) => L3_PAGES[i].map(r => r.t).filter((t, k, a) => a.indexOf(t) === k).join(" "),
+       stageSub: (i) => "صفحة " + (i + 3) },
+  4: { stages: 3, games: [["لعبة: اسمع واختر الحركة", "👂"], ["لعبة: ما اسم الحركة؟", "🏷️"]],
+       stageChips: (i) => ["ب","ت","ث"].map(c => c + HARAKAT[i].m).join(" "), stageSub: (i) => HARAKAT[i].title }
+};
+const AVAILABLE = 4;            // الدروس الجاهزة حالياً
+let CUR = 1;                     // الدرس المفتوح الآن
+const blankLP = (n) => ({ stages: Array(LDEF[n].stages).fill(false), games: [false, false], best: 0, tries: 0, passedAt: 0 });
+function LP(n, who) {
+  who = who || P;
+  if (n === 1) return who.l1;
+  who.lx = who.lx || {};
+  if (!who.lx[n]) who.lx[n] = blankLP(n);
+  return who.lx[n];
+}
+const stepsOf = (n) => [
+  ...Array.from({ length: LDEF[n].stages }, (_, i) => ({ kind: "stage", i })),
+  { kind: "game", i: 0 }, { kind: "game", i: 1 }, { kind: "test" }
+];
+const stepDone = (s, n) => { const L = LP(n || CUR); return s.kind === "stage" ? !!L.stages[s.i] : s.kind === "game" ? !!L.games[s.i] : L.best >= 8; };
+const stepOpen = (idx, n) => !!TEACHER || idx === 0 || stepDone(stepsOf(n || CUR)[idx - 1], n);
+const stepName = (s, n) => s.kind === "stage" ? "المرحلة " + STAGE_NAMES[s.i] : s.kind === "game" ? LDEF[n || CUR].games[s.i][0].replace("لعبة: ", "لعبة ") : "اختبار الدرس";
+const lessonPassed = (n) => n <= AVAILABLE && LP(n).best >= 8;
+const lessonOpen = (n) => n === 1 || !!TEACHER || lessonPassed(n - 1);
+
+/* ---------- إرسال التقدم إلى سجل المعلم ---------- */
+function position() {
+  for (let n = 1; n <= AVAILABLE; n++) {
+    const st = stepsOf(n), k = st.findIndex(s => !stepDone(s, n));
+    if (k >= 0) return "الدرس " + ORDINALS[n - 1] + " — " + stepName(st[k], n);
+  }
+  return "أنهى الدرس " + ORDINALS[AVAILABLE - 1] + " ✓";
+}
+function progressPct() {
+  let done = 0, all = 0;
+  for (let n = 1; n <= AVAILABLE; n++) { const st = stepsOf(n); all += st.length; done += st.filter(s => stepDone(s, n)).length; }
+  return Math.round(done / all * 100);
+}
+function report(activity, score, total, silent) {
+  if (!P || TEACHER) return;
+  if (silent) DB.queue = DB.queue.filter(ev => !(ev.silent && ev.sid === P.id));
+  DB.queue.push({ silent: !!silent,
+    sid: P.id, name: P.name, group: P.group || "", username: P.username || "", lesson: CUR, activity,
+    score: score == null ? "" : score, total: total == null ? "" : total,
+    position: position(), progress: progressPct(), best: P.l1.best, tries: P.l1.tries,
+    detail: { stages: P.l1.stages, games: P.l1.games, resetSeen: P.l1.resetSeen || 0, passedAt: P.l1.passedAt || 0, lx: P.lx || {} }, ts: new Date().toISOString()
+  });
+  if (DB.queue.length > 500) DB.queue = DB.queue.slice(-500);
+  save(); flush();
+}
+let flushing = false;
+async function flush() {
+  if (!CFG.backendUrl || flushing) return;
+  flushing = true;
+  try {
+    for (const st of Object.values(DB.students).filter(x => x.pending)) await registerOnline(st);
+    while (DB.queue.length) {
+      await fetch(CFG.backendUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(DB.queue[0]) });
+      DB.queue.shift(); save();
+    }
+  } catch (e) { /* لا إنترنت: يبقى في الطابور ويُرسل لاحقاً */ }
+  finally { flushing = false; }
+}
+window.addEventListener("online", flush);
+async function api(params) {
+  if (!CFG.backendUrl) throw new Error("no_backend");
+  const u = CFG.backendUrl + (CFG.backendUrl.includes("?") ? "&" : "?") + new URLSearchParams(params).toString();
+  const r = await fetch(u, { cache: "no-store" });
+  return r.json();
+}
+async function postApi(body) {
+  const r = await fetch(CFG.backendUrl, { method: "POST", body: JSON.stringify(body) });
+  return r.json();
+}
+/* يحجز اسم مستخدم فريداً في السجل. إن كان مأخوذاً يُعطى أقرب اسم متاح (أحمد2) */
+async function registerOnline(st) {
+  const j = await postApi({ action: "student.register", sid: st.id, name: st.name, group: st.group || "", username: st.username });
+  if (j.error === "deleted") { removeLocal(st.id, true); return null; }
+  if (!j.ok) return null;
+  const wanted = st.username;
+  applyServer(st, j.student);
+  st.pending = false; save();
+  return { wanted, got: st.username };
+}
+function removeLocal(id, notify) {
+  delete DB.students[id]; DB.queue = DB.queue.filter(ev => ev.sid !== id);
+  if (DB.current === id) DB.current = null;
+  if (P && P.id === id) { P = null; save(); if (notify) toast("حُذف هذا الطالب من السجل"); go("login"); }
+  save();
+}
+/* يطبّق ما في السجل على الطالب المحلي (الاسم، الحلقة، المعلم، اسم المستخدم، التقدّم) */
+function applyServer(me, s) {
+  const d = s.detail || {};
+  if (s.name) me.name = String(s.name);
+  if (s.username) me.username = String(s.username);
+  me.group = String(s.group || "");
+  me.teacher = String(s.teacher || "");
+  const reset = Number(d.reset || 0);
+  if (reset > (me.l1.resetSeen || 0)) {
+    me.l1 = Object.assign(blankL1(), { stages: (d.stages || []).slice(0, 4).map(Boolean).concat([false,false,false,false]).slice(0, 4),
+      games: (d.games || []).slice(0, 2).map(Boolean).concat([false,false]).slice(0, 2),
+      best: Number(s.best) || 0, tries: Number(s.tries) || 0, resetSeen: reset, passedAt: Number(d.passedAt) || 0 });
+    me.lx = {};
+    Object.keys(d.lx || {}).forEach(k => { if (LDEF[k]) me.lx[k] = Object.assign(blankLP(+k), d.lx[k]); });
+    DB.queue = DB.queue.filter(ev => ev.sid !== me.id);
+  } else {
+    const L = me.l1;
+    L.stages = L.stages.map((v, i) => v || !!(d.stages || [])[i]);
+    L.games = L.games.map((v, i) => v || !!(d.games || [])[i]);
+    L.best = Math.max(L.best, Number(s.best) || 0);
+    L.tries = Math.max(L.tries || 0, Number(s.tries) || 0);
+    const pa = Number(d.passedAt) || 0;
+    if (pa && (!L.passedAt || pa < L.passedAt)) L.passedAt = pa;
+    // الدروس 2 فما بعد
+    me.lx = me.lx || {};
+    Object.keys(d.lx || {}).forEach(k => {
+      if (!LDEF[k]) return;
+      const a = me.lx[k] || blankLP(+k), b = d.lx[k] || {};
+      a.stages = a.stages.map((v, i) => v || !!(b.stages || [])[i]);
+      a.games = a.games.map((v, i) => v || !!(b.games || [])[i]);
+      a.best = Math.max(a.best || 0, Number(b.best) || 0);
+      a.tries = Math.max(a.tries || 0, Number(b.tries) || 0);
+      const bp = Number(b.passedAt) || 0;
+      if (bp && (!a.passedAt || bp < a.passedAt)) a.passedAt = bp;
+      me.lx[k] = a;
+    });
+  }
+}
+/* مزامنة صامتة: يرسل حالة الطالب كاملة دون أن يُكتب نشاط جديد (تُصلح السجل إن نقص فيه شيء) */
+function syncUp() { if (P && !TEACHER && CFG.backendUrl) report("مزامنة", null, null, true); }
+/* --- الطلاب على هذا الجهاز: لا يُحفظ الطالب إلا إن اختار «احفظني» --- */
+const SKEY = "rehla-session";
+const sessionId = () => { try { return sessionStorage.getItem(SKEY) || ""; } catch (e) { return ""; } };
+const setSession = (id) => { try { id ? sessionStorage.setItem(SKEY, id) : sessionStorage.removeItem(SKEY); } catch (e) {} };
+const unsent = (id) => DB.queue.some(ev => ev.sid === id && !ev.silent) || !!(DB.students[id] || {}).pending;
+// يزيل الطلاب المؤقتين من جلسات سابقة بعد أن يُرسل تقدّمهم
+function purgeTemp() {
+  Object.values(DB.students).forEach(st => {
+    if (!st.temp || st.id === sessionId() || unsent(st.id)) return;
+    removeLocal(st.id);
+  });
+}
+// خروج الطالب: المؤقت يُزال من الجهاز (بعد إرسال تقدّمه)
+async function signOut() {
+  const me = P;
+  if (me && me.temp && !TEACHER) {
+    await flush();
+    setSession("");
+    if (!unsent(me.id)) { removeLocal(me.id); toast("خرجت ✓ ادخل في المرة القادمة باسم المستخدم: " + me.username); }
+    else toast("سيُزال من هذا الجهاز بعد إرسال تقدّمه عند الاتصال");
+  }
+  P = null; DB.current = null; save(); go("login");
+}
+/* يجلب تقدّم الطالب من السجل ويدمجه (إن تعلّم على جهاز آخر) */
+async function syncDown() {
+  if (!P || TEACHER || !CFG.backendUrl || !navigator.onLine) return;
+  try {
+    const me = P;
+    const j = await api({ action: "student", code: me.id });
+    if (P !== me) return;
+    if (j.error === "deleted") return removeLocal(me.id, true);  // حذفه المدير
+    if (!j.student) return;
+    const before = JSON.stringify(me);
+    applyServer(me, j.student);
+    if (JSON.stringify(me) !== before) { save(); if (["home", "lesson"].includes(screen.name)) render(); }
+    syncUp();
+  } catch (e) {}
+}
+async function loadGroups() {
+  if (!CFG.backendUrl || !navigator.onLine) return;
+  try { const j = await api({ action: "groups" }); if (Array.isArray(j.groups)) { DB.groups = j.groups; DB.groupTeachers = j.teachers || {}; save(); if (screen.name === "login") refreshGroupField(); } } catch (e) {}
+}
+
+/* ---------- screens ---------- */
+let screen = { name: P ? "home" : "login" };
+function go(name, data) { spellToken++; stopAudio(); screen = Object.assign({ name }, data || {}); render(); window.scrollTo(0, 0); }
+
+function render() {
+  ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
+  drawTrails();
+}
+
+function Login() {
+  const list = Object.values(DB.students).filter(k => !k.temp).sort((a, b) => (b.seen || 0) - (a.seen || 0));
+  const rm = screen.remove && DB.students[screen.remove];
+  let html = bar("رحلة الحروف", P && !TEACHER ? "home" : null, `<button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>`);
+  html += offlineNote() + hint("login");
+  html += `<div class="hero"><div class="big">👋</div><p><b>من سيتعلم الآن؟</b><br>اختر اسمك، أو ادخل باسم المستخدم، أو أضف طالباً جديداً.</p></div>`;
+  if (list.length) {
+    html += `<div class="kids">${list.map((k, n) => `<div class="kidwrap">
+      <button class="kid ${P && k.id === P.id && !TEACHER ? "on" : ""}" data-student="${k.id}">
+        <span class="av" style="background:${["#2a5fd0","#c8233a","#17804f","#e06a00","#8e44ad","#0e9aa7"][n % 6]}">${esc(k.name.trim()[0] || "؟")}</span>
+        <span class="kn">${esc(k.name)}</span><small>@${esc(k.username || "")}</small>
+      </button>
+      <button class="kidx" data-remove="${k.id}" aria-label="إزالة ${esc(k.name)} من هذا الجهاز" title="إزالة من هذا الجهاز">✕</button></div>`).join("")}</div>`;
+    if (rm) html += `<div class="confirmbox" role="alertdialog" aria-label="تأكيد الإزالة">
+      <b>إزالة «${esc(rm.name)}» من هذا الجهاز؟</b>
+      <p>يبقى تقدّمه وشهاداته محفوظة عند المعلم، ويستطيع الدخول مرة أخرى باسم المستخدم <b dir="auto">${esc(rm.username)}</b>.</p>
+      ${unsent(rm.id) ? `<p class="formerr">⚠️ بعض تقدّمه لم يُرسل إلى المعلم بعد. ${navigator.onLine ? "انتظر لحظة ثم حاول." : "اتصل بالإنترنت أولاً حتى لا يضيع."}</p>` : ""}
+      <div class="confirmrow"><button class="go small danger" id="doremove" ${unsent(rm.id) ? "disabled" : ""}>نعم، أزله</button><button class="go small ghost" id="noremove">إلغاء</button></div></div>`;
+  }
+  const tab = screen.tab || (list.length ? "user" : "new");
+  html += `<div class="tabs" role="tablist">
+      <button role="tab" class="tab ${tab === "user" ? "on" : ""}" data-tab="user" aria-selected="${tab === "user"}">🔑 عندي اسم مستخدم</button>
+      <button role="tab" class="tab ${tab === "new" ? "on" : ""}" data-tab="new" aria-selected="${tab === "new"}">➕ طالب جديد</button>
+    </div>`;
+  if (tab === "user") {
+    html += `<form class="newkid" id="byuser" autocomplete="off">
+      <label for="suser">اسم المستخدم</label>
+      <input id="suser" maxlength="24" placeholder="مثال: يوسف2" autocapitalize="off" spellcheck="false" value="${esc(screen.prefill || "")}">
+      <label class="remember"><input type="checkbox" id="remember1"> احفظ اسمي على هذا الجهاز <small>(لجهازك الخاص فقط)</small></label>
+      <p class="formerr" id="usererr" hidden></p>
+      <button class="go" type="submit">دخول ⬅</button>
+      <p class="note">تجده في خريطة الطالب على جهازه الأول، أو عند المعلم.</p>
+    </form>`;
+  } else {
+    html += `<form class="newkid" id="newkid" autocomplete="off">
+      <label for="sname">اسم الطالب</label>
+      <input id="sname" maxlength="40" required placeholder="مثال: يوسف أحمد">
+      <label for="suname">اسم المستخدم <small>(يدخل به من أي جهاز)</small></label>
+      <input id="suname" maxlength="20" placeholder="يُؤخذ من الاسم الأول تلقائياً" autocapitalize="off" spellcheck="false">
+      <small class="note" style="text-align:start">إن كان مستعملاً من طالب آخر يُضاف إليه رقم، مثل «يوسف2».</small>
+      <label for="sgroup">الحلقة أو الصف <small>(اختياري)</small></label>
+      <div id="groupbox"></div>
+      <label class="remember"><input type="checkbox" id="remember2"> احفظ اسمي على هذا الجهاز <small>(لجهازك الخاص فقط)</small></label>
+      <p class="formerr" id="newerr" hidden></p>
+      <button class="go" type="submit">➕ ابدأ الرحلة</button>
+    </form>`;
+  }
+  html += `<p class="note">يكتب الاسمَ المعلمُ أو وليُّ الأمر. ${CFG.backendUrl ? "يصل تقدّم الطالب إلى سجل المعلم تلقائياً." : "التقدم محفوظ على هذا الجهاز فقط (لم يُربط سجل المعلم بعد)."}</p>
+    <button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم لاستعراض الدروس</button>` + credit();
+  $app.innerHTML = html;
+  $app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { screen.tab = b.dataset.tab; render(); });
+  document.getElementById("tlogin").onclick = () => go("tlogin");
+  $app.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => { screen.remove = b.dataset.remove; render(); flush().then(() => { if (screen.name === "login" && screen.remove) render(); }); });
+  const dr = document.getElementById("doremove"), nr = document.getElementById("noremove");
+  if (nr) nr.onclick = () => { screen.remove = null; render(); };
+  if (dr) dr.onclick = () => { const k = DB.students[screen.remove]; screen.remove = null; if (k) { if (P && P.id === k.id) P = null; removeLocal(k.id); toast("أُزيل من هذا الجهاز ✓"); } render(); };
+
+  if (tab === "new") {
+    refreshGroupField();
+    const nm = document.getElementById("sname"), un = document.getElementById("suname");
+    nm.oninput = () => { un.placeholder = cleanUsername(firstWord(nm.value)) || "يُؤخذ من الاسم الأول تلقائياً"; };
+    document.getElementById("newkid").onsubmit = async (e) => {
+      e.preventDefault();
+      const name = nm.value.trim().replace(/\s+/g, " ");
+      const group = (document.getElementById("sgroup").value || "").trim().replace(/\s+/g, " ");
+      if (!name) return;
+      const username = cleanUsername(un.value) || cleanUsername(firstWord(name)) || "طالب";
+      const err = document.getElementById("newerr");
+      const localTaken = Object.values(DB.students).some(x => normU(x.username) === normU(username));
+      const id = newCode();
+      const st = { id, name, group, username: localTaken ? username + "2" : username, l1: blankL1(), seen: Date.now(), pending: true,
+        teacher: (DB.groupTeachers || {})[group] || "", temp: !document.getElementById("remember2").checked };
+      DB.students[id] = st; DB.current = id; setSession(id); DB.lastGroup = group; P = st; TEACHER = null; save();
+      let res = null;
+      if (CFG.backendUrl && navigator.onLine) {
+        err.textContent = "⏳ جارٍ حجز اسم المستخدم..."; err.hidden = false;
+        try { res = await registerOnline(st); } catch (x) {}
+      }
+      go("home", { fresh: true, renamed: res && normU(res.got) !== normU(username) ? username : null });
+    };
+  } else {
+    const inp = document.getElementById("suser"), err = document.getElementById("usererr");
+    // من بطاقة الدخول (QR): الاسم مكتوب، والطالب يضغط «دخول» بعد أن يقرّر حفظ اسمه أو لا
+    if (screen.prefill) { setTimeout(() => { const b = document.querySelector("#byuser button[type=submit]"); if (b) b.focus(); }, 50); }
+    document.getElementById("byuser").onsubmit = async (e) => {
+      e.preventDefault();
+      const raw = inp.value.trim();
+      const showErr = (m) => { err.textContent = m; err.hidden = false; };
+      if (!raw) return showErr("اكتب اسم المستخدم.");
+      const code = raw.replace(/\s/g, "");
+      const local = Object.values(DB.students).find(x => normU(x.username) === normU(raw) || x.id === code);
+      const keep = document.getElementById("remember1").checked;
+      if (local) { if (keep) local.temp = false; P = local; DB.current = local.id; setSession(local.id); TEACHER = null; save(); return go("home"); }
+      if (!CFG.backendUrl) return showErr("الدخول باسم المستخدم يحتاج ربط الموقع بسجل المعلم.");
+      if (!navigator.onLine) return showErr("تحتاج اتصالاً بالإنترنت للدخول من جهاز جديد أول مرة.");
+      showErr("⏳ جارٍ البحث...");
+      try {
+        const j = await api(isCode(code) ? { action: "student", code } : { action: "student", u: raw });
+        if (!j.student) return showErr(j.error === "deleted" ? "هذا الطالب حُذف من السجل." : "لم نجد طالباً بهذا الاسم. تأكد من الكتابة (مع الرقم إن وُجد).");
+        const st = { id: String(j.student.sid), name: "", group: "", username: "", l1: blankL1(), seen: Date.now(), temp: !keep };
+        applyServer(st, j.student);
+        DB.students[st.id] = st; DB.current = st.id; setSession(st.id); P = st; TEACHER = null; save();
+        report("دخول من جهاز جديد");
+        go("home");
+      } catch (x) { showErr("تعذّر الاتصال بالسجل. حاول بعد قليل."); }
+    };
+  }
+}
+function refreshGroupField() {
+  const box = document.getElementById("groupbox"); if (!box) return;
+  const gs = DB.groups || [];
+  box.innerHTML = gs.length
+    ? `<select id="sgroup"><option value="">— بدون حلقة —</option>${gs.map(g => `<option ${g === DB.lastGroup ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>`
+    : `<input id="sgroup" maxlength="40" placeholder="مثال: حلقة الفجر" value="${esc(DB.lastGroup || "")}">`;
+}
+
+/* --- دخول المعلم (وضع الاستعراض) --- */
+async function sha(t) {
+  try { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+  catch (e) { return "x" + t.length; }
+}
+function TLogin() {
+  let html = bar("دخول المعلم", "login");
+  html += `<form class="newkid" id="tform" autocomplete="on">
+    <p style="margin:0">يفتح كل المراحل والألعاب والاختبارات للاستعراض، <b>ولا يُسجَّل أي نشاط</b>.</p>
+    <label for="tuser">اسم المستخدم</label><input id="tuser" autocomplete="username" dir="ltr" required>
+    <label for="tpass">كلمة المرور</label><input id="tpass" type="password" autocomplete="current-password" dir="ltr" required>
+    <p class="formerr" id="terr" hidden></p>
+    <button class="go" type="submit">دخول ⬅</button>
+  </form>`;
+  $app.innerHTML = html;
+  const err = document.getElementById("terr");
+  const showErr = (m) => { err.textContent = m; err.hidden = false; };
+  document.getElementById("tform").onsubmit = async (e) => {
+    e.preventDefault();
+    const user = document.getElementById("tuser").value.trim(), pass = document.getElementById("tpass").value;
+    const h = await sha(user + "\n" + pass);
+    const enter = (name) => {
+      TEACHER = { name }; DB.teacher = { user, name, h }; save();
+      try { sessionStorage.setItem("teacher-cred", JSON.stringify({ user, pass })); } catch (x) {}
+      P = { id: "teacher", name, group: "", l1: blankL1(), lx: {} };
+      go("home");
+    };
+    if (CFG.backendUrl && navigator.onLine) {
+      showErr("⏳ جارٍ التحقق...");
+      try {
+        const r = await fetch(CFG.backendUrl, { method: "POST", body: JSON.stringify({ action: "verify", user, pass }) });
+        const j = await r.json();
+        if (j.ok) return enter(j.me.name);
+        return showErr("اسم المستخدم أو كلمة المرور غير صحيحة.");
+      } catch (x) { /* لا اتصال: نجرب التحقق المحفوظ */ }
+    }
+    if (DB.teacher && DB.teacher.user === user && DB.teacher.h === h) return enter(DB.teacher.name);
+    showErr(CFG.backendUrl ? "تحتاج اتصالاً بالإنترنت لأول دخول للمعلم على هذا الجهاز." : "وضع المعلم يحتاج ربط الموقع بسجل المعلم.");
+  };
+}
+function exitTeacher() { TEACHER = null; P = DB.students[DB.current] || null; go(P ? "home" : "login"); }
+/* وضع المعلم يُغلق بعد 30 دقيقة دون استعمال */
+let lastAct = Date.now();
+["pointerdown", "keydown", "touchstart"].forEach(ev => addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
+setInterval(() => {
+  if (TEACHER && Date.now() - lastAct > 30 * 60000) {
+    try { sessionStorage.removeItem("teacher-cred"); } catch (e) {}
+    exitTeacher(); toast("خرج وضع المعلم تلقائياً بعد 30 دقيقة دون استعمال");
+  }
+}, 30000);
+/* دخول واحد للمعلم: إن كان قد دخل سجل الطلاب في هذه النافذة يفتح وضع المعلم مباشرة */
+async function autoTeacher() {
+  let c = null; try { c = JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) {}
+  if (!c || !c.user) return false;
+  const h = await sha(c.user + "\n" + c.pass);
+  const enter = (name) => { TEACHER = { name }; DB.teacher = { user: c.user, name, h }; save(); P = { id: "teacher", name, group: "", l1: blankL1(), lx: {} }; go("home"); return true; };
+  if (DB.teacher && DB.teacher.user === c.user && DB.teacher.h === h) return enter(DB.teacher.name);
+  if (!CFG.backendUrl || !navigator.onLine) return false;
+  try {
+    const r = await fetch(CFG.backendUrl, { method: "POST", body: JSON.stringify({ action: "verify", user: c.user, pass: c.pass }) });
+    const j = await r.json();
+    if (j.ok) return enter(j.me.name);
+  } catch (e) {}
+  return false;
+}
+const teacherBanner = () => TEACHER ? `<div class="tbanner"><span>👩‍🏫 وضع المعلم: ${esc(TEACHER.name)} · كل الخطوات مفتوحة ولا يُسجَّل شيء</span>
+  <span class="tb-actions">${CFG.backendUrl ? `<a href="teacher.html">📋 سجل الطلاب</a>` : ""}<button id="texit">خروج</button></span></div>` : "";
+
+const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span>
+  <a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
+const offlineNote = () => navigator.onLine ? "" : `<div class="offline">📴 أنت غير متصل بالإنترنت. الدروس تعمل كالمعتاد، ويُرسل التقدّم إلى المعلم عند عودة الاتصال.</div>`;
+window.addEventListener("offline", () => { if (["home", "login"].includes(screen.name)) render(); });
+window.addEventListener("online", () => { if (["home", "login"].includes(screen.name)) render(); });
+
+function esc(t) { return String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* --- الطريق المتعرّج: تُرسم المحطات يميناً ويساراً، ويصل بينها طريق منقّط --- */
+const TRAIL_X = [0.72, 0.28, 0.64, 0.24, 0.7, 0.34];
+const TRAIL_ROW = 124;
+// stops: [{ node, label, cls }]، cur: رقم المحطة الحالية (أو عدد المحطات إن انتهت كلها)
+function trailHTML(stops, cur) {
+  return `<div class="trail" data-cur="${cur}" style="height:${(stops.length - 1) * TRAIL_ROW + 96}px">
+    <svg class="trail-svg" aria-hidden="true"></svg>
+    ${stops.map((s, i) => {
+      const x = TRAIL_X[i % TRAIL_X.length];
+      return `<div class="tstop ${x < 0.5 ? "r" : ""} ${i === cur ? "cur" : ""} ${s.cls || ""}" style="--x:${x};top:${i * TRAIL_ROW}px">
+        ${s.deco ? `<span class="tdeco" aria-hidden="true">${s.deco}</span>` : ""}${i === cur ? `<span class="here">أنت هنا</span>` : ""}${s.node}${s.ok ? `<span class="badge-ok" aria-hidden="true">✓</span>` : ""}${s.label}</div>`;
+    }).join("")}</div>`;
+}
+function drawTrails() {
+  $app.querySelectorAll(".trail").forEach(tr => {
+    const W = tr.clientWidth, cur = +tr.dataset.cur;
+    const pts = [...tr.querySelectorAll(".tstop")].map((st, i) => [TRAIL_X[i % TRAIL_X.length] * W, i * TRAIL_ROW + 42]);
+    if (!W || pts.length < 2) return;
+    const seg = (a, b) => { let d = `M${pts[a][0]},${pts[a][1]}`; for (let i = a + 1; i <= b; i++) { const p = pts[i - 1], q = pts[i], m = (q[1] - p[1]) / 2; d += ` C${p[0]},${p[1] + m} ${q[0]},${q[1] - m} ${q[0]},${q[1]}`; } return d; };
+    const k = Math.min(cur, pts.length - 1), last = pts.length - 1;
+    let svg = `<path class="road" d="${seg(0, last)}"/>`;
+    if (k > 0) svg += `<path class="road done" d="${seg(0, k)}"/>`;
+    svg += `<path class="lane" d="${seg(0, last)}"/>`;
+    if (k > 0) svg += `<path class="lane done" d="${seg(0, k)}"/>`;
+    tr.querySelector(".trail-svg").innerHTML = svg;
+  });
+}
+let trailResize = 0;
+window.addEventListener("resize", () => { clearTimeout(trailResize); trailResize = setTimeout(drawTrails, 120); });
+
+function Home() {
+  let total = 0;
+  for (let n = 1; n <= AVAILABLE; n++) total += starsFor(LP(n).best);
+  let html = bar(`<img class="wordmark" src="icons/wordmark-light.svg" alt="رحلة الحروف">`, null,
+    `<span class="pill" aria-label="النجوم">⭐ ${total}</span>
+     <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>
+     <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
+  html += teacherBanner() + offlineNote() + hint("home");
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p></div>`;
+  if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
+    <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
+      screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
+      screen.fresh ? "اكتبه واحفظه: به يدخل الطالب من أي جهاز آخر." : "به تدخل من أي جهاز آخر."}</small>
+    ${P.temp ? `<small class="tempnote">🔒 لن يُحفظ اسمك على هذا الجهاز: عند الخروج (🚪) يُزال، ويبقى تقدّمك عند المعلم. <button class="linkbtn" id="keepme">احفظني على هذا الجهاز</button></small>` : ""}</div>`;
+  const certs = [];
+  for (let n = 1; n <= AVAILABLE; n++) if (lessonPassed(n) || TEACHER) certs.push(n);
+  if (certs.length) html += `<div class="certs">${certs.map(n => `<button class="certbtn" data-cert="${n - 1}">🏅 <span><b>شهادة الدرس ${ORDINALS[n - 1]}</b><small>${LESSONS[n - 1]}</small></span></button>`).join("")}</div>`;
+  let curL = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1));
+  if (curL < 0) curL = LESSONS.length;
+  html += trailHTML(LESSONS.map((name, i) => {
+    const n = i + 1, open = lessonOpen(n), done = lessonPassed(n);
+    const st = n <= AVAILABLE ? starsFor(LP(n).best) : 0;
+    const cls = done ? "done" : open ? "open" : "";
+    return { deco: "ابتثجحخدذرزسشصض"[i],
+      node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">🔒</span>`}</button>`,
+      label: `<button class="tlabel" data-lesson="${i}" tabindex="-1"><small>الدرس ${ORDINALS[i]}</small><b>${name}</b>
+        ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}</button>`
+    };
+  }), curL);
+  html += `<p class="note" id="ttsnote" ${usingTTS ? "" : "hidden"}>🔈 بعض التعليمات بصوت آلي مؤقت.</p>` + credit();
+  $app.innerHTML = html;
+}
+
+function Lesson() {
+  const n = CUR, D = LDEF[n], L = LP(n);
+  let html = bar("الدرس " + ORDINALS[n - 1] + ": " + LESSONS[n - 1], "home");
+  html += teacherBanner() + hint("lesson");
+  if (D.explain) html += `<details class="explain"><summary>🎧 استمع لشرح المعلم للدرس</summary><audio controls preload="none" src="${D.explain}"></audio></details>`;
+  const STEPS = stepsOf(n);
+  let cur = STEPS.findIndex((s, i) => stepOpen(i) && !stepDone(s));
+  if (cur < 0) cur = STEPS.every(s => stepDone(s)) ? STEPS.length : 0;
+  html += trailHTML(STEPS.map((s, idx) => {
+    const open = stepOpen(idx), done = stepDone(s);
+    const cls = done ? "done" : idx === cur ? "open" : "";
+    const dis = open ? "" : "disabled";
+    let face, title, more = "";
+    if (s.kind === "stage") {
+      const chips = D.stageChips(s.i);
+      face = `<span class="glyph">${chips.split(" ")[0]}</span>`;
+      title = `<small>المرحلة ${STAGE_NAMES[s.i]}</small><b>${D.stageSub ? D.stageSub(s.i) : "الحروف"}</b>`;
+      more = `<span class="ltrs">${chips}</span>`;
+    } else if (s.kind === "game") {
+      face = D.games[s.i][1];
+      title = `<small>لعبة</small><b>${D.games[s.i][0].replace("لعبة: ", "")}</b>`;
+    } else {
+      const st = starsFor(L.best);
+      face = "🏆";
+      title = `<small>نهاية الدرس</small><b>اختبار الدرس</b>`;
+      more = `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>`;
+    }
+    return { cls: s.kind === "test" ? "big" : "", ok: done,
+      node: `<button class="tnode ${cls}" data-step="${idx}" ${dis} aria-label="${stepName(s, n)}">${face}</button>`,
+      label: `<button class="tlabel" data-step="${idx}" ${dis} tabindex="-1">${title}${more}</button>` };
+  }), cur);
+  if (n === 1) html += "";
+  $app.innerHTML = html;
+}
+
+/* --- المرحلة: تعلّم الحروف ثم تمرين قصير --- */
+function Stage() {
+  if (CUR === 3) return Stage3();
+  if (CUR === 4) return Stage4();
+  const L2S = CUR === 2 ? L2_STAGES[screen.i] : null;
+  const letters = L2S ? [...L2S.letters].map(byChar) : STAGES[screen.i];
+  screen.idx = screen.idx || 0;
+  screen.seen = screen.seen || new Set([0]);
+  const L = letters[screen.idx];
+  const allSeen = screen.seen.size === letters.length || !!TEACHER;
+  let html = bar(`المرحلة ${["الأولى","الثانية","الثالثة","الرابعة"][screen.i]}`, "lesson",
+    `<span class="pill">${screen.seen.size} من ${letters.length}</span>`);
+  html += hint("learn");
+  if (L2S) html += `<div class="l2head ${L2S.kind}">${L2S.tag} · ${L2S.title}</div>`;
+  html += `<div class="learn">
+    <div class="card-letter pulse ${L2S ? "k-" + L2S.kind : ""}" id="card"><span class="name">${L.name}</span><span class="glyph ${L2S && L2S.kind === "heavy" ? "heavy" : ""}">${L.c}</span>
+      ${L2S ? `<span class="badge ${L2S.kind}">${L2S.tag}</span>` : ""}</div>
+    ${L2S && L2_NOTES[L.c] ? `<p class="l2note">${L2_NOTES[L.c]}</p>` : ""}
+    <div class="navrow">
+      <button class="arrow" id="prev" aria-label="السابق" ${screen.idx === 0 ? "disabled" : ""}>›</button>
+      <button class="speak" id="say" aria-label="استمع">🔊</button>
+      <button class="arrow" id="next" aria-label="التالي" ${screen.idx === letters.length - 1 ? "disabled" : ""}>‹</button>
+    </div>
+    <div class="strip">${letters.map((l, k) =>
+      `<button class="chip ${screen.seen.has(k) ? "seen" : ""} ${k === screen.idx ? "cur" : ""}" data-k="${k}">${l.c}</button>`).join("")}
+    </div>
+    ${allSeen ? `<button class="go gold" id="practice">🎯 هيا نتمرّن</button>` : ""}
+  </div>`;
+  $app.innerHTML = html;
+  // في واجهة عربية: السهم الأيسر = التالي
+  const moveTo = (k) => { screen.idx = k; screen.seen.add(k); render(); sayLetter(letters[k]); };
+  document.getElementById("say").onclick = () => { sayLetter(L); const c = document.getElementById("card"); c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); };
+  document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
+  document.getElementById("prev").onclick = () => moveTo(screen.idx - 1);
+  $app.querySelectorAll(".chip").forEach(b => b.onclick = () => moveTo(+b.dataset.k));
+  const pr = document.getElementById("practice");
+  if (pr) pr.onclick = () => startQuiz({
+    title: "تمرين المرحلة", mode: "practice", back: "lesson", stage: screen.i,
+    questions: L2S ? l2Practice(L2S) : pick(letters, 5).map(t => qListen(t, shuffle([t, ...distractors(t, 2, letters)])))
+  });
+}
+
+/* --- الدرس الثالث: صفوف الكلمات، والضغط على الكلمة يتهجّاها --- */
+function Stage3() {
+  const rows = L3_PAGES[screen.i];
+  screen.idx = screen.idx || 0;
+  screen.seen = screen.seen || new Set([0]);
+  const R = rows[screen.idx];
+  const allSeen = screen.seen.size === rows.length || !!TEACHER;
+  const head = R.t === "لا" ? "لا" : R.t;
+  let html = bar(`المرحلة ${STAGE_NAMES[screen.i]}`, "lesson", `<span class="pill">${screen.seen.size} من ${rows.length}</span>`);
+  html += hint("l3learn");
+  html += `<div class="learn">
+    <div class="l3row">
+      <button class="l3head ${isHeavy(R.t) ? "heavy" : ""}" id="sayhead" aria-label="استمع لاسم الحرف">${head}<small>🔊</small></button>
+      <div class="l3words">${R.words.map((w, k) => `<button class="l3word" data-w="${k}">${hlWord(w, R.t)}</button>`).join("")}</div>
+    </div>
+    <p class="spell" id="spell">اضغط على كلمة لتسمع حروفها</p>
+    <div class="navrow">
+      <button class="arrow" id="prev" aria-label="السابق" ${screen.idx === 0 ? "disabled" : ""}>›</button>
+      <span class="muted">صفّ ${screen.idx + 1} من ${rows.length}</span>
+      <button class="arrow" id="next" aria-label="التالي" ${screen.idx === rows.length - 1 ? "disabled" : ""}>‹</button>
+    </div>
+    <div class="strip">${rows.map((r, k) =>
+      `<button class="chip ${screen.seen.has(k) ? "seen" : ""} ${k === screen.idx ? "cur" : ""}" data-k="${k}">${r.t}</button>`).join("")}
+    </div>
+    ${allSeen ? `<button class="go gold" id="practice">🎯 هيا نتمرّن</button>` : ""}
+  </div>`;
+  $app.innerHTML = html;
+  const moveTo = (k) => { spellToken++; stopAudio(); screen.idx = k; screen.seen.add(k); render(); };
+  const sayHead = () => R.t === "لا" ? spellWord("لا") : sayLetter(byChar(R.t));
+  document.getElementById("sayhead").onclick = sayHead;
+  document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
+  document.getElementById("prev").onclick = () => moveTo(screen.idx - 1);
+  $app.querySelectorAll(".chip").forEach(b => b.onclick = () => moveTo(+b.dataset.k));
+  const sp = document.getElementById("spell");
+  $app.querySelectorAll(".l3word").forEach(b => b.onclick = () => {
+    const w = R.words[+b.dataset.w];
+    $app.querySelectorAll(".l3word").forEach(x => x.classList.toggle("on", x === b));
+    sayL3Word(R, w, (i, ls) => {
+      if (screen.name !== "stage") return;
+      sp.innerHTML = `<b>${hlWord(w, R.t)}:</b> ` + ls.map((l, k) => `<span class="${k === i ? "now" : ""}">${l.name}</span>`).join(" ");
+    });
+  });
+  const pr = document.getElementById("practice");
+  if (pr) pr.onclick = () => startQuiz({ title: "تمرين المرحلة", mode: "practice", back: "lesson", stage: screen.i,
+    questions: pick(rows.filter(r => r.t !== "لا"), 5).map(r => qShape(r)) });
+  setTimeout(sayHead, 150);
+}
+
+/* --- محرك الأسئلة: كل سؤال = ما يُعرض + ما يُسمع + خيارات + الإجابة --- */
+const opt = (k, html, cls) => ({ k, html: html == null ? k : html, cls: cls || "" });
+const qListen = (t, options) => ({ hint: "listen", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => sayLetter(t),
+  opts: options.map(o => opt(o.c)), ans: t.c });
+const qSame = (t, options) => ({ hint: "same", ask: `<div class="target">${t.c}</div>`, speak: () => sayPrompt("same"),
+  opts: options.map(o => opt(o.c)), ans: t.c });
+// الدرس الثاني
+const CLASS_OPTS = [opt("heavy", `🐘<small>مفخّم</small>`, "cls"), opt("light", `🐦<small>مرقّق</small>`, "cls")];
+const qClass = (t) => ({ hint: "class", ask: `<div class="target">${t.c}</div>`, speak: () => sayLetter(t),
+  opts: CLASS_OPTS, ans: isHeavy(t.c) ? "heavy" : "light", cols: 2 });
+function qPick(kind) {
+  // kind: heavy = اختر المفخّم بين مرقّقات، light = العكس، var = اختر الحرف المتغيّر
+  let ans, others;
+  if (kind === "heavy") { ans = byChar(pick([...HEAVY], 1)[0]); others = shuffle([...LIGHT_TWIN[ans.c]].map(byChar)).concat(pick([..."بتثجدذزسشعفكمنهو"].map(byChar), 3)).filter((x, i, a) => a.indexOf(x) === i && x !== ans).slice(0, 3); }
+  else if (kind === "light") { ans = byChar(pick([..."بتثجحدذزسشعفكمنهو"], 1)[0]); others = pick([...HEAVY].map(byChar), 3); }
+  else { ans = byChar(pick([..."ارل"], 1)[0]); others = pick([...HEAVY, ..."بتسم"].map(byChar), 3); }
+  const label = { heavy: "🐘 اختر الحرف المفخّم", light: "🐦 اختر الحرف المرقّق", var: "🔄 اختر الحرف الذي يتغيّر" }[kind];
+  const say = { heavy: "اِخْتَرِ الْحَرْفَ الْمُفَخَّم", light: "اِخْتَرِ الْحَرْفَ الْمُرَقَّق", var: "اِخْتَرِ الْحَرْفَ الَّذِي يَتَغَيَّر" }[kind];
+  return { hint: "pick", ask: `<div class="asktext">${label}</div>`, speak: () => play(null, say),
+    opts: shuffle([ans, ...others]).map(o => opt(o.c)), ans: ans.c };
+}
+function l2Practice(S) {
+  if (S.kind === "var") return [0, 1, 2, 3, 4].map(() => qPick("var"));
+  const pool = [...S.letters].map(byChar);
+  const mix = S.kind === "heavy" ? [..."بتسدكه"].map(byChar) : [...HEAVY].map(byChar);
+  return shuffle([...pick(pool, 3), ...pick(mix, 2)]).map(qClass);
+}
+// الدرس الثالث
+const L3_ROWS = L3_PAGES.flat().filter(r => r.t !== "لا");
+function qShape(r) {
+  const w = pick(r.words, 1)[0], t = byChar(r.t);
+  return { hint: "shape", ask: `<div class="word-target">${hlWord(w, r.t)}</div>`, speak: () => sayL3Word(r, w),
+    opts: shuffle([t, ...distractors(t, 4).filter(o => !(r.t === "ء" && o.c === "ا")).slice(0, 3)]).map(o => opt(o.c)), ans: t.c };
+}
+function qWordHas(r) {
+  const w = pick(r.words, 1)[0];
+  const others = pick(L3_ROWS.filter(x => x.t !== r.t).flatMap(x => x.words).filter(x => !hasLetter(x, r.t) && x.length <= 5), 2);
+  return { hint: "wordhas", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => sayLetter(byChar(r.t)),
+    opts: shuffle([w, ...others]).map(x => opt(x, x, "word")), ans: w, cols: 3 };
+}
+
+/* --- الدرس الرابع: شبكة المقاطع + كلمات التدريب --- */
+function Stage4() {
+  const H = HARAKAT[screen.i], words = L4_WORDS[screen.i];
+  screen.tab = screen.tab || "ltr";
+  screen.seenL = screen.seenL || new Set();
+  screen.seenW = screen.seenW || new Set();
+  const needW = Math.min(5, words.length);
+  const ready = !!TEACHER || (screen.seenL.size === L4_LETTERS.length && screen.seenW.size >= needW);
+  let html = bar(`المرحلة ${STAGE_NAMES[screen.i]}: ${H.title}`, "lesson",
+    `<span class="pill">${screen.tab === "ltr" ? screen.seenL.size + " من " + L4_LETTERS.length : screen.seenW.size + " من " + words.length}</span>`);
+  html += hint(screen.tab === "ltr" ? "l4learn" : "l4words");
+  html += `<div class="learn">
+    <div class="l4head"><span class="l4mark">ـ${H.m}ـ</span><p>${H.note}</p></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" class="tab ${screen.tab === "ltr" ? "on" : ""}" data-tab="ltr" aria-selected="${screen.tab === "ltr"}">١ الحروف${screen.seenL.size === L4_LETTERS.length ? " ✓" : ""}</button>
+      <button role="tab" class="tab ${screen.tab === "words" ? "on" : ""}" data-tab="words" aria-selected="${screen.tab === "words"}">٢ الكلمات${screen.seenW.size >= needW ? " ✓" : ""}</button>
+    </div>`;
+  if (screen.tab === "ltr") {
+    html += `<button class="go" id="playall">${screen.playing ? "⏹️ إيقاف" : "▶️ اسمعها كلها"}</button>
+      <p class="spell" id="spell">اضغط على المقطع لتسمعه: «با ${H.name} ${sylOf(LETTERS[1], H)}»</p>
+      <div class="sylgrid">${L4_LETTERS.map((l, k) =>
+        `<button class="syl ${isHeavy(l.c) ? "heavy" : ""} ${screen.seenL.has(k) ? "seen" : ""}" data-k="${k}" aria-label="${l.name} ${H.name}">${l === TAM ? "ـ" : ""}${sylOf(l, H)}</button>`).join("")}</div>
+      <p class="muted l4legend"><span class="hv">●</span> الحروف المفخّمة بالأحمر</p>`;
+  } else {
+    html += `<p class="spell" id="spell">اضغط على كلمة لتسمع تهجئتها</p>
+      <div class="l4words">${words.map((w, k) =>
+        `<button class="l3word ${screen.seenW.has(k) ? "seen" : ""}" data-w="${k}">${unitsHtml(unitsOf(w), -1, true)}</button>`).join("")}</div>`;
+  }
+  html += ready ? `<button class="go gold" id="practice">🎯 هيا نتمرّن</button>`
+    : `<p class="muted">${screen.seenL.size < L4_LETTERS.length ? "استمع إلى كل الحروف" : "استمع إلى " + needW + " كلمات على الأقل"} ثم تظهر لك «هيا نتمرّن»</p>`;
+  html += `</div>`;
+  $app.innerHTML = html;
+
+  const sp = document.getElementById("spell");
+  const stopAll = () => { spellToken++; stopAudio(); screen.playing = false; };
+  $app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { stopAll(); screen.tab = b.dataset.tab; render(); });
+  const mark = (k) => {
+    screen.seenL.add(k);
+    $app.querySelectorAll(".syl").forEach(x => x.classList.toggle("now", +x.dataset.k === k));
+    const b = $app.querySelector(`.syl[data-k="${k}"]`); if (b) { b.classList.add("seen"); b.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    const L = L4_LETTERS[k], pill = $app.querySelector(".bar .pill");
+    if (pill) pill.textContent = screen.seenL.size + " من " + L4_LETTERS.length;
+    sp.innerHTML = `<b>${sylOf(L, H)}</b> ${L.name} ${H.name} ${sylOf(L, H)}`;
+  };
+  $app.querySelectorAll(".syl").forEach(b => b.onclick = () => {
+    stopAll(); const k = +b.dataset.k; mark(k);
+    const tok = spellToken;
+    sayFull(L4_LETTERS[k], H).then(() => { if (tok === spellToken && screen.name === "stage" && screen.seenL.size === L4_LETTERS.length && !$app.querySelector("#practice") && !TEACHER) render(); });
+  });
+  const pa = document.getElementById("playall");
+  if (pa) pa.onclick = async () => {
+    if (screen.playing) { stopAll(); return render(); }
+    stopAll(); screen.playing = true; pa.textContent = "⏹️ إيقاف";
+    const tok = spellToken;
+    for (let k = 0; k < L4_LETTERS.length; k++) {
+      if (tok !== spellToken || screen.name !== "stage") return;
+      mark(k);
+      await sayFull(L4_LETTERS[k], H);
+      await new Promise(r => setTimeout(r, 250));
+    }
+    if (tok === spellToken && screen.name === "stage") { screen.playing = false; render(); }
+  };
+  $app.querySelectorAll(".l4words .l3word").forEach(b => b.onclick = () => {
+    const k = +b.dataset.w, w = words[k];
+    $app.querySelectorAll(".l4words .l3word").forEach(x => x.classList.toggle("on", x === b));
+    const before = screen.seenW.size;
+    spellH(w, `audio/l4/${H.k}/w${k + 1}.mp3`, (i, us) => {
+      if (screen.name !== "stage") return;
+      b.innerHTML = unitsHtml(us, i, true);
+      sp.innerHTML = i === -2 ? "🔊 ..." : i === -1 ? `<b>${w}</b> ✓` :
+        `<b>${unitsHtml(us.slice(0, i + 1), i, false)}</b> ${us[i].L ? us[i].L.name : ""} ${us[i].H ? us[i].H.name : ""}`;
+      if (i === -1) {
+        screen.seenW.add(k); b.classList.add("seen");
+        const pill = $app.querySelector(".bar .pill"); if (pill) pill.textContent = screen.seenW.size + " من " + words.length;
+        if (before < needW && screen.seenW.size >= needW) render();
+      }
+    });
+  });
+  const pr = document.getElementById("practice");
+  if (pr) pr.onclick = () => { stopAll(); startQuiz({ title: "تمرين " + H.title, mode: "practice", back: "lesson", stage: screen.i, questions: l4Practice(screen.i) }); };
+}
+
+/* أسئلة الدرس الرابع */
+const randL4 = () => pick(L4_LETTERS.slice(0, 28), 1)[0];
+// اسمع المقطع، واختر الحرف الصحيح بالحركة نفسها
+function qSylListen(L, H) {
+  const ds = distractors(L.c === "ء" ? LETTERS[28] : L, 2, LETTERS.slice(1)).filter(x => x.c !== "ا").slice(0, 2);
+  return { hint: "l4listen", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => saySyl(L, H),
+    opts: shuffle([L, ...ds]).map(o => opt(sylOf(o, H))), ans: sylOf(L, H), cols: 3 };
+}
+// اسمع المقطع، واختر حركته: بَ بِ بُ
+function qHListen(L, H, hs) {
+  hs = hs || HARAKAT;
+  return { hint: "l4haraka", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => saySyl(L, H),
+    opts: hs.map(h => opt(sylOf(L, h))), ans: sylOf(L, H), cols: hs.length === 3 ? 3 : 2 };
+}
+// ما اسم الحركة؟
+const HNAME_OPTS = HARAKAT.map(h => opt(h.k, `<span class="hm">ـ${h.m}ـ</span><small>${h.name}</small>`, "cls hname"));
+const qHName = (L, H) => ({ hint: "l4name", ask: `<div class="target">${sylOf(L, H)}</div>`, speak: () => play("audio/prompts/haraka.mp3", "مَا اسْمُ هَذِهِ الْحَرَكَة؟"),
+  opts: HNAME_OPTS, ans: H.k, cols: 3 });
+// المقطع الملوّن داخل الكلمة: ما هو؟
+function qHInWord(maxStage) {
+  const w = pick(L4_WORDS.slice(0, maxStage + 1).flat(), 1)[0];
+  const us = unitsOf(w), k = pick(us.map((u, i) => i).filter(i => us[i].L && us[i].H), 1)[0], u = us[k];
+  return { hint: "l4word", ask: `<div class="word-target">${unitsHtml(us, k, false).replace('class="now"', 'class="hl"')}</div>`,
+    speak: () => play("audio/prompts/colored.mp3", "مَا الْمَقْطَعُ الْمُلَوَّن؟"),
+    opts: HARAKAT.map(h => opt(sylOf(u.L, h))), ans: sylOf(u.L, u.H), cols: 3 };
+}
+function l4Practice(i) {
+  const H = HARAKAT[i];
+  if (i === 0) return pick(L4_LETTERS.slice(0, 28), 5).map(L => qSylListen(L, H));
+  const hs = HARAKAT.slice(0, i + 1);
+  return shuffle([...pick(L4_LETTERS.slice(0, 28), 3).map(L => qSylListen(L, H)), qHListen(randL4(), H, hs), qHName(randL4(), H)]);
+}
+
+function startQuiz(cfg) { cfg.lesson = cfg.lesson || CUR; go("quiz", { cfg, q: 0, score: 0, firstTry: true }); }
+function Quiz() {
+  const { cfg } = screen;
+  const Q = cfg.questions[screen.q];
+  const pct = Math.round(screen.q / cfg.questions.length * 100);
+  let html = bar(cfg.title, cfg.back, `<span class="pill">${screen.q + 1} من ${cfg.questions.length}</span>`);
+  html += `<div class="progress"><i style="width:${pct}%"></i></div>`;
+  html += hint(cfg.mode === "test" ? "test" : Q.hint);
+  html += `<div class="ask">${Q.ask}<button class="speak ${Q.ask.includes("👂") ? "" : "small"}" id="rep" aria-label="أعد الصوت">🔊</button></div>`;
+  const cols = Q.cols || (Q.opts.length === 3 ? 3 : 2);
+  html += `<div class="opts ${cols === 3 ? "three" : ""}" id="opts">${Q.opts.map((o, i) =>
+    `<button class="opt ${o.cls}" data-i="${i}">${o.html}</button>`).join("")}</div>`;
+  $app.innerHTML = html;
+
+  const ask = () => Q.speak();
+  document.getElementById("rep").onclick = ask;
+  ask();
+  const optsEl = document.getElementById("opts");
+  optsEl.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    const ok = Q.opts[+b.dataset.i].k === Q.ans;
+    if (ok) {
+      if (screen.firstTry) screen.score++;
+      b.classList.add("right"); optsEl.classList.add("lock"); sfx("ok");
+      setTimeout(nextQ, 800);
+    } else {
+      b.classList.add("wrong"); sfx("bad");
+      screen.firstTry = false;
+      if (cfg.mode === "test") {
+        optsEl.classList.add("lock");
+        optsEl.querySelector(`[data-i="${Q.opts.findIndex(o => o.k === Q.ans)}"]`).classList.add("reveal");
+        setTimeout(nextQ, 1300);
+      } else {
+        setTimeout(() => { b.classList.remove("wrong"); ask(); }, 600);
+      }
+    }
+  });
+  function nextQ() {
+    spellToken++;
+    if (screen.q + 1 < cfg.questions.length) { screen.q++; screen.firstTry = true; stopAudio(); render(); }
+    else finish(cfg, screen.score, cfg.questions.length);
+  }
+}
+
+function finish(cfg, score, total) {
+  const n = cfg.lesson || CUR, L = LP(n);
+  if (cfg.mode === "practice") { L.stages[cfg.stage] = true; }
+  if (cfg.mode === "game") { L.games[cfg.game] = true; }
+  if (cfg.mode === "test") {
+    L.best = Math.max(L.best, score); L.tries = (L.tries || 0) + 1;
+    if (score >= 8 && !L.passedAt) L.passedAt = Date.now();
+  }
+  save();
+  const label = "الدرس " + ORDINALS[n - 1] + " — " + (cfg.mode === "practice" ? stepName({ kind: "stage", i: cfg.stage }, n)
+    : cfg.mode === "game" ? stepName({ kind: "game", i: cfg.game }, n) : "الاختبار");
+  report(label, score, total);
+  go("result", { cfg, score, total });
+}
+
+/* --- لعبة البالونات --- */
+function startBalloons() {
+  const rounds = pick(LETTERS, 6);
+  go("balloons", { rounds, r: 0, hits: 0 });
+}
+function Balloons() {
+  const T = screen.rounds[screen.r];
+  const others = distractors(T, 4);
+  const items = shuffle([T, T, ...others]);
+  const colors = ["#d9485f","#2a5fd0","#17804f","#f08a24","#8e44ad","#d6336c"];
+  let html = bar("لعبة البالونات", "lesson", `<span class="pill">${screen.r + 1} من ${screen.rounds.length}</span>`);
+  html += hint("pop");
+  html += `<div class="ask" style="min-height:90px"><button class="speak" id="rep" aria-label="أعد الصوت">🔊</button>
+    <span class="pill" id="need">🎈 × 2</span></div>`;
+  html += `<div class="sky" id="sky">${items.map((l, k) => {
+    const left = 4 + (k % 6) * 15.5;
+    const dur = 7 + (k % 3) * 1.3;
+    const delay = -(k * 1.25);
+    return `<button class="balloon" data-c="${l.c}" style="left:${left}%;background:${colors[k % colors.length]};animation-duration:${dur}s;animation-delay:${delay}s">${l.c}</button>`;
+  }).join("")}</div>`;
+  $app.innerHTML = html;
+  let left = 2;
+  const ask = () => sayLetter(T);
+  document.getElementById("rep").onclick = ask;
+  ask();
+  const sky = document.getElementById("sky");
+  sky.querySelectorAll(".balloon").forEach(b => b.onclick = (ev) => {
+    if (b.dataset.c === T.c) {
+      sfx("ok"); b.classList.add("popped");
+      const r = sky.getBoundingClientRect(), br = b.getBoundingClientRect();
+      const boom = document.createElement("span"); boom.className = "boom"; boom.textContent = "💥";
+      boom.style.left = (br.left - r.left + 20) + "px"; boom.style.top = (br.top - r.top + 20) + "px";
+      sky.appendChild(boom);
+      left--; document.getElementById("need").textContent = left ? "🎈 × " + left : "✓";
+      if (!left) setTimeout(() => {
+        if (screen.r + 1 < screen.rounds.length) { screen.r++; render(); }
+        else finish({ mode: "game", game: 1, back: "lesson", title: "لعبة البالونات", lesson: 1 }, 6, 6);
+      }, 700);
+    } else {
+      sfx("bad"); b.classList.add("nope"); setTimeout(() => b.classList.remove("nope"), 500); ask();
+    }
+  });
+}
+
+/* --- الشهادة --- */
+function Cert() {
+  const i = screen.lesson || 0;
+  const best = LP(i + 1).best, total = 10;
+  let html = bar("شهادة الدرس " + ORDINALS[i], "home");
+  html += teacherBanner();
+  if (best < 8 && !TEACHER) { html += `<p class="note">تظهر الشهادة بعد النجاح في اختبار الدرس.</p>`; $app.innerHTML = html; return; }
+  html += `<div class="certwrap"><img id="certimg" alt="شهادة إتمام الدرس ${ORDINALS[i]} باسم ${esc(P.name)}"><p class="note" id="certwait">⏳ جارٍ تجهيز الشهادة...</p></div>
+    <div class="certactions">
+      <button class="go" id="dl">⬇️ تحميل الصورة</button>
+      <button class="go gold" id="pr">🖨️ طباعة</button>
+    </div>
+    <p class="note">على الآيفون: اضغط على الشهادة مطوّلاً ثم «حفظ الصورة».</p>`;
+  $app.innerHTML = html;
+  const teacher = P.teacher || (DB.groupTeachers || {})[P.group] || (TEACHER ? TEACHER.name : "");
+  Certificate.render({ name: P.name, sid: TEACHER ? "" : P.id, username: TEACHER ? "" : P.username, lessonIndex: i, lessonName: LESSONS[i],
+    score: TEACHER ? 10 : best, total, teacher, group: P.group, date: LP(i + 1).passedAt || Date.now() }).then(cv => {
+    if (screen.name !== "cert") return;
+    document.getElementById("certimg").src = cv.toDataURL("image/png");
+    document.getElementById("certwait").remove();
+    document.getElementById("dl").onclick = () => Certificate.download(cv, `certificate-lesson-${i + 1}-${P.id}.png`);
+    document.getElementById("pr").onclick = () => Certificate.print(cv);
+  });
+}
+
+/* --- النتيجة --- */
+function Result() {
+  const { cfg, score, total } = screen;
+  let stars, title, msg, pass = true;
+  if (cfg.mode === "test") {
+    stars = starsFor(score); pass = score >= 8;
+    title = pass ? "أحسنت! نجحت 🎉" : "قاربت! حاول مرة أخرى";
+    msg = pass ? "فُتح لك الدرس التالي." : "تحتاج 8 إجابات صحيحة من 10. راجع المراحل ثم أعد الاختبار.";
+  } else {
+    stars = score >= total ? 3 : score >= total * 0.6 ? 2 : 1;
+    title = "أحسنت!"; msg = cfg.mode === "practice" ? "أنهيت هذه المرحلة." : "أنهيت اللعبة.";
+  }
+  let html = `<div class="result">
+    <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}">⭐</span>`).join("")}</div>
+    <h2>${title}</h2>
+    ${cfg.mode !== "game" || cfg.game === 0 ? `<div class="score">${score} من ${total}</div>` : ""}
+    <p>${msg}</p>
+    <button class="go" data-go="lesson">متابعة ⬅</button>
+    ${cfg.mode === "test" && !pass ? `<button class="go gold" id="retry">🔁 أعد الاختبار</button>` : ""}
+    ${cfg.mode === "test" && pass ? `<button class="go gold" data-cert="${(cfg.lesson || CUR) - 1}">🏅 استلم شهادتك</button>` : ""}
+  </div>`;
+  $app.innerHTML = html;
+  if (pass) { sfx("win"); confetti(); setTimeout(() => sayPrompt("great"), 500); }
+  else { setTimeout(() => sayPrompt("again"), 300); }
+  const rt = document.getElementById("retry"); if (rt) rt.onclick = () => startLessonTest(cfg.lesson || CUR);
+}
+
+function startListenGame() {
+  startQuiz({ title: "لعبة: اسمع واختر", mode: "game", game: 0, back: "lesson", lesson: 1,
+    questions: pick(LETTERS, 10).map(t => qListen(t, shuffle([t, ...distractors(t, 3)]))) });
+}
+function startGame(n, g) {
+  if (n === 1) return g === 0 ? startListenGame() : startBalloons();
+  const title = LDEF[n].games[g][0];
+  let questions;
+  if (n === 2) questions = g === 0
+    ? shuffle([...pick([...HEAVY], 5), ...pick([..."ءبتثجحدذزسشعفكمنهوي"], 7)]).map(c => qClass(byChar(c)))
+    : [0, 1, 2, 3, 4, 5, 6, 7].map(() => qPick("heavy"));
+  else if (n === 4) questions = g === 0
+    ? Array.from({ length: 10 }, () => qHListen(randL4(), pick(HARAKAT, 1)[0]))
+    : Array.from({ length: 10 }, () => qHName(randL4(), pick(HARAKAT, 1)[0]));
+  else questions = g === 0 ? pick(L3_ROWS, 10).map(qShape) : pick(L3_ROWS, 8).map(qWordHas);
+  startQuiz({ title, mode: "game", game: g, back: "lesson", lesson: n, questions });
+}
+function startLessonTest(n) {
+  let questions;
+  if (n === 1) questions = pick(LETTERS, 10).map((t, k) => (k % 5 === 4 || k % 5 === 1 ? qSame : qListen)(t, shuffle([t, ...distractors(t, 3)])));
+  else if (n === 2) questions = shuffle([...shuffle([...pick([...HEAVY], 3), ...pick([..."ءبتثجحدذزسشعفكمنهوي"], 3)]).map(c => qClass(byChar(c))),
+    qPick("heavy"), qPick("heavy"), qPick("light"), qPick("var")]);
+  else if (n === 4) questions = shuffle([
+    ...Array.from({ length: 4 }, () => qHListen(randL4(), pick(HARAKAT, 1)[0])),
+    ...Array.from({ length: 3 }, () => qHName(randL4(), pick(HARAKAT, 1)[0])),
+    ...Array.from({ length: 3 }, () => qHInWord(2))]);
+  else questions = shuffle([...pick(L3_ROWS, 6).map(qShape), ...pick(L3_ROWS, 4).map(qWordHas)]);
+  startQuiz({ title: "اختبار الدرس " + ORDINALS[n - 1], mode: "test", back: "lesson", lesson: n, questions });
+}
+
+/* ---------- global clicks ---------- */
+$app.addEventListener("click", (e) => {
+  const g = e.target.closest("[data-go]"); if (g) return go(g.dataset.go);
+  if (e.target.closest("#texit")) return exitTeacher();
+  const cb = e.target.closest("[data-cert]"); if (cb) return go("cert", { lesson: +cb.dataset.cert });
+  const kid = e.target.closest("[data-student]");
+  if (kid) {
+    TEACHER = null; P = DB.students[kid.dataset.student]; DB.current = P.id; setSession(P.id); P.seen = Date.now(); save();
+    report("دخول"); syncUp(); return go("home");
+  }
+  const ls = e.target.closest("[data-lesson]");
+  if (ls) {
+    const n = +ls.dataset.lesson + 1;
+    if (!lessonOpen(n)) return toast("🔒 أنهِ الدرس السابق أولاً");
+    if (n > AVAILABLE) return toast("الدرس " + ORDINALS[n - 1] + " قيد الإعداد ✨");
+    CUR = n; return go("lesson");
+  }
+  const st = e.target.closest("[data-step]");
+  if (st && !st.disabled) {
+    const s = stepsOf(CUR)[+st.dataset.step];
+    if (s.kind === "stage") {
+      go("stage", { i: s.i });
+      if (CUR === 1) setTimeout(() => sayLetter(STAGES[s.i][0]), 150);
+      if (CUR === 2) setTimeout(() => sayLetter(byChar(L2_STAGES[s.i].letters[0])), 150);
+    }
+    else if (s.kind === "game") startGame(CUR, s.i);
+    else startLessonTest(CUR);
+  }
+  if (e.target.closest("#signout")) return signOut();
+  if (e.target.closest("#keepme")) { P.temp = false; save(); toast("حُفظ اسمك على هذا الجهاز ✓"); return render(); }
+  if (e.target.closest("#lang")) {
+    DB.lang = LANGS[(LANGS.indexOf(DB.lang) + 1) % LANGS.length]; save(); render();
+    toast(DB.lang === "ar" ? "الإرشادات: العربية" : "Parent hints: English");
+  }
+});
+
+// طالب مؤقت من جلسة سابقة (أُغلق التطبيق دون «احفظني»): لا يُفتح، ويُزال بعد إرسال تقدّمه
+if (P && P.temp && P.id !== sessionId()) { P = null; DB.current = null; screen = { name: "login" }; }
+if (P) { P.seen = Date.now(); save(); }
+if (location.hash === "#teacher") screen = { name: "tlogin" };
+// رابط بطاقة الدخول: index.html#u=اسم_المستخدم
+if (/^#u=/.test(location.hash)) {
+  const u = decodeURIComponent(location.hash.slice(3));
+  history.replaceState(null, "", location.pathname);
+  const local = Object.values(DB.students).find(x => normU(x.username) === normU(u));
+  if (local && !local.temp) { TEACHER = null; P = local; DB.current = local.id; setSession(local.id); save(); screen = { name: "home" }; }
+  else { P = null; screen = { name: "login", tab: "user", prefill: u }; }
+}
+render();
+if (location.hash === "#teacher") autoTeacher();
+flush().then(() => { purgeTemp(); if (screen.name === "login") render(); if (P && !P.pending && ["home"].includes(screen.name)) render(); }); syncDown(); loadGroups();
+window.addEventListener("online", () => { syncDown(); loadGroups(); });
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+})();
+</script>
+</body>
+</html>

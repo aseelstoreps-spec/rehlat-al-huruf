@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>رحلة الحروف · Letters Journey</title>
+<meta name="description" content="رحلة الحروف: موقع لتعليم الأطفال قراءة القرآن الكريم خطوة بخطوة، من الحروف إلى أحكام التلاوة. Letters Journey: teaching children to read the Quran step by step.">
+<meta name="theme-color" content="#23266b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="icons/rehla-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/rehla-touch.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+/* Layout: one column page — hero, then sections (audience, path, how it works, features, install, credit) */
+:root {
+  --bg: #f7f7fc; --card: #ffffff; --ink: #1b1d45; --soft: #565a86; --line: #dcddf0;
+  --green: #23266b; --green-dark: #15174a; --gold: #ffd23f; --gold-soft: #fff6d1; --blue: #2a5fd0;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-letter: "Noto Naskh Arabic", "Amiri", serif;
+  --f-title: "Lalezar", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 17px; line-height: 1.7; }
+a { color: var(--green); }
+.wrap { max-width: 880px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink); }
+.brand img { width: 40px; height: 40px; border-radius: 10px; }
+.lang { display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.lang button { font: inherit; font-weight: 800; border: 0; background: none; padding: 4px 14px; border-radius: 999px; cursor: pointer; color: var(--soft); }
+.lang button[aria-pressed="true"] { background: var(--green); color: #fff; }
+.hero { background: var(--green); color: #fff; border-radius: 28px; padding: 32px 28px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; overflow: hidden; }
+.hero h1 { margin: 0 0 6px; font-family: var(--f-title); font-weight: 400; font-size: clamp(2.2rem, 6.5vw, 3.3rem); line-height: 1.15; text-wrap: balance; }
+.hero p { margin: 0 0 18px; font-size: 1.1rem; opacity: .95; max-width: 46ch; }
+.hero .letters { font-family: var(--f-letter); font-size: clamp(3.5rem, 12vw, 6rem); color: var(--gold); line-height: 1; white-space: nowrap; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-weight: 800; text-decoration: none; font-size: 1.05rem; }
+.btn.gold { background: var(--gold); color: #1b1d45; box-shadow: 0 5px 0 #d9a800; }
+.btn.ghost { background: #ffffff22; color: #fff; border: 2px solid #ffffff66; }
+section { padding-block: 26px 6px; }
+h2 { font-size: 1.5rem; margin: 0 0 14px; text-wrap: balance; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; min-width: 0; }
+.card .ico { font-size: 2rem; line-height: 1; }
+.card h3 { margin: 8px 0 4px; font-size: 1.1rem; }
+.card p { margin: 0; color: var(--soft); font-size: .98rem; }
+.path { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; counter-reset: l; }
+.path li { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; min-width: 0; }
+.path .n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #eceefa; color: var(--soft); display: grid; place-items: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.path li.now .n { background: var(--gold); color: #1b1d45; }
+.path b { display: block; font-size: .98rem; line-height: 1.35; }
+.path small { color: var(--soft); font-size: .8rem; }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.flow span { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-weight: 700; }
+.flow i { font-style: normal; color: var(--soft); }
+.steps { margin: 0; padding-inline-start: 1.2em; color: var(--soft); }
+.credit { margin-block: 30px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; text-align: center; }
+.credit b { font-size: 1.2rem; color: var(--green-dark); }
+.credit p { margin: 4px 0; color: var(--soft); }
+[lang="en"] { direction: ltr; text-align: left; }
+@media (max-width: 720px) {
+  .hero { grid-template-columns: 1fr; padding: 24px 20px; }
+  .hero .letters { order: -1; }
+  .grid, .path { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="index.html"><img src="icons/rehla-192.png" alt=""> <span data-ar>رحلة الحروف</span><span data-en>Letters Journey</span></a>
+    <div class="lang" role="group" aria-label="Language / اللغة">
+      <button type="button" data-set="ar" aria-pressed="true">العربية</button>
+      <button type="button" data-set="en" aria-pressed="false">English</button>
+    </div>
+  </div>
+
+  <!-- ===================== العربية ===================== -->
+  <main lang="ar" id="ar">
+    <div class="hero">
+      <div>
+        <h1>رحلة الحروف</h1>
+        <p>موقع يعلّم الأطفال قراءة القرآن الكريم خطوة بخطوة: من شكل الحرف ونطقه، إلى الحركات، ثم أحكام التلاوة. باللعب والصوت، بلا حاجة إلى معرفة القراءة مسبقاً.</p>
+        <div class="cta"><a class="btn gold" href="index.html">ابدأ التعلّم ⬅</a><a class="btn ghost" href="teacher.html">👩‍🏫 دخول المعلم</a></div>
+      </div>
+      <div class="letters" aria-hidden="true">أ ب ت</div>
+    </div>
+
+    <section>
+      <h2>لمن هذا الموقع؟</h2>
+      <div class="grid">
+        <div class="card"><div class="ico">🧒</div><h3>الأطفال الصغار</h3><p>الذين لا يعرفون القراءة ولا الكتابة بعد. كل شيء بالصوت والصورة والألوان.</p></div>
+        <div class="card"><div class="ico">🌍</div><h3>الأطفال غير العرب</h3><p>يتعلمون العربية من الصفر، مع إرشادات بالإنجليزية لأولياء الأمور.</p></div>
+        <div class="card"><div class="ico">👨‍👩‍👧</div><h3>الأهل والمعلمون</h3><p>يتابعون تقدّم كل طفل: أين وصل، وكم حصّل، ومتى تعلّم آخر مرة.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>مسار التعلّم: 15 درساً</h2>
+      <p style="margin-top:-6px;color:var(--soft)">بترتيب منهج «القاعدة الذهبية لتعليم تلاوة القرآن الكريم». يُفتح كل درس بعد النجاح في الذي قبله.</p>
+      <ol class="path">
+        <li class="now"><span class="n">1</span><span><b>حروف الهجاء المفردة</b><small>متاح الآن</small></span></li>
+        <li class="now"><span class="n">2</span><span><b>التفخيم والترقيق</b><small>متاح الآن</small></span></li>
+        <li class="now"><span class="n">3</span><span><b>حروف الهجاء المركبة</b><small>متاح الآن</small></span></li>
+        <li class="now"><span class="n">4</span><span><b>الحركات: الفتحة والكسرة والضمة</b><small>متاح الآن</small></span></li>
+        <li><span class="n">5</span><span><b>التنوين</b><small>قريباً</small></span></li>
+        <li><span class="n">6</span><span><b>السكون</b><small>قريباً</small></span></li>
+        <li><span class="n">7</span><span><b>الهمس</b><small>قريباً</small></span></li>
+        <li><span class="n">8</span><span><b>القلقلة</b><small>قريباً</small></span></li>
+        <li><span class="n">9</span><span><b>الشدة</b><small>قريباً</small></span></li>
+        <li><span class="n">10</span><span><b>النون والميم المشددتان</b><small>قريباً</small></span></li>
+        <li><span class="n">11</span><span><b>حروف المد واللين</b><small>قريباً</small></span></li>
+        <li><span class="n">12</span><span><b>أحكام النون الساكنة والتنوين</b><small>قريباً</small></span></li>
+        <li><span class="n">13</span><span><b>أحكام الميم الساكنة</b><small>قريباً</small></span></li>
+        <li><span class="n">14</span><span><b>تنبيهات عامة</b><small>قريباً</small></span></li>
+        <li><span class="n">15</span><span><b>تدريبات شاملة</b><small>قريباً</small></span></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>كيف يسير كل درس؟</h2>
+      <div class="flow"><span>📖 مراحل قصيرة</span><i>←</i><span>🎮 لعبتان</span><i>←</i><span>🏆 اختبار</span><i>←</i><span>🏅 شهادة باسم الطالب</span></div>
+      <p style="color:var(--soft)">في كل مرحلة يرى الطفل الحرف كبيراً ويسمع نطقه الصحيح ويكرّره، ثم يتمرّن. ومن ينجح في الاختبار ينال شهادة فيها اسمه وتقديره وختم معلمه.</p>
+    </section>
+
+    <section>
+      <h2>المزايا</h2>
+      <div class="grid">
+        <div class="card"><div class="ico">🔊</div><h3>نطق صحيح</h3><p>أسماء الحروف بصوت معلم قرآن، لا بصوت آلي.</p></div>
+        <div class="card"><div class="ico">📴</div><h3>يعمل دون إنترنت</h3><p>بعد أول فتح تعمل الدروس دون اتصال، ويُرسل التقدّم حين يعود الاتصال.</p></div>
+        <div class="card"><div class="ico">📲</div><h3>يُثبَّت كتطبيق</h3><p>على الجوال والتابلت والكمبيوتر، بأيقونة على الشاشة الرئيسية.</p></div>
+        <div class="card"><div class="ico">👤</div><h3>اسم مستخدم لكل طالب</h3><p>يدخل به من أي جهاز ويجد تقدّمه كما هو.</p></div>
+        <div class="card"><div class="ico">📋</div><h3>سجلّ للمعلم</h3><p>لكل معلم حلقاته وطلابه، وللمدير إدارة كاملة للمعلمين والحلقات.</p></div>
+        <div class="card"><div class="ico">🏅</div><h3>شهادات</h3><p>شهادة لكل درس، تُحمَّل صورةً أو تُطبع.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>تثبيته على الجهاز</h2>
+      <div class="grid">
+        <div class="card"><h3>أندرويد</h3><p>افتح الموقع في Chrome ← ⋮ ← «تثبيت التطبيق».</p></div>
+        <div class="card"><h3>آيفون وآيباد</h3><p>افتحه في Safari ← زر المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية».</p></div>
+        <div class="card"><h3>الكمبيوتر</h3><p>في Chrome أو Edge: أيقونة التثبيت ⊕ في شريط العنوان.</p></div>
+      </div>
+    </section>
+
+    <div class="credit"><b>من إنشاء م. كريم عادل اللوح</b><p>نسأل الله أن يجعله عملاً خالصاً لوجهه الكريم، وأن ينفع به.</p></div>
+  </main>
+
+  <!-- ===================== English ===================== -->
+  <main lang="en" id="en" hidden>
+    <div class="hero">
+      <div>
+        <h1>Letters Journey</h1>
+        <p>A website that teaches children to read the Holy Quran step by step: from the shape and sound of each Arabic letter, to vowel marks, to the rules of recitation. Through play and sound, with no reading skills needed to start.</p>
+        <div class="cta"><a class="btn gold" href="index.html">Start learning →</a><a class="btn ghost" href="teacher.html">👩‍🏫 Teacher login</a></div>
+      </div>
+      <div class="letters" aria-hidden="true">أ ب ت</div>
+    </div>
+
+    <section>
+      <h2>Who is it for?</h2>
+      <div class="grid">
+        <div class="card"><div class="ico">🧒</div><h3>Young children</h3><p>Children who can't read or write yet. Everything works through sound, pictures and colour.</p></div>
+        <div class="card"><div class="ico">🌍</div><h3>Non-Arabic speakers</h3><p>Children learning Arabic from zero, with English guidance for parents.</p></div>
+        <div class="card"><div class="ico">👨‍👩‍👧</div><h3>Parents and teachers</h3><p>Follow each child's progress: where they are, their scores, and when they last practised.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The learning path: 15 lessons</h2>
+      <p style="margin-top:-6px;color:var(--soft)">Following the order of the “Al-Qa'idah Al-Dhahabiyyah” (Golden Primer) for Quran recitation. Each lesson opens after passing the one before it.</p>
+      <ol class="path">
+        <li class="now"><span class="n">1</span><span><b>The single letters of the alphabet</b><small>Available now</small></span></li>
+        <li class="now"><span class="n">2</span><span><b>Heavy and light letters (Tafkhim &amp; Tarqiq)</b><small>Available now</small></span></li>
+        <li class="now"><span class="n">3</span><span><b>Connected letter forms</b><small>Available now</small></span></li>
+        <li class="now"><span class="n">4</span><span><b>Short vowels: Fatha, Kasra, Damma</b><small>Available now</small></span></li>
+        <li><span class="n">5</span><span><b>Tanween</b><small>Coming soon</small></span></li>
+        <li><span class="n">6</span><span><b>Sukoon</b><small>Coming soon</small></span></li>
+        <li><span class="n">7</span><span><b>Hams (whispered letters)</b><small>Coming soon</small></span></li>
+        <li><span class="n">8</span><span><b>Qalqalah (echoing letters)</b><small>Coming soon</small></span></li>
+        <li><span class="n">9</span><span><b>Shaddah</b><small>Coming soon</small></span></li>
+        <li><span class="n">10</span><span><b>Doubled Noon and Meem</b><small>Coming soon</small></span></li>
+        <li><span class="n">11</span><span><b>Madd and Leen letters</b><small>Coming soon</small></span></li>
+        <li><span class="n">12</span><span><b>Rules of Noon Sakinah and Tanween</b><small>Coming soon</small></span></li>
+        <li><span class="n">13</span><span><b>Rules of Meem Sakinah</b><small>Coming soon</small></span></li>
+        <li><span class="n">14</span><span><b>General notes</b><small>Coming soon</small></span></li>
+        <li><span class="n">15</span><span><b>Comprehensive practice</b><small>Coming soon</small></span></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>How each lesson works</h2>
+      <div class="flow"><span>📖 Short stages</span><i>→</i><span>🎮 Two games</span><i>→</i><span>🏆 A test</span><i>→</i><span>🏅 A named certificate</span></div>
+      <p style="color:var(--soft)">In each stage the child sees the letter large, hears its correct pronunciation and repeats it, then practises. Passing the test earns a certificate with the child's name, grade and their teacher's stamp.</p>
+    </section>
+
+    <section>
+      <h2>Features</h2>
+      <div class="grid">
+        <div class="card"><div class="ico">🔊</div><h3>Correct pronunciation</h3><p>Letter names recorded by a Quran teacher, not a robot voice.</p></div>
+        <div class="card"><div class="ico">📴</div><h3>Works offline</h3><p>After the first visit, lessons work without internet; progress is sent once you're back online.</p></div>
+        <div class="card"><div class="ico">📲</div><h3>Installs like an app</h3><p>On phones, tablets and computers, with its own home-screen icon.</p></div>
+        <div class="card"><div class="ico">👤</div><h3>A username per child</h3><p>Sign in from any device and continue where you left off.</p></div>
+        <div class="card"><div class="ico">📋</div><h3>Teacher records</h3><p>Each teacher sees their own groups; the admin manages teachers and groups.</p></div>
+        <div class="card"><div class="ico">🏅</div><h3>Certificates</h3><p>One per lesson, to download as an image or print.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Install it on your device</h2>
+      <div class="grid">
+        <div class="card"><h3>Android</h3><p>Open the site in Chrome → ⋮ → “Install app”.</p></div>
+        <div class="card"><h3>iPhone &amp; iPad</h3><p>Open it in Safari → Share ⬆️ → “Add to Home Screen”.</p></div>
+        <div class="card"><h3>Computer</h3><p>In Chrome or Edge: the install icon ⊕ in the address bar.</p></div>
+      </div>
+    </section>
+
+    <div class="credit"><b>Created by Eng. Kareem Adel Allouh</b><p>May Allah accept it and make it beneficial.</p></div>
+  </main>
+</div>
+<script>
+(function () {
+  const set = (l) => {
+    document.getElementById("ar").hidden = l !== "ar";
+    document.getElementById("en").hidden = l !== "en";
+    document.documentElement.lang = l; document.documentElement.dir = l === "ar" ? "rtl" : "ltr";
+    document.querySelectorAll("[data-ar]").forEach(e => e.hidden = l !== "ar");
+    document.querySelectorAll("[data-en]").forEach(e => e.hidden = l !== "en");
+    document.querySelectorAll("[data-set]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.set === l)));
+    document.title = l === "ar" ? "رحلة الحروف · عن الموقع" : "Letters Journey · About";
+    try { localStorage.setItem("about-lang", l); } catch (e) {}
+  };
+  let l = null; try { l = localStorage.getItem("about-lang"); } catch (e) {}
+  if (location.hash === "#en" || location.hash === "#ar") l = location.hash.slice(1);
+  set(l || ((navigator.language || "ar").toLowerCase().startsWith("ar") ? "ar" : "en"));
+  document.querySelectorAll("[data-set]").forEach(b => b.onclick = () => set(b.dataset.set));
+})();
+</script>
+</body>
+</html>

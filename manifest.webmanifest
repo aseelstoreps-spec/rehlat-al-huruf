@@ -1,0 +1,17 @@
+{
+  "name": "رحلة الحروف",
+  "short_name": "رحلة الحروف",
+  "description": "تعليم الأطفال القراءة الصحيحة للقرآن الكريم خطوة بخطوة",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f7fc",
+  "theme_color": "#23266b",
+  "icons": [
+    { "src": "icons/rehla-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/rehla-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

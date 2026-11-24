@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تقرير ولي الأمر · رحلة الحروف</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#23266b">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<script src="config.js"></script>
+<script src="cert.js"></script>
+<script src="lessons-meta.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+/* تقرير ولي الأمر — عمود واحد للجوال: البطاقة الرئيسية ← ما يحتاجه الآن ← الدروس ← آخر النشاط */
+:root {
+  --bg: #f7f7fc; --card: #ffffff; --ink: #1b1d45; --soft: #565a86; --line: #dcddf0;
+  --navy: #23266b; --hi: #ffd23f; --hi-soft: #fff6d1; --ok: #17804f; --ok-soft: #e4f3ec; --red: #c8233a; --red-soft: #fff1f2;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-title: "Lalezar", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 620px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 40px; display: flex; flex-direction: column; gap: 14px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.top img { height: 34px; width: auto; }
+.top span { color: var(--soft); font-weight: 700; font-size: .9rem; }
+.hero { background: var(--navy); color: #f7f7fc; border-radius: 22px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+.hero h1 { margin: 0; font-family: var(--f-title); font-weight: 400; font-size: 2rem; line-height: 1.2; }
+.hero p { margin: 0; color: #c9cbef; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tile { background: var(--card); border-radius: 16px; padding: 12px; box-shadow: 0 3px 0 #d5d7ee; display: flex; flex-direction: column; }
+.tile b { font-size: 1.6rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--soft); font-size: .85rem; }
+.card { background: var(--card); border-radius: 18px; padding: 16px; box-shadow: 0 3px 0 #d5d7ee; }
+.card h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.tip { border-inline-start: 0; background: var(--hi-soft); }
+.tip.warn { background: var(--red-soft); }
+.tip p { margin: 0; }
+.tip p + p { margin-top: 6px; }
+.lessons { display: flex; flex-direction: column; gap: 10px; }
+.lesson { display: grid; grid-template-columns: 40px 1fr; gap: 4px 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.lesson:last-child { border-bottom: 0; }
+.dot { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: #eef0f8; color: var(--soft); }
+.dot.pass { background: var(--navy); color: #fff; }
+.dot.prog { background: var(--hi); color: var(--ink); }
+.lesson b { display: block; }
+.lesson .muted { color: var(--soft); font-size: .88rem; }
+.bar { height: 8px; border-radius: 99px; background: #eceefa; overflow: hidden; margin-top: 6px; }
+.bar i { display: block; height: 100%; background: var(--navy); }
+.btn { font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 8px 14px; background: var(--hi); color: var(--ink); cursor: pointer; margin-top: 8px; }
+.btn.ghost { background: var(--card); border: 1px solid var(--line); }
+.btn:focus-visible { outline: 3px solid #2a5fd0; outline-offset: 2px; }
+.feed { list-style: none; margin: 0; padding: 0; }
+.feed li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.feed li:last-child { border-bottom: 0; }
+.feed .when { color: var(--soft); font-size: .85rem; white-space: nowrap; }
+.score { font-weight: 700; font-variant-numeric: tabular-nums; }
+.score.ok { color: var(--ok); }
+.score.bad { color: var(--red); }
+.state { text-align: center; padding: 40px 20px; }
+.note { color: var(--soft); font-size: .85rem; text-align: center; margin: 0; }
+.credit { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; color: var(--soft); font-size: .8rem; border-top: 1px dashed var(--line); padding-top: 10px; }
+.modal { position: fixed; inset: 0; background: #0009; z-index: 30; display: grid; place-items: center; padding: 16px; }
+.modal-card { background: var(--card); border-radius: 16px; padding: 14px; width: min(900px, 100%); max-height: 100%; overflow: auto; }
+.modal-card img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); }
+.modal-card img:not([src]) { aspect-ratio: 1600 / 1131; background: #f3f4fb; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+@media (max-width: 380px) { .tiles { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap" id="root">
+  <div class="top"><img src="icons/wordmark-light.svg" alt="رحلة الحروف"><span>تقرير ولي الأمر</span></div>
+  <div class="card state" id="state">⏳ جارٍ تحميل التقرير...</div>
+</main>
+<script>
+(function () {
+"use strict";
+const CFG = window.QAIDA_CONFIG || {};
+const L = window.LESSONS_META || [];
+const ORD = ["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر"];
+const root = document.getElementById("root");
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const key = (location.hash.replace(/^#k?=?/, "") || new URLSearchParams(location.search).get("k") || "").trim();
+const credit = `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span></footer>`;
+
+function days(iso) { return iso ? Math.floor((Date.now() - new Date(iso)) / 864e5) : null; }
+function ago(iso) {
+  if (!iso) return "—";
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 60) return m < 1 ? "الآن" : `قبل ${m} دقيقة`;
+  const h = Math.round(m / 60); if (h < 24) return `قبل ${h} ساعة`;
+  const d = Math.round(h / 24); return d === 1 ? "أمس" : `قبل ${d} يوم`;
+}
+function lessonOf(s, n) {
+  const d = s.detail || {};
+  if (n === 1) return { stages: d.stages || [], games: d.games || [], best: Number(s.best) || 0, tries: Number(s.tries) || 0, passedAt: d.passedAt };
+  const x = (d.lx || {})[n] || {};
+  return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
+}
+const doneSteps = (s, M) => { const x = lessonOf(s, M.n); return M.steps.filter((_, i) => i < M.stages ? !!x.stages[i] : i < M.steps.length - 1 ? !!x.games[i - M.stages] : x.best >= 8).length; };
+
+function fail(msg) { document.getElementById("state").innerHTML = msg; }
+
+async function load() {
+  if (!key) return fail("هذا الرابط ناقص. اطلب من المعلم رابط التقرير مرة أخرى.");
+  if (!CFG.backendUrl) return fail("لم يُربط الموقع بسجل المعلم.");
+  let j;
+  try {
+    const r = await fetch(CFG.backendUrl + "?action=report&k=" + encodeURIComponent(key), { cache: "no-store" });
+    j = await r.json();
+  } catch (e) { return fail(navigator.onLine ? "تعذّر الاتصال بالسجل. حاول بعد قليل." : "أنت غير متصل بالإنترنت."); }
+  if (!j.student) return fail("الرابط غير صحيح، أو جدّده المعلم. اطلب رابطاً جديداً من المعلم.");
+  render(j.student, j.events || []);
+}
+
+function render(s, events) {
+  const passed = L.filter(M => lessonOf(s, M.n).best >= 8);
+  const failing = L.find(M => { const x = lessonOf(s, M.n); return x.tries && x.best < 8; });
+  const d = days(s.lastSeen);
+  const tips = [];
+  if (failing) { const x = lessonOf(s, failing.n); tips.push(`حاول اختبار <b>الدرس ${ORD[failing.n - 1]}</b> ولم ينجح بعد (أفضل درجة ${x.best} من 10، والنجاح من 8). شجّعه على مراجعة المراحل ثم إعادة الاختبار.`); }
+  if (d != null && d >= 3) tips.push(`لم يتدرّب منذ ${d} أيام. عشر دقائق يومياً تكفي ليتقدّم بثبات.`);
+  if (!tips.length) tips.push(passed.length === L.length ? `أنهى كل الدروس المتاحة حتى الآن. ما شاء الله! 🌟` : `يتعلّم الآن: <b>${esc(s.position)}</b>. استمعوا معه إلى الحروف، واطلبوا منه أن يكرّرها بصوت مسموع.`);
+
+  let h = `<div class="top"><img src="icons/wordmark-light.svg" alt="رحلة الحروف"><span>تقرير ولي الأمر</span></div>
+  <section class="hero"><h1>${esc(s.name)}</h1>
+    <p>${s.group ? "الحلقة: " + esc(s.group) : "بدون حلقة"}${s.teacher ? " · المعلم: " + esc(s.teacher) : ""}</p>
+    <p>آخر تدريب: ${ago(s.lastSeen)}</p></section>
+  <div class="tiles">
+    <div class="tile"><b>${passed.length} / ${L.length}</b><span>دروس أنهاها</span></div>
+    <div class="tile"><b>${Number(s.progress) || 0}%</b><span>الإنجاز</span></div>
+    <div class="tile"><b>${passed.length}</b><span>شهادات</span></div>
+  </div>
+  <section class="card tip ${failing || (d != null && d >= 3) ? "warn" : ""}"><h2>ما يحتاجه الآن</h2>${tips.map(t => `<p>${t}</p>`).join("")}</section>
+  <section class="card"><h2>الدروس</h2><div class="lessons">${L.map(M => {
+    const x = lessonOf(s, M.n), dn = doneSteps(s, M), ok = x.best >= 8, prog = !ok && (dn || x.tries);
+    return `<div class="lesson"><span class="dot ${ok ? "pass" : prog ? "prog" : ""}">${ok ? "✓" : M.n}</span>
+      <div><b>الدرس ${ORD[M.n - 1]}: ${esc(M.title)}</b>
+        <span class="muted">${ok ? `نجح في الاختبار بدرجة ${x.best} من 10` : x.tries ? `اختُبر ${x.tries} مرة، أفضل درجة ${x.best} من 10` : dn ? `أنهى ${dn} من ${M.steps.length} خطوات` : "لم يبدأ بعد"}</span>
+        <div class="bar"><i style="width:${Math.round(dn / M.steps.length * 100)}%"></i></div>
+        ${ok ? `<button class="btn" data-cert="${M.n}">🏅 شهادة الدرس ${ORD[M.n - 1]}</button>` : ""}</div></div>`; }).join("")}</div></section>
+  <section class="card"><h2>آخر النشاط</h2><ul class="feed">${events.length ? events.map(e => {
+    const sc = e.total !== "" && e.total != null ? `<span class="score ${Number(e.score) >= Number(e.total) * 0.8 ? "ok" : "bad"}">${esc(e.score)} من ${esc(e.total)}</span>` : "";
+    return `<li><span>${esc(e.activity)} ${sc}</span><span class="when">${ago(e.ts)}</span></li>`; }).join("") : `<li class="muted">لا يوجد نشاط في آخر شهرين.</li>`}</ul></section>
+  <p class="note">🔒 هذا الرابط خاص بالطالب وحده، فلا تنشره في المجموعات.</p>` + credit;
+  root.innerHTML = h;
+  root.querySelectorAll("[data-cert]").forEach(b => b.onclick = () => showCert(s, +b.dataset.cert));
+}
+
+async function showCert(s, n) {
+  const M = L.find(x => x.n === n), x = lessonOf(s, n);
+  const box = document.createElement("div");
+  box.className = "modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "الشهادة");
+  box.innerHTML = `<div class="modal-card"><div class="row"><b>شهادة ${esc(s.name)}</b><button class="btn ghost" data-x>✕ إغلاق</button></div>
+    <img alt="شهادة ${esc(s.name)}"><p class="note">⏳ جارٍ التجهيز...</p>
+    <div class="row"><button class="btn" data-dl>⬇️ تحميل الصورة</button><button class="btn ghost" data-pr>🖨️ طباعة</button></div></div>`;
+  document.body.appendChild(box);
+  box.querySelector("[data-x]").onclick = () => box.remove();
+  box.onclick = (e) => { if (e.target === box) box.remove(); };
+  const cv = await Certificate.render({ name: s.name, lessonIndex: n - 1, lessonName: M.title, score: x.best, total: 10,
+    teacher: s.teacher || "", group: s.group, date: x.passedAt || s.lastSeen, serial: (s.serials || {})[n] });
+  box.querySelector("img").src = cv.toDataURL("image/png");
+  box.querySelector(".note").textContent = "على الآيفون: اضغط على الشهادة مطوّلاً ثم «حفظ الصورة».";
+  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, `certificate-lesson-${n}.png`);
+  box.querySelector("[data-pr]").onclick = () => Certificate.print(cv);
+}
+
+load();
+})();
+</script>
+</body>
+</html>

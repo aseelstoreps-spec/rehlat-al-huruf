@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>سجل المعلم</title>
+<meta name="robots" content="noindex">
+<script src="config.js"></script>
+<script src="cert.js"></script>
+<script src="lessons-meta.js"></script>
+<script src="vendor/qrcode.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="icons/rehla-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+/* Layout: header + tabs; each tab is a stack of panels (summary → form → list → detail) */
+:root {
+  --bg: #f7f7fc; --card: #ffffff; --ink: #1b1d45; --soft: #565a86; --line: #dcddf0;
+  --green: #23266b; --gold: #ffd23f; --gold-soft: #fff6d1; --red: #c8233a; --blue: #2a5fd0; --violet: #2b2350;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-title: "Lalezar", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 16px; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px; display: flex; flex-direction: column; gap: 16px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { margin: 0; font-family: var(--f-title); font-weight: 400; font-size: 1.7rem; }
+header .who { flex: 1; min-width: 0; }
+.btn { background: var(--green); color: #fff; border: 0; border-radius: 12px; padding: 9px 16px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: var(--red); }
+.btn.small { padding: 5px 12px; font-size: .9rem; }
+.btn[disabled] { opacity: .5; cursor: wait; }
+.muted { color: var(--soft); font-size: .88rem; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; min-width: 0; }
+.login { max-width: 420px; margin: 10vh auto 0; display: flex; flex-direction: column; gap: 10px; }
+input, select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafaff; width: 100%; }
+label { font-weight: 700; font-size: .92rem; }
+.err { color: var(--red); font-weight: 700; margin: 0; }
+.ok { color: var(--green); font-weight: 700; margin: 0; }
+.msg:empty { display: none; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
+.tab { background: none; border: 0; padding: 10px 16px; font-weight: 800; color: var(--soft); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tab.on { color: var(--green); border-bottom-color: var(--green); }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.tile b { display: block; font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--soft); font-size: .9rem; }
+.row { display: grid; gap: 10px; align-items: end; }
+.row.r3 { grid-template-columns: 2fr 1fr auto; }
+.row.r2 { grid-template-columns: 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tablebox { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+table.students { min-width: 820px; }
+th, td { text-align: right; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: .85rem; color: var(--soft); font-weight: 700; white-space: nowrap; }
+tbody tr.click { cursor: pointer; }
+tbody tr.click:hover, tbody tr.sel { background: #f5f6fd; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar { height: 10px; border-radius: 99px; background: #eceefa; overflow: hidden; min-width: 90px; }
+.bar i { display: block; height: 100%; background: var(--green); }
+.chip { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .82rem; font-weight: 700; white-space: nowrap; margin: 2px; }
+.chip.ok { background: #dff5e7; color: #17804f; }
+.chip.bad { background: #fde5e3; color: #9c2a20; }
+.chip.idle { background: #eef0f8; color: var(--soft); }
+.chip.adm { background: #e7e3ff; color: var(--violet); }
+.chip.grp { background: #f3dbff; color: #5b2a73; }
+.detail { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; }
+.steps span { padding: 6px 12px; border-radius: 10px; background: #eef0f8; color: var(--soft); font-weight: 700; font-size: .9rem; }
+.steps span.done { background: #dff5e7; color: #17804f; }
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 420px; overflow: auto; }
+.feed li { display: flex; gap: 10px; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.feed li div { min-width: 0; }
+h2 { margin: 0 0 12px; font-size: 1.15rem; }
+h3 { margin: 16px 0 8px; font-size: 1rem; }
+.code { font-size: 1.25rem; letter-spacing: 3px; font-variant-numeric: tabular-nums; color: var(--blue); font-weight: 800; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.checks label { display: inline-flex; align-items: center; gap: 6px; background: #f3f4fb; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-weight: 600; }
+.checks input { width: auto; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.confirm { background: #fff4f3; border: 1px solid #f3c4bf; border-radius: 12px; padding: 12px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row.r4 { grid-template-columns: 2fr 1.3fr 1.2fr auto; }
+.row.rf { grid-template-columns: 2fr 1fr 1fr; }
+.lessonbox { border-top: 1px dashed var(--line); padding-top: 4px; margin-top: 8px; }
+.credit { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; color: var(--soft); font-size: .82rem; padding-top: 10px; border-top: 1px dashed var(--line); }
+.credit a { color: var(--green); font-weight: 700; }
+.offbar { background: var(--gold-soft); color: #1b1d45; border-radius: 12px; padding: 10px 14px; font-weight: 700; }
+.modal { position: fixed; inset: 0; background: #0009; z-index: 30; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); }
+.modal-card { background: var(--card); border-radius: 16px; padding: 14px; width: min(960px, 100%); max-height: 100%; overflow: auto; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.modal-card img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); }
+.modal-card img:not([src]) { aspect-ratio: 1600 / 1131; background: #f3f4fb; }
+header .logo { border-radius: 10px; }
+header .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.warnbar { background: #fff1f2; border: 2px solid var(--red); border-radius: 14px; padding: 12px 16px; line-height: 1.7; }
+.warnbar ol { margin: 6px 0 0; padding-inline-start: 20px; }
+.warnbar code { background: #fff; padding: 1px 6px; border-radius: 6px; direction: ltr; display: inline-block; }
+button.tile { text-align: start; cursor: pointer; font: inherit; color: inherit; }
+.tile.care b { color: var(--red); }
+.tile.care.on { border: 2px solid var(--red); background: #fff1f2; }
+.sumrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.sum { display: flex; flex-direction: column; gap: 4px; background: #f5f6fd; border-radius: 12px; padding: 10px 12px; }
+.sum .bar i { background: #17804f; }
+.ls { display: inline-block; min-width: 44px; text-align: center; padding: 2px 8px; border-radius: 8px; font-weight: 700; font-size: .85rem; white-space: nowrap; }
+.ls.pass { background: #dff5e7; color: #17804f; }
+.ls.prog { background: var(--gold-soft); color: #1b1d45; }
+.ls.none { color: var(--soft); }
+td .bar { margin-top: 4px; }
+.lessonbox { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.lessonbox.pass { border-color: #b9e4c8; }
+.lhead { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: start; width: 100%; }
+.lhead .lt { flex: 1; display: flex; flex-direction: column; }
+.btn.gold { background: var(--gold); color: #1b1d45; align-self: flex-start; }
+.linkbox { display: flex; flex-direction: column; gap: 8px; background: #f5f6fd; border-radius: 12px; padding: 10px; margin-top: 8px; }
+.btn.wa { background: #1f8a4c; }
+textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafaff; resize: vertical; line-height: 1.7; }
+.certline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+@media (max-width: 760px) {
+  .row.rf { grid-template-columns: 1fr 1fr; }
+  .row.rf input { grid-column: 1 / -1; }
+  header .who { order: 5; flex-basis: 100%; }
+  header h1 { flex: 1; }
+  .tab { padding: 8px 10px; }
+  table.students { min-width: 0; }
+  table.students thead { display: none; }
+  table.students tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+  table.students td { border: 0; padding: 2px 0; }
+  table.students td:first-child, table.students td:nth-child(3) { grid-column: 1 / -1; }
+  table.students td[data-l]::before { content: attr(data-l); display: block; font-size: .75rem; color: var(--soft); }
+  table.students td:first-child::before { display: none; }
+  .row.r4 { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .detail, .row.r3, .row.r2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script>
+(function () {
+"use strict";
+const CFG = window.QAIDA_CONFIG || {};
+const root = document.getElementById("root");
+// الدروس الجاهزة وخطواتها (بنفس ترتيبها في الموقع)
+const LESSONS_T = window.LESSONS_META;
+const ORD = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن", "التاسع", "العاشر", "الحادي عشر", "الثاني عشر", "الثالث عشر", "الرابع عشر", "الخامس عشر"];
+// تقدّم الطالب في درس معيّن
+function lessonOf(s, n) {
+  const d = s.detail || {};
+  if (n === 1) return { stages: d.stages || [], games: d.games || [], best: Number(s.best) || 0, tries: Number(s.tries) || 0, passedAt: d.passedAt };
+  const x = (d.lx || {})[n] || {};
+  return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
+}
+const passedList = (s) => LESSONS_T.filter(L => lessonOf(s, L.n).best >= 8).map(L => L.n);
+const NEED_VERSION = 7;
+// عدد الخطوات المنجزة في درس (المراحل + اللعبتان + الاختبار)
+function stepsDone(s, L) {
+  const x = lessonOf(s, L.n);
+  return L.steps.filter((_, i) => i < L.stages ? !!x.stages[i] : i < L.steps.length - 1 ? !!x.games[i - L.stages] : x.best >= 8).length;
+}
+// حالة الطالب في درس: ناجح / يتعلّم / لم يبدأ
+function lessonState(s, L) {
+  const x = lessonOf(s, L.n), d = stepsDone(s, L);
+  if (x.best >= 8) return { k: "pass", t: `✓ ${x.best}/10`, title: "ناجح في اختبار الدرس" };
+  if (d || x.tries) return { k: "prog", t: x.tries ? `${d}/${L.steps.length} · ${x.best}/10` : `${d}/${L.steps.length}`, title: x.tries ? "لم ينجح بعد في الاختبار" : "يتعلّم الآن" };
+  return { k: "none", t: "—", title: "لم يبدأ" };
+}
+// يحتاج متابعة: غاب أسبوعاً، أو رسب في اختبار ولم ينجح بعد
+function needsCare(s) {
+  const days = s.lastSeen ? (Date.now() - new Date(s.lastSeen)) / 864e5 : 99;
+  const failing = LESSONS_T.some(L => { const x = lessonOf(s, L.n); return x.tries && x.best < 8; });
+  return days >= 7 || failing;
+}
+const ERR = {
+  wrong_password: "اسم المستخدم أو كلمة المرور غير صحيحة.",
+  not_your_group: "هذه الحلقة ليست من حلقاتك.",
+  admin_only: "هذا للمدير فقط.",
+  user_taken: "اسم المستخدم مستعمل من قبل.",
+  bad_user: "اسم المستخدم: أحرف إنجليزية أو أرقام فقط، بلا مسافات.",
+  short_pass: "كلمة المرور قصيرة جداً.",
+  group_taken: "توجد حلقة بهذا الاسم.",
+  no_name: "اكتب الاسم.",
+  not_found: "لم يُعثر عليه (ربما حُذف). حدّث الصفحة.",
+  unknown_action: "يبدو أن كود الجدول قديم. الصق الكود الجديد وانشر «إصدار جديد».",
+  admin_only_repair: "الإصلاح للمدير فقط.",
+  main_only: "هذا للمدير الرئيسي فقط (المدير المساعد لا يحذف ولا يمنح صلاحية المدير).",
+  username_taken: "اسم المستخدم هذا مستعمل من طالب آخر.",
+  bad_username: "اسم المستخدم: حرفان على الأقل، حروف وأرقام فقط.",
+  offline: "أنت غير متصل بالإنترنت. التعديل يحتاج اتصالاً.",
+  network: "تعذّر الاتصال بالسجل. تأكد من الإنترنت، ومن نشر «إصدار جديد» من كود الجدول."
+};
+const errText = (e) => ERR[e] || ("خطأ: " + e);
+
+let cred = null; try { cred = JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) {}
+const UI = { tab: "students", sel: null, q: "", grp: "", sortBy: "lastSeen", lastCode: null, confirm: null, editT: null, editG: null };
+let wdata = null;
+let data = null, tdata = null, gdata = null, loginErr = "", offline = false, cachedAt = null;
+/* نسخة محفوظة من آخر بيانات، لعرضها دون إنترنت (على جهاز المعلم فقط) */
+async function sha(t) {
+  try { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+  catch (e) { return "x" + t.length; }
+}
+const CACHE_KEY = "teacher-cache-v1";
+async function saveCache(j) { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ h: await sha(cred.user + "\n" + cred.pass), at: Date.now(), data: j })); } catch (e) {} }
+async function readCache() {
+  try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); if (c && c.h === await sha(cred.user + "\n" + cred.pass)) return c; } catch (e) {}
+  return null;
+}
+
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtCode = (c) => String(c).replace(/^(\d{4})(\d{4})$/, "$1 $2");
+const isCode = (c) => /^[1-9]\d{7}$/.test(String(c));
+const $ = (id) => document.getElementById(id);
+function ago(iso) {
+  if (!iso) return "—";
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return "الآن"; if (m < 60) return `قبل ${m} دقيقة`;
+  const h = Math.round(m / 60); if (h < 24) return `قبل ${h} ساعة`;
+  const d = Math.round(h / 24); return d === 1 ? "أمس" : `قبل ${d} يوم`;
+}
+const isToday = (iso) => iso && new Date(iso).toDateString() === new Date().toDateString();
+function testChip(x) {
+  if (!Number(x.tries)) return `<span class="chip idle">لم يختبر</span>`;
+  return x.best >= 8 ? `<span class="chip ok">${x.best} من 10 · ناجح</span>` : `<span class="chip bad">${x.best} من 10</span>`;
+}
+function certChips(s) {
+  const p = passedList(s);
+  return p.length ? p.map(n => `<span class="chip ok" title="شهادة الدرس ${ORD[n - 1]}">🏅 ${n}</span>`).join("") : `<span class="chip idle">لا شهادات بعد</span>`;
+}
+
+/* كل الطلبات المحمية تُرسل بـ POST حتى لا تظهر كلمة المرور في الروابط */
+async function call(action, extra) {
+  if (!navigator.onLine && action !== "data") return { error: "offline" };
+  try {
+    const r = await fetch(CFG.backendUrl, { method: "POST", body: JSON.stringify(Object.assign({}, extra || {}, { action, user: cred.user, pass: cred.pass })) });
+    return await r.json();
+  } catch (e) { return { error: "network" }; }
+}
+function flash(id, text, good) { const el = $(id); if (el) { el.className = good ? "ok msg" : "err msg"; el.textContent = text || ""; } }
+async function busy(btn, fn) { if (btn) btn.disabled = true; try { return await fn(); } finally { if (btn && btn.isConnected) btn.disabled = false; } }
+function logout() { cred = null; data = tdata = gdata = wdata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
+/* الخروج التلقائي بعد 30 دقيقة دون استعمال (لحماية السجل على الأجهزة المشتركة) */
+const IDLE_MIN = 30;
+let lastAct = Date.now();
+["pointerdown", "keydown", "scroll", "touchstart"].forEach(ev => addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
+setInterval(() => { if (cred && Date.now() - lastAct > IDLE_MIN * 60000) { loginErr = `خرجت تلقائياً بعد ${IDLE_MIN} دقيقة دون استعمال. ادخل مرة أخرى.`; logout(); } }, 30000);
+
+async function load() {
+  const j = await call("data");
+  if (j.error === "wrong_password") { loginErr = errText(j.error); return logout(); }
+  if (j.error === "network") {
+    const c = await readCache();
+    if (c) { data = c.data; offline = true; cachedAt = c.at; loginErr = ""; render(); return; }
+  }
+  if (j.error) { loginErr = errText(j.error); if (!data) { cred = null; } render(); return; }
+  data = j; loginErr = ""; offline = false; saveCache(j);
+  if (data.me.admin && UI.tab === "teachers") await loadTeachers();
+  window.addEventListener("online", () => { if (offline) load(); }, { once: true });
+  if (data.me.admin && UI.tab === "groups") await loadGroups();
+  render();
+}
+async function loadWeekly() { const j = await call("weekly"); wdata = j.error ? { error: j.error } : j; }
+async function loadTeachers() { const j = await call("teachers.list"); if (!j.error) tdata = j; }
+async function loadGroups() { const j = await call("groups.list"); if (!j.error) gdata = j; }
+
+/* ---------------- render ---------------- */
+function render() {
+  if (!CFG.backendUrl) {
+    root.innerHTML = `<div class="panel login"><h1>سجل المعلم</h1><p>لم يُربط الموقع بسجل بعد. اتبع خطوات «ربط سجل المعلم» في README.md ثم ضع الرابط في config.js.</p></div>`;
+    return;
+  }
+  if (!cred || !data) return renderLogin();
+  const me = data.me;
+  const tabs = me.admin
+    ? [["students", "👧 الطلاب"], ["weekly", "📊 الأسبوع"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"], ["account", "🔐 حسابي"]]
+    : [["students", "👧 طلابي"], ["weekly", "📊 الأسبوع"], ["account", "🔐 حسابي"]];
+  if (!tabs.some(t => t[0] === UI.tab)) UI.tab = "students";
+  let h = `<header><img class="logo" src="icons/rehla.svg" alt="" width="40" height="40"><h1>${me.admin ? "لوحة المدير" : "سجل المعلم"}</h1>
+    <span class="who"><span class="chip ${me.admin ? "adm" : "grp"}">${me.main ? "المدير" : me.admin ? "مدير مساعد" : "معلم"}</span> <b>${esc(me.name)}</b>
+      <span class="muted">${me.admin ? "· كل الحلقات" : (me.groups || []).length ? "· " + me.groups.map(esc).join("، ") : "· لا حلقات بعد"}</span></span>
+    <a class="btn ghost" href="index.html#teacher">👁️ استعراض الدروس</a>
+    <button class="btn ghost" id="refresh">↻ تحديث</button><button class="btn ghost" id="out">خروج</button></header>
+  <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${UI.tab === k ? "on" : ""}" role="tab" aria-selected="${UI.tab === k}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
+  if (!offline && !(Number(data.version) >= NEED_VERSION)) h += `<div class="warnbar"><b>⚠️ كود الجدول المنشور قديم${data.version ? " (الإصدار " + esc(data.version) + ")" : ""}.</b>
+    لذلك لا يُحفظ تقدّم الدروس من الثاني فما بعد، وتظهر الشهادات ناقصة. الحل (مرة واحدة):
+    <ol><li>افتح الجدول ← الإضافات ← Apps Script، واحذف الكود، والصق محتوى <code>google-apps-script/Code.gs</code> الجديد، ثم احفظ.</li>
+    <li>اختر الدالة <code>setup</code> واضغط «تنفيذ» (تُصلح السجلات القديمة من سجل النشاط).</li>
+    <li>نشر ← إدارة عمليات النشر ← ✏️ ← الإصدار: <b>إصدار جديد</b> ← نشر.</li></ol></div>`;
+  if (offline) h += `<div class="offbar">📴 غير متصل بالإنترنت — تعرض آخر بيانات محفوظة (${new Date(cachedAt).toLocaleString("ar-EG")}). التعديل يعود عند الاتصال.</div>`;
+  h += ({ students: studentsTab, weekly: weeklyTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
+  h += credit();
+  root.innerHTML = h;
+  if (offline) root.querySelectorAll("form button[type=submit], #askreset, #askdel").forEach(b => b.disabled = true);
+
+  $("refresh").onclick = (e) => busy(e.currentTarget, load);
+  $("out").onclick = logout;
+  root.querySelectorAll("[data-tab]").forEach(b => b.onclick = async () => {
+    UI.tab = b.dataset.tab; UI.confirm = null;
+    if (UI.tab === "teachers" && !tdata) await loadTeachers();
+    if (UI.tab === "groups" && !gdata) await loadGroups();
+    if (UI.tab === "weekly" && !wdata) { render(); await loadWeekly(); }
+    render();
+  });
+  ({ students: bindStudents, weekly: bindWeekly, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
+}
+
+const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
+function renderLogin() {
+  root.innerHTML = `<form class="panel login" id="lf"><h1>سجل المعلم</h1>
+    <label for="un">اسم المستخدم</label><input id="un" autocomplete="username" dir="ltr" required>
+    <label for="pw">كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr" required>
+    ${loginErr ? `<p class="err">${esc(loginErr)}</p>` : ""}<button class="btn" type="submit">دخول</button>
+    <a class="muted" href="index.html#teacher">استعراض الدروس في وضع المعلم ←</a></form>` + credit();
+  $("lf").onsubmit = (e) => {
+    e.preventDefault();
+    cred = { user: $("un").value.trim(), pass: $("pw").value };
+    loginErr = "";
+    try { sessionStorage.setItem("teacher-cred", JSON.stringify(cred)); } catch (x) {}
+    busy(e.submitter, load);
+  };
+}
+
+/* ---------------- الطلاب ---------------- */
+function studentsTab() {
+  const me = data.me;
+  const S = (data.students || []).filter(s => s.sid);
+  const groups = [...new Set([...(me.groups || []), ...S.map(s => s.group).filter(Boolean)])].sort();
+  const myGroups = me.admin ? groups : (me.groups || []);
+  let rows = S.filter(s => (!UI.grp || s.group === UI.grp) && (!UI.care || needsCare(s)) && (!UI.q || String(s.name).includes(UI.q) || String(s.username || "").toLowerCase().includes(UI.q.toLowerCase())));
+  rows.sort((a, b) => UI.sortBy === "name" ? String(a.name).localeCompare(String(b.name), "ar")
+    : UI.sortBy === "progress" ? (b.progress || 0) - (a.progress || 0)
+    : UI.sortBy === "best" ? passedList(b).length - passedList(a).length || (b.best || 0) - (a.best || 0)
+    : String(b.lastSeen).localeCompare(String(a.lastSeen)));
+  UI.rows = rows;
+  const scope = S.filter(s => !UI.grp || s.group === UI.grp);
+  const care = scope.filter(needsCare).length;
+  const today = scope.filter(s => isToday(s.lastSeen)).length;
+  const avg = scope.length ? Math.round(scope.reduce((t, s) => t + (Number(s.progress) || 0), 0) / scope.length) : 0;
+  const st = UI.sel && S.find(s => s.sid === UI.sel);
+  const groupOpts = (sel) => `${me.admin ? `<option value="">— بدون حلقة —</option>` : ""}${myGroups.map(g => `<option ${g === sel ? "selected" : ""}>${esc(g)}</option>`).join("")}`;
+
+  let h = `<div class="tiles">
+    <div class="tile"><b>${scope.length}</b><span>طالب مسجّل</span></div>
+    <div class="tile"><b>${today}</b><span>نشط اليوم</span></div>
+    <button class="tile care ${UI.care ? "on" : ""}" id="carebtn" aria-pressed="${!!UI.care}"><b>${care}</b><span>يحتاج متابعة ${UI.care ? "· يُعرض الآن" : "· اضغط للعرض"}</span></button>
+    <div class="tile"><b>${avg}%</b><span>متوسط الإنجاز</span></div>
+  </div>
+  <div class="panel lessonsum"><h2>النجاح في الدروس</h2><div class="sumrow">${LESSONS_T.map(L => {
+    const ok = scope.filter(s => lessonOf(s, L.n).best >= 8).length, on = scope.filter(s => lessonState(s, L).k === "prog").length;
+    return `<div class="sum"><span class="muted">الدرس ${ORD[L.n - 1]}</span><b>${esc(L.title)}</b>
+      <div class="bar"><i style="width:${scope.length ? Math.round(ok / scope.length * 100) : 0}%"></i></div>
+      <span class="muted">✓ ${ok} ناجح · ${on} يتعلّم</span></div>`; }).join("")}</div>
+    ${me.admin ? `<div class="actions"><button class="btn ghost small" id="repair">🔧 إصلاح التقدّم الناقص من سجل النشاط</button>
+      <button class="btn ghost small" id="backup">💾 نسخة احتياطية الآن</button><span class="msg" id="repmsg"></span></div>` : ""}</div>
+  <form class="panel" id="addf" autocomplete="off">
+    <h2>تسجيل طالب جديد</h2>
+    <div class="row r4">
+      <input id="an" maxlength="40" placeholder="اسم الطالب" aria-label="اسم الطالب" required>
+      <input id="au2" maxlength="20" placeholder="اسم المستخدم (اختياري)" aria-label="اسم المستخدم" autocapitalize="off" spellcheck="false">
+      <select id="ag" aria-label="الحلقة">${groupOpts(UI.grp)}</select>
+      <button class="btn" type="submit">➕ تسجيل</button>
+    </div>
+    ${UI.lastCode ? `<p class="ok" style="margin-top:10px">اسم مستخدم ${esc(UI.lastCode.name)}: <b class="code">${esc(UI.lastCode.username)}</b>${UI.lastCode.renamed ? ` (كان «${esc(UI.lastCode.renamed)}» مستعملاً)` : ""} — أعطه للطالب ليدخل به («عندي اسم مستخدم»).</p>` : ""}
+    <p class="msg" id="addmsg"></p>
+  </form>
+  <div class="panel">
+    <div class="row rf">
+      <input id="q" placeholder="ابحث بالاسم أو اسم المستخدم" value="${esc(UI.q)}" aria-label="بحث">
+      <select id="grp" aria-label="الحلقة"><option value="">كل الحلقات</option>${groups.map(g => `<option ${g === UI.grp ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>
+      <select id="sort" aria-label="الترتيب">
+        <option value="lastSeen" ${UI.sortBy === "lastSeen" ? "selected" : ""}>الأحدث نشاطاً</option>
+        <option value="progress" ${UI.sortBy === "progress" ? "selected" : ""}>الأعلى إنجازاً</option>
+        <option value="best" ${UI.sortBy === "best" ? "selected" : ""}>الأكثر شهادات</option>
+        <option value="name" ${UI.sortBy === "name" ? "selected" : ""}>الاسم</option>
+      </select>
+    </div>
+    <div class="actions" style="margin:10px 0"><button class="btn ghost small" id="cards" ${rows.length ? "" : "disabled"}>🪪 طباعة بطاقات الدخول (${rows.length})</button>
+      <span class="muted">لكل طالب في القائمة المعروضة: اسمه، واسم المستخدم، ورمز QR يفتح الموقع ويُدخله مباشرة.</span></div>
+    <div class="tablebox"><table class="students">
+      <thead><tr><th>الطالب</th><th>الحلقة</th><th>أين وصل</th>${LESSONS_T.map(L => `<th title="${esc(L.title)}">د${L.n}</th>`).join("")}<th>آخر نشاط</th></tr></thead>
+      <tbody>${rows.length ? rows.map(s => `<tr data-sid="${esc(s.sid)}" class="click ${s.sid === UI.sel ? "sel" : ""}">
+        <td data-l="الطالب"><b>${esc(s.name)}</b>${needsCare(s) ? ` <span class="chip bad" title="غاب أسبوعاً أو لم ينجح في اختبار">متابعة</span>` : ""}<br><span class="muted" dir="auto">@${esc(s.username || "—")}</span></td>
+        <td data-l="الحلقة">${esc(s.group) || "—"}</td><td data-l="أين وصل">${esc(s.position)}<div class="bar"><i style="width:${Number(s.progress) || 0}%"></i></div></td>
+        ${LESSONS_T.map(L => { const z = lessonState(s, L); return `<td data-l="الدرس ${L.n}" class="num"><span class="ls ${z.k}" title="${z.title}">${z.t}</span></td>`; }).join("")}
+        <td data-l="آخر نشاط" class="muted">${ago(s.lastSeen)}</td></tr>`).join("")
+      : `<tr><td colspan="${4 + LESSONS_T.length}" class="muted">لا يوجد طلاب هنا بعد. سجّل طالباً من الأعلى، أو حين يكتب الطالب اسمه في الموقع يظهر هنا.</td></tr>`}</tbody>
+    </table></div>
+  </div>`;
+
+  const evs = (data.events || []).filter(e => st ? e.sid === st.sid : (!UI.grp || e.group === UI.grp)).slice(0, 60);
+  h += `<div class="detail">`;
+  if (st) {
+    const cf = UI.confirm && UI.confirm.sid === st.sid ? UI.confirm.kind : null;
+    h += `<div class="panel"><h2>${esc(st.name)}</h2>
+      <p class="muted">${esc(st.group) || "بلا حلقة"} · ${esc(st.position)}</p>
+      ${st.username ? `<p>اسم المستخدم: <b class="code" dir="auto">${esc(st.username)}</b> <button class="btn ghost small" id="copyu" type="button">نسخ</button></p>` : ""}
+      ${LESSONS_T.map(L => {
+        const x = lessonOf(st, L.n), z = lessonState(st, L);
+        const done = L.steps.map((_, i) => i < L.stages ? !!x.stages[i] : i < L.steps.length - 1 ? !!x.games[i - L.stages] : x.best >= 8);
+        const open = UI.openL === L.n;
+        return `<div class="lessonbox ${z.k}"><button class="lhead" data-openl="${L.n}" aria-expanded="${open}">
+            <span class="ls ${z.k}">${z.k === "pass" ? "✓" : z.k === "prog" ? "◐" : "○"}</span>
+            <span class="lt"><b>الدرس ${ORD[L.n - 1]}: ${L.title}</b><span class="muted">${done.filter(Boolean).length} من ${L.steps.length} خطوات · الاختبار: ${x.tries ? `${x.best}/10 (${x.tries} محاولة)` : "لم يختبر"}</span></span>
+            <span class="muted">${open ? "▲" : "▼"}</span></button>
+          ${open ? `<div class="steps">${L.steps.map((nm, i) => `<span class="${done[i] ? "done" : ""}">${done[i] ? "✓ " : ""}${nm}</span>`).join("")}</div>` : ""}
+          ${x.best >= 8 ? `<div class="certline"><button class="btn small gold" data-showcert="${L.n}">🏅 شهادة الدرس ${ORD[L.n - 1]}</button>
+            <span class="muted">رقمها: <bdi dir="ltr">${esc(Certificate.serial(st.sid, L.n - 1, x.passedAt || st.lastSeen))}</bdi></span></div>` : ""}</div>`;
+      }).join("")}
+      <h3>تعديل</h3>
+      <form class="row r4" id="editst" autocomplete="off">
+        <div class="field"><label for="en">الاسم</label><input id="en" maxlength="40" value="${esc(st.name)}" required></div>
+        <div class="field"><label for="eu">اسم المستخدم</label><input id="eu" maxlength="20" value="${esc(st.username || "")}" autocapitalize="off" spellcheck="false"></div>
+        <div class="field"><label for="eg">الحلقة</label><select id="eg">${groupOpts(st.group)}${st.group && !myGroups.includes(st.group) ? `<option selected>${esc(st.group)}</option>` : ""}</select></div>
+        <button class="btn" type="submit">حفظ</button>
+      </form>
+      <p class="msg" id="stmsg"></p>
+      <h3>ولي الأمر</h3>
+      <div class="actions" style="margin:0"><button class="btn small" id="plink">🔗 رابط تقرير ولي الأمر</button>
+        <button class="btn ghost small" id="onecard">🪪 بطاقة الدخول</button></div>
+      ${UI.link && UI.link.sid === st.sid ? `<div class="linkbox"><input id="linkurl" readonly dir="ltr" value="${esc(UI.link.url)}" aria-label="رابط التقرير">
+        <div class="actions" style="margin:0"><button class="btn small" id="copylink">نسخ</button>
+        <a class="btn small wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`تقرير ${st.name} في «رحلة الحروف»: ${UI.link.url}`)}">واتساب</a>
+        <button class="btn ghost small" id="renew">↻ رابط جديد (يُبطل القديم)</button></div>
+        <span class="muted">الرابط خاص بهذا الطالب: يعرض تقدّمه وشهاداته فقط، بلا كلمة مرور. أرسله لولي أمره وحده.</span></div>` : ""}
+      <div class="actions">
+        <button class="btn ghost small" id="askreset">↺ إعادة ضبط التقدّم</button>
+        ${data.me.main ? `<button class="btn ghost small" id="askdel" style="color:var(--red)">🗑️ حذف الطالب</button>` : ""}
+        <button class="btn ghost small" id="clear">عرض كل الطلاب</button>
+      </div>
+      ${cf === "reset" ? `<div class="confirm"><b>إعادة ضبط تقدّم ${esc(st.name)}؟</b><span class="muted">يرجع إلى بداية الدرس الأول على كل أجهزته، ويبقى اسمه ورمزه وسجل نشاطه.</span>
+        <div class="actions" style="margin:0"><button class="btn danger small" id="doreset">نعم، أعد الضبط</button><button class="btn ghost small" data-cancel>إلغاء</button></div></div>` : ""}
+      ${cf === "delete" ? `<div class="confirm"><b>حذف ${esc(st.name)} نهائياً؟</b><span class="muted">يُحذف من قائمة الطلاب ولا يعود رمزه يعمل. يبقى نشاطه القديم في «سجل النشاط». لا يمكن التراجع.</span>
+        <div class="actions" style="margin:0"><button class="btn danger small" id="dodel">نعم، احذف</button><button class="btn ghost small" data-cancel>إلغاء</button></div></div>` : ""}
+    </div>`;
+  } else {
+    h += `<div class="panel"><h2>تفاصيل طالب</h2><p class="muted">اضغط على اسم طالب في الجدول لترى خطواته، وتعدّل اسمه أو حلقته${data.me.admin ? "، أو تحذفه" : ""}.</p></div>`;
+  }
+  h += `<div class="panel"><h2>${st ? "نشاط " + esc(st.name) : "آخر النشاطات"}</h2><ul class="feed">${evs.length ? evs.map(e => `<li>
+      <div><b>${esc(e.name)}</b> · ${esc(e.activity)}${e.total !== "" && e.total != null ? ` · ${esc(e.score)} من ${esc(e.total)}` : ""}</div>
+      <span class="muted">${ago(e.ts)}</span></li>`).join("") : `<li class="muted">لا يوجد نشاط بعد.</li>`}</ul></div></div>`;
+  return h;
+}
+const rows = () => UI.rows || [];
+function bindStudents() {
+  const qi = $("q");
+  qi.oninput = () => { UI.q = qi.value.trim(); const pos = qi.selectionStart; render(); const n = $("q"); n.focus(); n.setSelectionRange(pos, pos); };
+  $("grp").onchange = (e) => { UI.grp = e.target.value; render(); };
+  $("sort").onchange = (e) => { UI.sortBy = e.target.value; render(); };
+  root.querySelectorAll("tr[data-sid]").forEach(tr => tr.onclick = () => { UI.sel = tr.dataset.sid; UI.confirm = null; UI.openL = null; render();
+    const d = root.querySelector(".detail"); if (d && window.innerWidth < 900) d.scrollIntoView({ behavior: "smooth" }); });
+  $("carebtn").onclick = () => { UI.care = !UI.care; render(); };
+  $("cards").onclick = () => printCards(rows());
+  if ($("backup")) $("backup").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("backup");
+    flash("repmsg", j.error ? (j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 7)." : "تعذّرت النسخة: " + errText(j.error)) : `حُفظت نسخة في Drive ✓ (${j.name})`, !j.error);
+  });
+  if ($("repair")) $("repair").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("repair");
+    if (j.error) return flash("repmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 6)." : errText(j.error));
+    await load(); flash("repmsg", j.fixed ? `أُصلح تقدّم ${j.fixed} طالب ✓` : "لا يوجد شيء ناقص ✓", true);
+  });
+  $("addf").onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const name = $("an").value.trim();
+    if (!name) return;
+    const want = $("au2").value.trim();
+    const j = await call("register", { name, group: $("ag").value, username: want });
+    if (j.error) return flash("addmsg", errText(j.error));
+    UI.lastCode = { name, username: j.username, renamed: j.wanted && j.wanted !== j.username ? j.wanted : "" }; await load();
+  }); };
+  const sid = UI.sel;
+  if (!$("editst")) return;
+  $("clear").onclick = () => { UI.sel = null; UI.confirm = null; render(); };
+  $("editst").onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const j = await call("student.update", { sid, name: $("en").value.trim(), group: $("eg").value, username: $("eu").value.trim() });
+    if (j.error) return flash("stmsg", errText(j.error) + (j.suggest ? ` جرّب: ${j.suggest}` : ""));
+    await load(); flash("stmsg", "تم الحفظ ✓", true);
+  }); };
+  $("askreset").onclick = () => { UI.confirm = { sid, kind: "reset" }; render(); };
+  const getLink = (renew) => async (e) => busy(e.currentTarget, async () => {
+    const j = await call("report.link", { sid, renew: !!renew });
+    if (j.error) return flash("stmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 7)." : errText(j.error));
+    UI.link = { sid, url: new URL("report.html#" + j.key, location.href).href }; render();
+    if (renew) flash("stmsg", "أُنشئ رابط جديد ✓ الرابط القديم لم يعد يعمل.", true);
+  });
+  $("plink").onclick = getLink(false);
+  if ($("renew")) $("renew").onclick = getLink(true);
+  if ($("copylink")) $("copylink").onclick = (e) => { const i = $("linkurl"); navigator.clipboard.writeText(i.value).then(() => { e.target.textContent = "نُسخ ✓"; }).catch(() => { i.select(); }); };
+  $("onecard").onclick = () => printCards([(data.students || []).find(s => s.sid === sid)]);
+  root.querySelectorAll("[data-openl]").forEach(b => b.onclick = () => { UI.openL = UI.openL === +b.dataset.openl ? null : +b.dataset.openl; render(); });
+  if ($("copyu")) $("copyu").onclick = (e) => { const u = (data.students || []).find(s => s.sid === sid).username;
+    navigator.clipboard.writeText(u).then(() => { e.target.textContent = "نُسخ ✓"; }).catch(() => { e.target.textContent = u; }); };
+  root.querySelectorAll("[data-showcert]").forEach(b => b.onclick = () => showCert((data.students || []).find(s => s.sid === sid), +b.dataset.showcert));
+  if ($("askdel")) $("askdel").onclick = () => { UI.confirm = { sid, kind: "delete" }; render(); };
+  root.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { UI.confirm = null; render(); });
+  if ($("doreset")) $("doreset").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("student.reset", { sid }); UI.confirm = null;
+    if (j.error) return flash("stmsg", errText(j.error));
+    await load(); flash("stmsg", "أُعيد ضبط التقدّم ✓", true);
+  });
+  if ($("dodel")) $("dodel").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("student.delete", { sid }); UI.confirm = null;
+    if (j.error) return flash("stmsg", errText(j.error));
+    UI.sel = null; await load();
+  });
+}
+
+/* ---------------- الشهادة ---------------- */
+async function showCert(s, n) {
+  n = n || 1; const x = lessonOf(s, n);
+  const box = document.createElement("div");
+  box.className = "modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "شهادة " + s.name);
+  box.innerHTML = `<div class="modal-card"><div class="modal-head"><b>شهادة ${esc(s.name)}</b><button class="btn ghost small" data-x>✕ إغلاق</button></div>
+    <img alt="شهادة ${esc(s.name)}"><p class="muted">⏳ جارٍ التجهيز...</p>
+    <div class="actions"><button class="btn" data-dl>⬇️ تحميل الصورة</button><button class="btn ghost" data-pr>🖨️ طباعة</button></div></div>`;
+  document.body.appendChild(box);
+  const close = () => box.remove();
+  box.querySelector("[data-x]").onclick = close;
+  box.onclick = (e) => { if (e.target === box) close(); };
+  const cv = await Certificate.render({ name: s.name, sid: s.sid, username: s.username, lessonIndex: n - 1, lessonName: LESSONS_T[n - 1].title,
+    score: x.best, total: 10, teacher: s.teacher || "", group: s.group, date: x.passedAt || s.lastSeen });
+  box.querySelector("img").src = cv.toDataURL("image/png");
+  box.querySelector(".muted").remove();
+  box.querySelector("[data-dl]").onclick = () => Certificate.download(cv, `certificate-lesson-${n}-${s.sid}.png`);
+  box.querySelector("[data-pr]").onclick = () => Certificate.print(cv);
+}
+
+/* ---------------- المعلمون (للمدير) ---------------- */
+function teachersTab() {
+  if (!tdata) return `<div class="panel"><p class="muted">جارٍ التحميل...</p></div>`;
+  const T = tdata.teachers || [], G = tdata.groups || [];
+  const ed = UI.editT; // null = إضافة، أو كائن المعلم
+  const cur = ed ? T.find(t => t.user === ed) : null;
+  let h = `<form class="panel stack" id="tform" autocomplete="off">
+    <h2>${cur ? "تعديل: " + esc(cur.name) : "إضافة معلم"}</h2>
+    <div class="row r2">
+      <div class="field"><label for="tn">اسم المعلم</label><input id="tn" maxlength="60" value="${esc(cur ? cur.name : "")}" placeholder="مثال: الأستاذ أحمد" required></div>
+      <div class="field"><label for="tu">اسم المستخدم (للدخول)</label><input id="tu" maxlength="40" dir="ltr" value="${esc(cur ? cur.user : "")}" placeholder="ahmad" required autocomplete="off"></div>
+    </div>
+    <div class="field"><label for="tp">كلمة المرور</label><input id="tp" type="text" dir="ltr" maxlength="60" autocomplete="new-password" placeholder="${cur ? "اتركها فارغة لتبقى كما هي" : "4 أحرف على الأقل"}" ${cur ? "" : "required"}></div>
+    <div class="field"><label>حلقاته</label>
+      <div class="checks">${G.length ? G.map(g => `<label><input type="checkbox" name="tg" value="${esc(g)}" ${cur && cur.groups.includes(g) ? "checked" : ""}> ${esc(g)}</label>`).join("") : `<span class="muted">لا توجد حلقات بعد.</span>`}</div>
+      <input id="tnewg" maxlength="40" placeholder="أو أنشئ حلقة جديدة له: اكتب اسمها هنا">
+    </div>
+    ${data.me.main ? `<label class="checks" style="font-weight:600"><label><input type="checkbox" id="tadm" ${cur && cur.admin ? "checked" : ""}> مدير مساعد (يرى كل الحلقات ويعدّل، ولا يحذف)</label></label>` : ""}
+    <div class="actions" style="margin:0"><button class="btn" type="submit">${cur ? "حفظ التعديل" : "➕ إضافة المعلم"}</button>${cur ? `<button class="btn ghost" type="button" id="tcancel">إلغاء</button>` : ""}</div>
+    <p class="msg" id="tmsg"></p>
+  </form>
+  <div class="panel"><h2>المعلمون (${T.length})</h2><div class="tablebox"><table>
+    <thead><tr><th>المعلم</th><th>اسم المستخدم</th><th>الحلقات</th><th></th></tr></thead>
+    <tbody>${T.length ? T.map(t => `<tr>
+      <td><b>${esc(t.name)}</b> ${t.admin ? `<span class="chip adm">مدير</span>` : ""}</td>
+      <td><bdi dir="ltr">${esc(t.user)}</bdi></td>
+      <td>${t.admin ? `<span class="muted">كل الحلقات</span>` : t.groups.map(g => `<span class="chip grp">${esc(g)}</span>`).join("") || `<span class="muted">—</span>`}</td>
+      <td style="white-space:nowrap"><button class="btn ghost small" data-edit="${esc(t.user)}">✏️ تعديل</button>
+        ${data.me.main ? `<button class="btn ghost small" data-del="${esc(t.user)}" style="color:var(--red)">🗑️</button>` : ""}</td></tr>
+      ${UI.confirm && UI.confirm.kind === "tdel" && UI.confirm.user === t.user ? `<tr><td colspan="4"><div class="confirm" style="margin:0"><b>حذف حساب ${esc(t.name)}؟</b><span class="muted">لن يستطيع الدخول بعد الآن. طلاب حلقاته يبقون كما هم.</span>
+        <div class="actions" style="margin:0"><button class="btn danger small" id="dotdel">نعم، احذف</button><button class="btn ghost small" data-cancel>إلغاء</button></div></div></td></tr>` : ""}`).join("")
+    : `<tr><td colspan="4" class="muted">لا يوجد معلمون بعد. أضف أول معلم من الأعلى.</td></tr>`}</tbody></table></div></div>`;
+  return h;
+}
+function bindTeachers() {
+  if (!tdata) return;
+  $("tform").onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const groups = [...root.querySelectorAll("input[name=tg]:checked")].map(x => x.value);
+    const ng = $("tnewg").value.trim(); if (ng) groups.push(ng);
+    const j = await call("teacher.save", { orig: UI.editT || "", tUser: $("tu").value.trim(), name: $("tn").value.trim(), tPass: $("tp").value.trim(), groups, admin: $("tadm") ? $("tadm").checked : !!(UI.editT && (tdata.teachers.find(x => x.user === UI.editT) || {}).admin) });
+    if (j.error) return flash("tmsg", errText(j.error));
+    const was = UI.editT; UI.editT = null; await loadTeachers(); gdata = null; render();
+    flash("tmsg", was ? "حُفظ التعديل ✓" : "أُضيف المعلم ✓ — أعطه اسم المستخدم وكلمة المرور ليدخل.", true);
+  }); };
+  if ($("tcancel")) $("tcancel").onclick = () => { UI.editT = null; render(); };
+  root.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { UI.editT = b.dataset.edit; UI.confirm = null; render(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { UI.confirm = { kind: "tdel", user: b.dataset.del }; render(); });
+  root.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { UI.confirm = null; render(); });
+  if ($("dotdel")) $("dotdel").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("teacher.delete", { tUser: UI.confirm.user }); UI.confirm = null;
+    if (j.error) { render(); return flash("tmsg", errText(j.error)); }
+    if (UI.editT) UI.editT = null; await loadTeachers(); gdata = null; render();
+  });
+}
+
+/* ---------------- الحلقات (للمدير) ---------------- */
+function groupsTab() {
+  if (!gdata) return `<div class="panel"><p class="muted">جارٍ التحميل...</p></div>`;
+  const G = gdata.groups || [], T = gdata.teachers || [];
+  const cur = UI.editG ? G.find(g => g.name === UI.editG) : null;
+  return `<form class="panel stack" id="gform" autocomplete="off">
+    <h2>${cur ? "تعديل حلقة: " + esc(cur.name) : "إنشاء حلقة"}</h2>
+    <div class="field"><label for="gname">اسم الحلقة</label><input id="gname" maxlength="40" value="${esc(cur ? cur.name : "")}" placeholder="مثال: حلقة الفجر" required></div>
+    ${cur ? `<p class="muted" style="margin:0">تغيير الاسم يشمل كل طلاب الحلقة (${cur.students}).</p>` : ""}
+    <div class="field"><label>معلم الحلقة</label>
+      <div class="checks">${T.length ? T.map(t => `<label><input type="checkbox" name="gt" value="${esc(t.user)}" ${cur && cur.teachers.includes(t.user) ? "checked" : ""}> ${esc(t.name)}</label>`).join("") : `<span class="muted">أضف المعلمين أولاً من تبويب «المعلمون».</span>`}</div></div>
+    <div class="actions" style="margin:0"><button class="btn" type="submit">${cur ? "حفظ التعديل" : "➕ إنشاء الحلقة"}</button>${cur ? `<button class="btn ghost" type="button" id="gcancel">إلغاء</button>` : ""}</div>
+    <p class="msg" id="gmsg"></p>
+  </form>
+  <div class="panel"><h2>الحلقات (${G.length})</h2><div class="tablebox"><table>
+    <thead><tr><th>الحلقة</th><th>المعلم</th><th>الطلاب</th><th></th></tr></thead>
+    <tbody>${G.length ? G.map(g => `<tr>
+      <td><b>${esc(g.name)}</b></td>
+      <td>${g.teachers.map(u => { const t = T.find(x => x.user === u); return `<span class="chip grp">${esc(t ? t.name : u)}</span>`; }).join("") || `<span class="chip bad">بلا معلم</span>`}</td>
+      <td class="num">${g.students}</td>
+      <td style="white-space:nowrap"><button class="btn ghost small" data-gedit="${esc(g.name)}">✏️ تعديل</button>
+        ${data.me.main ? `<button class="btn ghost small" data-gdel="${esc(g.name)}" style="color:var(--red)">🗑️</button>` : ""}</td></tr>
+      ${UI.confirm && UI.confirm.kind === "gdel" && UI.confirm.name === g.name ? `<tr><td colspan="4"><div class="confirm" style="margin:0"><b>حذف «${esc(g.name)}»؟</b><span class="muted">${g.students ? `طلابها (${g.students}) يبقون، لكن يصبحون «بدون حلقة» ولا يراهم إلا المدير حتى تنقلهم.` : "لا يوجد فيها طلاب."}</span>
+        <div class="actions" style="margin:0"><button class="btn danger small" id="dogdel">نعم، احذف</button><button class="btn ghost small" data-cancel>إلغاء</button></div></div></td></tr>` : ""}`).join("")
+    : `<tr><td colspan="4" class="muted">لا توجد حلقات بعد.</td></tr>`}
+    ${gdata.ungrouped ? `<tr><td class="muted">بدون حلقة</td><td></td><td class="num">${gdata.ungrouped}</td><td></td></tr>` : ""}</tbody></table></div></div>`;
+}
+function bindGroups() {
+  if (!gdata) return;
+  $("gform").onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const teachers = [...root.querySelectorAll("input[name=gt]:checked")].map(x => x.value);
+    const j = await call("group.save", { orig: UI.editG || "", name: $("gname").value.trim(), teachers });
+    if (j.error) return flash("gmsg", errText(j.error));
+    const was = UI.editG; UI.editG = null; await loadGroups(); tdata = null; await load();
+    flash("gmsg", was ? "حُفظ التعديل ✓" : "أُنشئت الحلقة ✓", true);
+  }); };
+  if ($("gcancel")) $("gcancel").onclick = () => { UI.editG = null; render(); };
+  root.querySelectorAll("[data-gedit]").forEach(b => b.onclick = () => { UI.editG = b.dataset.gedit; UI.confirm = null; render(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  root.querySelectorAll("[data-gdel]").forEach(b => b.onclick = () => { UI.confirm = { kind: "gdel", name: b.dataset.gdel }; render(); });
+  root.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { UI.confirm = null; render(); });
+  if ($("dogdel")) $("dogdel").onclick = (e) => busy(e.currentTarget, async () => {
+    const j = await call("group.delete", { name: UI.confirm.name }); UI.confirm = null;
+    if (j.error) { render(); return flash("gmsg", errText(j.error)); }
+    UI.editG = null; await loadGroups(); tdata = null; await load();
+  });
+}
+
+/* ---------------- بطاقات الدخول (QR) ---------------- */
+function qrSvg(text) {
+  const q = qrcode(0, "M"); q.addData(text); q.make();
+  return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+}
+function printCards(list) {
+  list = (list || []).filter(s => s && s.username);
+  if (!list.length) return;
+  const site = new URL("index.html", location.href).href;
+  const cards = list.map(s => {
+    const url = site + "#u=" + encodeURIComponent(s.username);
+    return `<div class="card"><div class="head"><img src="${new URL("icons/wordmark-light.svg", location.href).href}" alt=""><span>بطاقة دخول</span></div>
+      <div class="body"><div class="qr">${qrSvg(url)}</div><div class="info"><b>${esc(s.name)}</b>${s.group ? `<small>${esc(s.group)}</small>` : ""}
+        <span class="lbl">اسم المستخدم</span><span class="user" dir="auto">${esc(s.username)}</span></div></div>
+      <p class="how">امسح الرمز بكاميرا الجوال، أو افتح الموقع واكتب اسم المستخدم.</p></div>`;
+  }).join("");
+  const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقات الدخول</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap">
+  <style>@page{size:A4;margin:10mm}body{margin:0;font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif;color:#1b1d45}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .card{border:1px dashed #9a9cc0;padding:5mm;height:66mm;box-sizing:border-box;break-inside:avoid;display:flex;flex-direction:column;gap:2mm}
+  .head{display:flex;justify-content:space-between;align-items:center}.head img{height:8mm}.head span{font-size:9pt;color:#565a86;font-weight:700}
+  .body{display:flex;gap:4mm;align-items:center;flex:1}.qr{width:34mm;height:34mm;flex:none}.qr svg{width:100%;height:100%}
+  .info{display:flex;flex-direction:column;min-width:0}.info b{font-size:14pt;line-height:1.3}.info small{color:#565a86;font-size:9pt}
+  .lbl{font-size:8pt;color:#565a86;margin-top:2mm}.user{font-size:18pt;font-weight:700;color:#2a5fd0;letter-spacing:1px;overflow-wrap:anywhere}
+  .how{margin:0;font-size:8pt;color:#565a86}</style></head><body><div class="grid">${cards}</div></body></html>`;
+  const f = document.createElement("iframe");
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(f);
+  const doc = f.contentWindow.document; doc.open(); doc.write(html); doc.close();
+  let done = false;
+  const go = () => { if (done) return; done = true; try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) {} setTimeout(() => f.remove(), 4000); };
+  f.contentWindow.onload = () => setTimeout(go, 600);
+  setTimeout(go, 2500);
+}
+
+/* ---------------- التقرير الأسبوعي ---------------- */
+function weekStats(group) {
+  const S = (data.students || []).filter(s => !group || s.group === group);
+  const ids = new Set(S.map(s => s.sid));
+  const E = ((wdata && wdata.events) || []).filter(e => ids.has(e.sid) && e.activity !== "مزامنة");
+  const per = {};
+  S.forEach(s => per[s.sid] = { s, acts: 0, steps: 0, tests: [], passed: [] });
+  E.forEach(e => {
+    const p = per[e.sid]; if (!p) return;
+    p.acts++;
+    if (/ — (المرحلة|لعبة)/.test(e.activity)) p.steps++;
+    if (/ — الاختبار$/.test(e.activity)) { p.tests.push(e); if (Number(e.score) >= 8) p.passed.push(e.activity.replace(" — الاختبار", "")); }
+  });
+  const list = Object.values(per);
+  return { S, list, active: list.filter(p => p.acts), idle: list.filter(p => !p.acts),
+    passed: list.filter(p => p.passed.length), failed: list.filter(p => p.tests.length && !p.passed.length) };
+}
+function weekText(group, w) {
+  const d = (x) => new Date(x).toLocaleDateString("ar-EG", { day: "numeric", month: "long" });
+  let t = `📊 التقرير الأسبوعي — ${group || "كل الحلقات"}\n${d(wdata.since)} – ${d(Date.now())}\n\n`;
+  t += `👧 عدد الطلاب: ${w.S.length}\n✅ تدرّب هذا الأسبوع: ${w.active.length}\n`;
+  if (w.passed.length) t += `\n🏅 نجحوا في اختبار:\n${w.passed.map(p => `• ${p.s.name}: ${p.passed.join("، ")}`).join("\n")}\n`;
+  const top = w.active.slice().sort((a, b) => b.steps - a.steps).slice(0, 3).filter(p => p.steps);
+  if (top.length) t += `\n⭐ الأكثر اجتهاداً:\n${top.map(p => `• ${p.s.name} (${p.steps} خطوات)`).join("\n")}\n`;
+  if (w.failed.length) t += `\n📖 يحتاجون مراجعة:\n${w.failed.map(p => `• ${p.s.name}`).join("\n")}\n`;
+  if (w.idle.length) t += `\n⏰ لم يتدرّبوا هذا الأسبوع:\n${w.idle.map(p => `• ${p.s.name}`).join("\n")}\n`;
+  return t + `\nبارك الله في جهودكم 🌱`;
+}
+function weeklyTab() {
+  if (!wdata) return `<div class="panel"><p class="muted">⏳ جارٍ تجهيز تقرير الأسبوع...</p></div>`;
+  if (wdata.error) return `<div class="panel"><p class="err">${wdata.error === "unknown_action" ? "التقرير الأسبوعي يحتاج نشر كود الجدول الجديد (الإصدار 7)." : esc(errText(wdata.error))}</p></div>`;
+  const me = data.me;
+  const groups = [...new Set([...(me.groups || []), ...(data.students || []).map(s => s.group).filter(Boolean)])].sort();
+  if (UI.wg == null) UI.wg = me.admin ? "" : (groups[0] || "");
+  const w = weekStats(UI.wg), text = weekText(UI.wg, w);
+  return `<div class="panel stack"><div class="row r2" style="grid-template-columns:1fr auto">
+      <select id="wg" aria-label="الحلقة">${me.admin ? `<option value="">كل الحلقات</option>` : ""}${groups.map(g => `<option ${g === UI.wg ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>
+      <button class="btn ghost" id="wref">↻ تحديث</button></div>
+    <div class="tiles"><div class="tile"><b>${w.active.length}/${w.S.length}</b><span>تدرّب هذا الأسبوع</span></div>
+      <div class="tile"><b>${w.passed.length}</b><span>نجح في اختبار</span></div>
+      <div class="tile"><b>${w.failed.length}</b><span>يحتاج مراجعة</span></div>
+      <div class="tile"><b>${w.idle.length}</b><span>لم يتدرّب</span></div></div></div>
+  <div class="detail"><div class="panel"><h2>الطلاب هذا الأسبوع</h2><div class="tablebox"><table>
+    <thead><tr><th>الطالب</th><th>أنشطة</th><th>خطوات</th><th>اختبارات</th><th>نجح في</th></tr></thead>
+    <tbody>${w.list.sort((a, b) => b.acts - a.acts).map(p => `<tr><td><b>${esc(p.s.name)}</b></td><td class="num">${p.acts || "—"}</td><td class="num">${p.steps || "—"}</td>
+      <td class="num">${p.tests.map(e => `<span class="chip ${Number(e.score) >= 8 ? "ok" : "bad"}">${esc(e.score)}/10</span>`).join("") || "—"}</td>
+      <td>${p.passed.map(x => `<span class="chip ok">${esc(x)}</span>`).join("") || "—"}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">لا يوجد طلاب.</td></tr>`}</tbody></table></div></div>
+  <div class="panel stack"><h2>نص للمشاركة</h2><textarea id="wtext" rows="16" dir="rtl" aria-label="نص التقرير">${esc(text)}</textarea>
+    <div class="actions" style="margin:0"><button class="btn" id="wcopy">📋 نسخ التقرير</button>
+      <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">إرسال عبر واتساب</a></div>
+    <span class="muted">يمكنك تعديل النص قبل النسخ. لا يُذكر فيه إلا الاسم، بلا أسماء مستخدمين ولا روابط.</span></div></div>`;
+}
+function bindWeekly() {
+  if (!$("wg")) return;
+  $("wg").onchange = (e) => { UI.wg = e.target.value; render(); };
+  $("wref").onclick = (e) => busy(e.currentTarget, async () => { await load(); await loadWeekly(); render(); });
+  $("wcopy").onclick = (e) => { const t = $("wtext"); navigator.clipboard.writeText(t.value).then(() => { e.target.textContent = "نُسخ ✓"; }).catch(() => { t.select(); }); };
+}
+
+/* ---------------- حسابي ---------------- */
+function accountTab() {
+  const me = data.me;
+  return `<form class="panel stack" id="aform" autocomplete="off" style="max-width:520px">
+    <h2>${me.main ? "حساب المدير" : "حسابي"}</h2>
+    ${me.main ? `<div class="field"><label for="au">اسم المستخدم</label><input id="au" dir="ltr" maxlength="40" value="${esc(me.user)}" autocomplete="username"></div>`
+      : `<p class="muted" style="margin:0">اسم المستخدم: <bdi dir="ltr">${esc(me.user)}</bdi></p>`}
+    <div class="field"><label for="ap1">كلمة المرور الجديدة</label><input id="ap1" type="password" dir="ltr" minlength="6" autocomplete="new-password" required></div>
+    <div class="field"><label for="ap2">أعد كتابتها</label><input id="ap2" type="password" dir="ltr" minlength="6" autocomplete="new-password" required></div>
+    <p class="muted" style="margin:0">6 أحرف على الأقل.${me.main ? " بعد الحفظ لا تعود كلمة المرور المكتوبة في الكود تعمل." : ""}</p>
+    <div><button class="btn" type="submit">حفظ</button></div>
+    <p class="msg" id="amsg"></p>
+  </form>`;
+}
+function bindAccount() {
+  $("aform").onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const p1 = $("ap1").value, p2 = $("ap2").value;
+    if (p1 !== p2) return flash("amsg", "كلمتا المرور غير متطابقتين.");
+    const j = await call("account.update", { newPass: p1, newUser: $("au") ? $("au").value.trim() : undefined });
+    if (j.error) return flash("amsg", errText(j.error));
+    cred = { user: j.user, pass: p1 };
+    try { sessionStorage.setItem("teacher-cred", JSON.stringify(cred)); } catch (x) {}
+    await load(); flash("amsg", "حُفظ ✓ استعمل البيانات الجديدة في المرة القادمة.", true);
+  }); };
+}
+
+render();
+if (cred && CFG.backendUrl) load();
+setInterval(() => { if (data && cred && UI.tab === "students" && !document.activeElement.matches("input, select")) load(); }, 60000);
+})();
+</script>
+</body>
+</html>
