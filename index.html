@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icons/rehla-touch.png">
 <script src="config.js"></script>
 <script src="cert.js"></script>
+<script src="intro.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
@@ -118,6 +119,7 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .hero .big { white-space: nowrap; font-family: var(--f-letter); font-size: 2.8rem; line-height: 1; color: var(--gold); }
 .hero p { margin: 0; line-height: 1.5; }
 .hero .mark { width: 64px; height: 64px; flex: none; border-radius: 16px; box-shadow: 0 0 0 2px #ffffff33; }
+.storybtn { font-size: .92rem; margin-top: 2px; padding: 0; }
 .hero b { font-family: var(--f-title); font-weight: 400; font-size: 1.5rem; }
 .map { display: flex; flex-direction: column; gap: 4px; padding-block: 6px; }
 .station { display: flex; align-items: center; gap: 14px; }
@@ -848,7 +850,7 @@ const birdsOn = () => DB.birds !== false;
 function birdsTick() {
   clearTimeout(birdsTimer);
   birdsTimer = setTimeout(birdsTick, 7000 + Math.random() * 8000);
-  if (!birdsOn() || !actx || document.hidden || screen.name !== "home" || (cur && !cur.paused) || (window.speechSynthesis && speechSynthesis.speaking)) return;
+  if (!birdsOn() || !actx || document.hidden || screen.name !== "home" || document.body.classList.contains("intro-on") || (cur && !cur.paused) || (window.speechSynthesis && speechSynthesis.speaking)) return;
   const t = actx.currentTime + .05, base = 2200 + Math.random() * 1600;
   chirp(t, base, 2 + Math.floor(Math.random() * 3), .018);
   if (Math.random() < .4) chirp(t + .6 + Math.random() * .4, base * (.85 + Math.random() * .3), 2, .012);
@@ -1119,10 +1121,24 @@ window.addEventListener("popstate", (e) => {
   go(n, st.d || {}, true);
 });
 
+/* قصة البداية: تظهر مرة واحدة لكل طالب على الجهاز (وتُعاد من زر 🎬) */
+function showIntro() {
+  if (!window.RehlaIntro || RehlaIntro.open) return;
+  stopAudio();
+  RehlaIntro.show({ sfx, name: P && !TEACHER ? P.name : "" });
+}
+function maybeIntro() {
+  if (screen.name !== "home" || !P || TEACHER || !window.RehlaIntro) return;
+  DB.introSeen = DB.introSeen || {};
+  if (DB.introSeen[P.id]) return;
+  DB.introSeen[P.id] = Date.now(); save();
+  showIntro();
+}
 function render() {
   document.body.classList.toggle("scene", ["stage", "quiz", "balloons", "result"].includes(screen.name));
   ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
   drawTrails();
+  maybeIntro();
 }
 
 function Login() {
@@ -1385,7 +1401,7 @@ function Home() {
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
   html += `<div class="homegrid"><aside class="side">`;
-  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p></div>`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.<br><button class="linkbtn storybtn" id="story">🎬 شاهد قصة الرحلة</button></p></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
       screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
@@ -1951,6 +1967,7 @@ $app.addEventListener("click", (e) => {
     else startLessonTest(CUR);
   }
   if (e.target.closest("#signout")) return signOut();
+  if (e.target.closest("#story")) return showIntro();
   if (e.target.closest("#birds")) { DB.birds = !birdsOn(); save(); if (DB.birds) { ac(); chirp(actx.currentTime + .05, 2800, 3, .05); } toast(DB.birds ? "🐦 أصوات الطيور تعمل" : "🔇 أُوقفت أصوات الطيور"); return render(); }
   if (e.target.closest("#keepme")) { P.temp = false; save(); toast("حُفظ اسمك على هذا الجهاز ✓"); return render(); }
   if (e.target.closest("#lang")) {
