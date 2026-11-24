@@ -1,5 +1,5 @@
 /**
- * سجل المعلم — رحلة الحروف (الإصدار 8: سجل التعديلات + النقل بالجملة + الاستيراد + الإحصاءات وأصعب الأسئلة)
+ * سجل المعلم — رحلة الحروف (الإصدار 9: التسجيل للمعلم والمدير فقط + سجل التعديلات + النقل + الاستيراد + الإحصاءات)
  * بعد التحديث: شغّل setup، ثم (مرة واحدة) installTriggers للنسخة الاحتياطية والبريد الأسبوعي، ثم انشر «إصدار جديد»
  * من إنشاء م. كريم عادل اللوح · Created by Eng. Kareem Adel Allouh
  *
@@ -12,7 +12,7 @@
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "غير-هذه-الكلمة";
 
-const VERSION = 8;
+const VERSION = 9;
 const STUDENTS = "الطلاب";
 const EVENTS = "سجل النشاط";
 const TEACHERS = "المعلمون";
@@ -322,13 +322,8 @@ function selfRegister_(d) {
     if (!s.username) { const u = pickUsername_(d.username || first_(s.name), takenMap_(st)); st.getRange(r, 11).setValue(u); s.username = u; }
     return { ok: true, student: publicStudent_(s, te) };
   }
-  const name = clean_(d.name, 40);
-  if (!name) return { error: "no_name" };
-  const group = clean_(d.group, 40);
-  const u = pickUsername_(d.username || first_(name), takenMap_(st));
-  newRow_(st, sid, name, group, u);
-  ev.appendRow([new Date(), name, group, "تسجيل طالب جديد", "", "", "لم يبدأ بعد", sid]);
-  return { ok: true, student: publicStudent_(readStudent_(st, st.getLastRow()), te) };
+  // التسجيل الذاتي مغلق: لا يُضاف طالب إلا من المعلم أو المدير
+  return { error: "closed" };
 }
 
 function logEvent_(d) {
@@ -338,7 +333,7 @@ function logEvent_(d) {
   if (isDeleted_(sid)) return out_("deleted");
   const now = new Date();
   let r = studentRow_(st, sid);
-  if (r < 0) { newRow_(st, sid, clean_(d.name, 40), clean_(d.group, 40), pickUsername_(d.username || first_(d.name), takenMap_(st))); r = st.getLastRow(); }
+  if (r < 0) return out_("unknown"); // طالب غير مسجّل من المعلم أو المدير: لا يُنشأ له سجل
   const old = readStudent_(st, r);
   // الاسم والحلقة يحددهما السجل (يعدّلهما المدير أو المعلم). المزامنة الصامتة لا تُكتب في سجل النشاط
   if (!d.silent) ev.appendRow([now, old.name, old.group, clean_(d.activity, 60), num_(d.score), num_(d.total), clean_(d.position, 80), sid]);

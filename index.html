@@ -61,6 +61,34 @@ body {
   flex-direction: column;
   gap: 16px;
 }
+.homegrid, .homegrid .side, .mapcol, .logingrid, .lside, .lmain { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.formhead { margin: 0 0 4px; font-family: var(--f-title); font-weight: 400; font-size: 1.4rem; }
+/* الحاسوب واللوحي: الشاشة كلها بدل عمود الهاتف */
+@media (min-width: 700px) {
+  #app { max-width: 780px; }
+}
+@media (min-width: 1000px) {
+  #app { max-width: 1200px; padding-block: 20px 40px; gap: 20px; }
+  .bar { min-height: 66px; }
+  .bar h1 { font-size: 1.9rem; }
+  .bar h1 .wordmark { height: 44px; }
+  .homegrid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 32px; align-items: start; }
+  .homegrid .side { position: sticky; top: 16px; }
+  .mapcol { background: var(--card); border-radius: 28px; padding: 12px 28px 28px; box-shadow: 0 6px 0 #d5d7ee; }
+  .logingrid { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 32px; align-items: start; }
+  .lmain { position: sticky; top: 16px; }
+  .kids { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  #app > .trail, #app > .explain, #app > .learn, #app > .ask, #app > .progress, #app > .result,
+  #app > .certwrap, #app > .certactions, #app > .sky, #app > .steps, #app > .tbanner + .trail { width: 100%; max-width: 880px; margin-inline: auto; }
+  #app > .progress, #app > .ask { max-width: 760px; }
+  #app > .opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; max-width: 900px; margin-inline: auto; }
+  #app > .opts .opt { width: 170px; }
+  #app > .opts .opt.word { width: 240px; }
+  #app > .opts .opt.cls { width: 210px; }
+  .sylgrid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+  .syl { font-size: 2.8rem; }
+  .card-letter { max-width: 420px; }
+}
 button { font-family: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
 button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 
@@ -948,8 +976,8 @@ function Login() {
   const list = Object.values(DB.students).filter(k => !k.temp).sort((a, b) => (b.seen || 0) - (a.seen || 0));
   const rm = screen.remove && DB.students[screen.remove];
   let html = bar("رحلة الحروف", P && !TEACHER ? "home" : null, `<button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>`);
-  html += offlineNote() + hint("login");
-  html += `<div class="hero"><div class="big">👋</div><p><b>من سيتعلم الآن؟</b><br>اختر اسمك، أو ادخل باسم المستخدم، أو أضف طالباً جديداً.</p></div>`;
+  html += offlineNote() + hint("login") + `<div class="logingrid"><div class="lside">`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>من سيتعلم الآن؟</b><br>${list.length ? "اختر اسمك، أو ادخل باسم المستخدم." : "ادخل باسم المستخدم الذي أعطاك إياه معلمك."}</p></div>`;
   if (list.length) {
     html += `<div class="kids">${list.map((k, n) => `<div class="kidwrap">
       <button class="kid ${P && k.id === P.id && !TEACHER ? "on" : ""}" data-student="${k.id}">
@@ -963,68 +991,25 @@ function Login() {
       ${unsent(rm.id) ? `<p class="formerr">⚠️ بعض تقدّمه لم يُرسل إلى المعلم بعد. ${navigator.onLine ? "انتظر لحظة ثم حاول." : "اتصل بالإنترنت أولاً حتى لا يضيع."}</p>` : ""}
       <div class="confirmrow"><button class="go small danger" id="doremove" ${unsent(rm.id) ? "disabled" : ""}>نعم، أزله</button><button class="go small ghost" id="noremove">إلغاء</button></div></div>`;
   }
-  const tab = screen.tab || (list.length ? "user" : "new");
-  html += `<div class="tabs" role="tablist">
-      <button role="tab" class="tab ${tab === "user" ? "on" : ""}" data-tab="user" aria-selected="${tab === "user"}">🔑 عندي اسم مستخدم</button>
-      <button role="tab" class="tab ${tab === "new" ? "on" : ""}" data-tab="new" aria-selected="${tab === "new"}">➕ طالب جديد</button>
-    </div>`;
-  if (tab === "user") {
-    html += `<form class="newkid" id="byuser" autocomplete="off">
+  html += `</div><div class="lmain"><form class="newkid" id="byuser" autocomplete="off">
+      <h2 class="formhead">🔑 الدخول باسم المستخدم</h2>
       <label for="suser">اسم المستخدم</label>
       <input id="suser" maxlength="24" placeholder="مثال: يوسف2" autocapitalize="off" spellcheck="false" value="${esc(screen.prefill || "")}">
       <label class="remember"><input type="checkbox" id="remember1"> احفظ اسمي على هذا الجهاز <small>(لجهازك الخاص فقط)</small></label>
       <p class="formerr" id="usererr" hidden></p>
       <button class="go" type="submit">دخول ⬅</button>
-      <p class="note">تجده في خريطة الطالب على جهازه الأول، أو عند المعلم.</p>
+      <p class="note">اسم المستخدم يعطيك إياه معلمك، وهو مكتوب في بطاقة الدخول. يمكنك أيضاً مسح رمز QR الذي في البطاقة.</p>
     </form>`;
-  } else {
-    html += `<form class="newkid" id="newkid" autocomplete="off">
-      <label for="sname">اسم الطالب</label>
-      <input id="sname" maxlength="40" required placeholder="مثال: يوسف أحمد">
-      <label for="suname">اسم المستخدم <small>(يدخل به من أي جهاز)</small></label>
-      <input id="suname" maxlength="20" placeholder="يُؤخذ من الاسم الأول تلقائياً" autocapitalize="off" spellcheck="false">
-      <small class="note" style="text-align:start">إن كان مستعملاً من طالب آخر يُضاف إليه رقم، مثل «يوسف2».</small>
-      <label for="sgroup">الحلقة أو الصف <small>(اختياري)</small></label>
-      <div id="groupbox"></div>
-      <label class="remember"><input type="checkbox" id="remember2"> احفظ اسمي على هذا الجهاز <small>(لجهازك الخاص فقط)</small></label>
-      <p class="formerr" id="newerr" hidden></p>
-      <button class="go" type="submit">➕ ابدأ الرحلة</button>
-    </form>`;
-  }
-  html += `<p class="note">يكتب الاسمَ المعلمُ أو وليُّ الأمر. ${CFG.backendUrl ? "يصل تقدّم الطالب إلى سجل المعلم تلقائياً." : "التقدم محفوظ على هذا الجهاز فقط (لم يُربط سجل المعلم بعد)."}</p>
-    <button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم لاستعراض الدروس</button>` + credit();
+  html += `<p class="note">ليس عندك اسم مستخدم؟ يسجّلك معلم الحلقة أو المدير، ثم يعطيك بطاقة الدخول.</p>
+    <button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم</button></div></div>` + credit();
   $app.innerHTML = html;
-  $app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { screen.tab = b.dataset.tab; render(); });
   document.getElementById("tlogin").onclick = () => go("tlogin");
   $app.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => { screen.remove = b.dataset.remove; render(); flush().then(() => { if (screen.name === "login" && screen.remove) render(); }); });
   const dr = document.getElementById("doremove"), nr = document.getElementById("noremove");
   if (nr) nr.onclick = () => { screen.remove = null; render(); };
   if (dr) dr.onclick = () => { const k = DB.students[screen.remove]; screen.remove = null; if (k) { if (P && P.id === k.id) P = null; removeLocal(k.id); toast("أُزيل من هذا الجهاز ✓"); } render(); };
 
-  if (tab === "new") {
-    refreshGroupField();
-    const nm = document.getElementById("sname"), un = document.getElementById("suname");
-    nm.oninput = () => { un.placeholder = cleanUsername(firstWord(nm.value)) || "يُؤخذ من الاسم الأول تلقائياً"; };
-    document.getElementById("newkid").onsubmit = async (e) => {
-      e.preventDefault();
-      const name = nm.value.trim().replace(/\s+/g, " ");
-      const group = (document.getElementById("sgroup").value || "").trim().replace(/\s+/g, " ");
-      if (!name) return;
-      const username = cleanUsername(un.value) || cleanUsername(firstWord(name)) || "طالب";
-      const err = document.getElementById("newerr");
-      const localTaken = Object.values(DB.students).some(x => normU(x.username) === normU(username));
-      const id = newCode();
-      const st = { id, name, group, username: localTaken ? username + "2" : username, l1: blankL1(), seen: Date.now(), pending: true,
-        teacher: (DB.groupTeachers || {})[group] || "", temp: !document.getElementById("remember2").checked };
-      DB.students[id] = st; DB.current = id; setSession(id); DB.lastGroup = group; P = st; TEACHER = null; save();
-      let res = null;
-      if (CFG.backendUrl && navigator.onLine) {
-        err.textContent = "⏳ جارٍ حجز اسم المستخدم..."; err.hidden = false;
-        try { res = await registerOnline(st); } catch (x) {}
-      }
-      go("home", { fresh: true, renamed: res && normU(res.got) !== normU(username) ? username : null });
-    };
-  } else {
+  {
     const inp = document.getElementById("suser"), err = document.getElementById("usererr");
     // من بطاقة الدخول (QR): الاسم مكتوب، والطالب يضغط «دخول» بعد أن يقرّر حفظ اسمه أو لا
     if (screen.prefill) { setTimeout(() => { const b = document.querySelector("#byuser button[type=submit]"); if (b) b.focus(); }, 50); }
@@ -1174,6 +1159,7 @@ function Home() {
      <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
+  html += `<div class="homegrid"><aside class="side">`;
   html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
@@ -1183,6 +1169,7 @@ function Home() {
   const certs = [];
   for (let n = 1; n <= AVAILABLE; n++) if (lessonPassed(n) || TEACHER) certs.push(n);
   if (certs.length) html += `<div class="certs">${certs.map(n => `<button class="certbtn" data-cert="${n - 1}">🏅 <span><b>شهادة الدرس ${ORDINALS[n - 1]}</b><small>${LESSONS[n - 1]}</small></span></button>`).join("")}</div>`;
+  html += `</aside><section class="mapcol" aria-label="خريطة الدروس">`;
   let curL = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1));
   if (curL < 0) curL = LESSONS.length;
   html += trailHTML(LESSONS.map((name, i) => {
@@ -1195,7 +1182,7 @@ function Home() {
         ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}</button>`
     };
   }), curL);
-  html += `<p class="note" id="ttsnote" ${usingTTS ? "" : "hidden"}>🔈 بعض التعليمات بصوت آلي مؤقت.</p>` + credit();
+  html += `</section></div><p class="note" id="ttsnote" ${usingTTS ? "" : "hidden"}>🔈 بعض التعليمات بصوت آلي مؤقت.</p>` + credit();
   $app.innerHTML = html;
 }
 
@@ -1704,6 +1691,10 @@ $app.addEventListener("click", (e) => {
   }
 });
 
+// الزائر الجديد (لا طالب محفوظاً على جهازه ولا رابط خاص) يرى صفحة التعريف أولاً
+if (!Object.values(DB.students).some(k => !k.temp) && !location.hash && !/[?&]app\b/.test(location.search) && !sessionId() && !DB.teacher) {
+  try { if (!sessionStorage.getItem("rehla-landed")) { sessionStorage.setItem("rehla-landed", "1"); location.replace("about.html"); return; } } catch (e) {}
+}
 // طالب مؤقت من جلسة سابقة (أُغلق التطبيق دون «احفظني»): لا يُفتح، ويُزال بعد إرسال تقدّمه
 if (P && P.temp && P.id !== sessionId()) { P = null; DB.current = null; screen = { name: "login" }; }
 if (P) { P.seen = Date.now(); save(); }

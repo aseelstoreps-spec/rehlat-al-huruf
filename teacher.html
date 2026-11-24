@@ -122,6 +122,14 @@ td .bar { margin-top: 4px; }
 .lhead { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: start; width: 100%; }
 .lhead .lt { flex: 1; display: flex; flex-direction: column; }
 .btn.gold { background: var(--gold); color: #1b1d45; align-self: flex-start; }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.st3 { background: #f5f6fd; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.st3 > b { width: 26px; height: 26px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; font-size: .9rem; }
+.st3 span { font-size: .9rem; line-height: 1.6; }
+.filebtn { cursor: pointer; }
+details.paste summary { cursor: pointer; color: var(--soft); font-weight: 700; }
+details.paste textarea { margin-top: 8px; }
+@media (max-width: 760px) { .steps3 { grid-template-columns: 1fr; } }
 .pick { display: inline-flex; vertical-align: middle; cursor: pointer; }
 .pick input { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
 .bulkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--gold-soft); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
@@ -168,7 +176,7 @@ function lessonOf(s, n) {
   return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
 }
 const passedList = (s) => LESSONS_T.filter(L => lessonOf(s, L.n).best >= 8).map(L => L.n);
-const NEED_VERSION = 8;
+const NEED_VERSION = 9;
 // عدد الخطوات المنجزة في درس (المراحل + اللعبتان + الاختبار)
 function stepsDone(s, L) {
   const x = lessonOf(s, L.n);
@@ -673,20 +681,59 @@ function parseImport(text) {
     .filter(c => c[0] && !/^(الاسم|اسم الطالب|name)$/i.test(c[0]))
     .map(c => ({ name: c[0].replace(/\s+/g, " ").slice(0, 40), username: c[1] || "", group: c[2] || "" }));
 }
+// قراءة ملف Excel/CSV من الجهاز (المكتبة تُحمَّل عند الحاجة فقط)
+let xlsxLoading = null;
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return xlsxLoading = xlsxLoading || new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "vendor/xlsx.mini.min.js"; sc.onload = () => res(window.XLSX); sc.onerror = rej; document.head.appendChild(sc); });
+}
+const HEAD = { name: /^(الاسم|اسم الطالب|الطالب|اسم|name|student)$/i, username: /^(اسم المستخدم|المستخدم|username|user)$/i, group: /^(الحلقة|حلقة|الصف|group|class)$/i };
+// صفوف الجدول ← طلاب. إن كان في الصف الأول عناوين («الاسم»، «اسم المستخدم»، «الحلقة») تُستعمل، وإلا فالترتيب: الاسم، اسم المستخدم، الحلقة
+function rowsToStudents(rows) {
+  rows = rows.map(r => (r || []).map(c => String(c == null ? "" : c).trim())).filter(r => r.some(Boolean));
+  if (!rows.length) return [];
+  let col = { name: 0, username: 1, group: 2 };
+  const h = rows[0], found = {};
+  h.forEach((c, i) => Object.keys(HEAD).forEach(k => { if (HEAD[k].test(c) && found[k] == null) found[k] = i; }));
+  if (found.name != null) { col = { name: found.name, username: found.username != null ? found.username : -1, group: found.group != null ? found.group : -1 }; rows = rows.slice(1); }
+  return rows.map(r => ({ name: (r[col.name] || "").replace(/\s+/g, " ").slice(0, 40), username: col.username >= 0 ? r[col.username] || "" : "", group: col.group >= 0 ? r[col.group] || "" : "" }))
+    .filter(x => x.name);
+}
+async function readImportFile(file) {
+  const X = await loadXlsx();
+  const wb = X.read(await file.arrayBuffer(), { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return rowsToStudents(X.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" }));
+}
+async function downloadTemplate() {
+  const X = await loadXlsx();
+  const ws = X.utils.aoa_to_sheet([["الاسم", "اسم المستخدم", "الحلقة"], ["يوسف أحمد", "", ""], ["مريم سالم", "مريم", ""], ["عمر خالد", "", "حلقة الفجر"]]);
+  ws["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 20 }];
+  const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "الطلاب");
+  X.writeFile(wb, "نموذج-استيراد-الطلاب.xlsx");
+}
 function importPanel(groupOpts) {
-  const list = parseImport(UI.impText);
+  const list = UI.impFile ? UI.impFile.rows : parseImport(UI.impText);
   const seen = {}, dup = new Set();
-  list.forEach(x => { const k = x.name; if (seen[k]) dup.add(k); seen[k] = 1; });
+  list.forEach(x => { if (seen[x.name]) dup.add(x.name); seen[x.name] = 1; });
   const res = UI.impRes;
   return `<div class="panel stack" id="imppanel"><h2>📥 استيراد قائمة طلاب</h2>
-    <p class="muted" style="margin:0">انسخ الأعمدة من Excel أو Google Sheets والصقها هنا. كل سطر طالب: <b>الاسم</b>، ثم (اختياري) <b>اسم المستخدم</b>، ثم (اختياري) <b>الحلقة</b>. يمكن الفصل بفاصلة أيضاً. اسم المستخدم المأخوذ يُضاف إليه رقم.</p>
-    <textarea id="imptext" rows="7" placeholder="يوسف أحمد&#10;مريم سالم	مريم&#10;عمر خالد	عمر	حلقة الفجر">${esc(UI.impText || "")}</textarea>
+    ${res ? "" : `<div class="steps3">
+      <div class="st3"><b>1</b><span>حمّل النموذج واكتب فيه الطلاب، أو استعمل ملفك: عمود <b>الاسم</b> مطلوب، و<b>اسم المستخدم</b> و<b>الحلقة</b> اختياريان.</span>
+        <button class="btn ghost small" type="button" id="tpl">⬇️ تحميل نموذج Excel</button></div>
+      <div class="st3"><b>2</b><span>اختر الملف من جهازك (Excel أو CSV).</span>
+        <label class="btn small filebtn">📄 اختيار ملف<input type="file" id="impfile" accept=".xlsx,.xls,.csv,.ods" hidden></label></div>
+      <div class="st3"><b>3</b><span>راجع القائمة، واختر الحلقة لمن لم تُكتب حلقته، ثم اضغط استيراد.</span></div>
+    </div>
+    ${UI.impFile ? `<p class="ok" style="margin:0">📄 ${esc(UI.impFile.name)}: ${list.length} طالب <button class="btn ghost small" type="button" id="impclear">✕ ملف آخر</button></p>` : ""}
+    ${UI.impFile ? "" : `<details class="paste" ${UI.impText ? "open" : ""}><summary>أو الصق القائمة نصاً</summary>
+      <textarea id="imptext" rows="6" placeholder="كل سطر طالب. مثال:&#10;يوسف أحمد&#10;مريم سالم، مريم&#10;عمر خالد، عمر، حلقة الفجر">${esc(UI.impText || "")}</textarea></details>`}
     <div class="row r2" style="grid-template-columns:auto 1fr auto;align-items:center"><label for="impg">الحلقة لمن لم تُكتب حلقته:</label><select id="impg">${groupOpts(UI.impG != null ? UI.impG : UI.grp)}</select>
-      <button class="btn" id="doimp" ${list.length ? "" : "disabled"}>➕ استيراد ${list.length} طالب</button></div>
+      <button class="btn" id="doimp" ${list.length ? "" : "disabled"}>➕ استيراد ${list.length} طالب</button></div>`}
     ${list.length && !res ? `<div class="tablebox"><table><thead><tr><th>#</th><th>الاسم</th><th>اسم المستخدم المطلوب</th><th>الحلقة</th><th></th></tr></thead><tbody>
       ${list.slice(0, 300).map((x, i) => `<tr><td class="num">${i + 1}</td><td>${esc(x.name)}</td><td dir="auto">${esc(x.username) || `<span class="muted">من الاسم</span>`}</td>
         <td>${esc(x.group) || `<span class="muted">الافتراضية</span>`}</td><td>${dup.has(x.name) ? `<span class="chip bad">مكرّر في القائمة</span>` : ""}</td></tr>`).join("")}</tbody></table></div>
-      ${list.length > 300 ? `<p class="err">الحد 300 طالب في المرة الواحدة.</p>` : ""}` : ""}
+      ${list.length > 300 ? `<p class="err">الحد 300 طالب في المرة الواحدة. قسّم الملف.</p>` : ""}` : ""}
     ${res ? `<div class="stack"><p class="ok">سُجّل ${res.added} طالب ✓</p><div class="tablebox"><table><thead><tr><th>الاسم</th><th>الحلقة</th><th>اسم المستخدم</th></tr></thead><tbody>
       ${res.results.map(r => `<tr><td>${esc(r.name)}</td><td>${r.error ? "" : esc(r.group || "—")}</td><td>${r.error ? `<span class="chip bad">${esc(errText(r.error))}</span>`
         : `<b class="code" dir="auto">${esc(r.username)}</b>${r.wanted && r.wanted !== r.username ? ` <span class="muted">(كان «${esc(r.wanted)}» مأخوذاً)</span>` : ""}`}</td></tr>`).join("")}</tbody></table></div>
@@ -694,17 +741,25 @@ function importPanel(groupOpts) {
     <p class="msg" id="impmsg"></p></div>`;
 }
 function bindImport() {
-  const ta = $("imptext"); if (!ta) return;
-  ta.oninput = () => { UI.impText = ta.value; clearTimeout(UI.impT); UI.impT = setTimeout(() => { const pos = ta.selectionStart; render(); const n = $("imptext"); n.focus(); n.setSelectionRange(pos, pos); }, 500); };
+  if ($("impcards")) $("impcards").onclick = () => printCards(UI.impRes.results.filter(r => r.username));
+  if ($("impnew")) $("impnew").onclick = () => { UI.impRes = null; UI.impFile = null; render(); };
+  if (!$("doimp")) return;
+  $("tpl").onclick = (e) => busy(e.currentTarget, () => downloadTemplate().catch(() => flash("impmsg", "تعذّر تجهيز النموذج. تحقّق من الاتصال.")));
+  $("impfile").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const rows = await readImportFile(f); UI.impFile = { name: f.name, rows }; UI.impText = ""; render(); if (!rows.length) flash("impmsg", "لم أجد أسماء في الملف. تأكد أن الأسماء في العمود الأول أو تحت عنوان «الاسم»."); }
+    catch (x) { flash("impmsg", "تعذّرت قراءة الملف. احفظه بصيغة Excel (xlsx) أو CSV ثم جرّب مرة أخرى."); }
+  };
+  if ($("impclear")) $("impclear").onclick = () => { UI.impFile = null; render(); };
+  const ta = $("imptext");
+  if (ta) ta.oninput = () => { UI.impText = ta.value; clearTimeout(UI.impT); UI.impT = setTimeout(() => { const pos = ta.selectionStart; render(); const n = $("imptext"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 500); };
   $("impg").onchange = (e) => { UI.impG = e.target.value; };
   $("doimp").onclick = (e) => busy(e.currentTarget, async () => {
-    const rowsIn = parseImport(UI.impText).slice(0, 300);
+    const rowsIn = (UI.impFile ? UI.impFile.rows : parseImport(UI.impText)).slice(0, 300);
     const j = await call("students.import", { rows: rowsIn, group: $("impg").value });
     if (j.error) return flash("impmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 8)." : errText(j.error));
-    UI.impRes = j; UI.impText = ""; await load();
+    UI.impRes = j; UI.impText = ""; UI.impFile = null; await load();
   });
-  if ($("impcards")) $("impcards").onclick = () => printCards(UI.impRes.results.filter(r => r.username));
-  if ($("impnew")) $("impnew").onclick = () => { UI.impRes = null; render(); };
 }
 
 /* ---------------- الإحصاءات ---------------- */
