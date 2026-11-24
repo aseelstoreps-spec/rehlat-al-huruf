@@ -140,6 +140,23 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 
 /* الطريق المتعرّج: خريطة الدروس ومراحل الدرس */
 .trail { position: relative; container-type: inline-size; direction: ltr; margin-block: 30px 10px; }
+/* جزر في السماء */
+.trail.sky { margin-block: 0; border-radius: 28px; overflow: hidden; box-shadow: 0 6px 0 #d5d7ee; }
+.mapcol .trail.sky { margin-inline: -4px; }
+.trail.sky .hopline { fill: none; stroke: #ffffff; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 0 15; opacity: .95; }
+.trail.sky .hopline.done { stroke: #e06a00; }
+.trail.sky .isl.locked { opacity: .72; }
+.trail.sky .cl.far { animation: drift 38s ease-in-out infinite alternate; }
+.trail.sky .cl.near { opacity: .9; animation: drift 26s ease-in-out infinite alternate-reverse; }
+@keyframes drift { to { transform: translateX(34px); } }
+.trail.sky .tlabel { width: max-content; max-width: min(calc(var(--x) * 100cqw - 80px), 230px); right: 60px; top: 14px; transform: none; background: #ffffffe8; border-radius: 14px; padding: 6px 12px; box-shadow: 0 2px 0 #d5d7ee; }
+.trail.sky .tstop.r .tlabel { right: auto; left: 60px; max-width: min(calc((1 - var(--x)) * 100cqw - 80px), 230px); }
+.trail.sky .tdeco { display: none; }
+.trail.sky .node, .trail.sky .tnode { box-shadow: 0 6px 0 #15174a33, 0 10px 18px #23266b33; }
+.traveler { position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px #fff, 0 6px 14px #e06a0066; z-index: 6; pointer-events: none; }
+#app.enter > *:not(.bar) { animation: enterZoom .42s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes enterZoom { from { opacity: 0; transform: scale(.94) translateY(14px); } }
+.backbtn { text-decoration: none; text-align: center; align-self: center; }
 .trail-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .trail-svg .road { fill: none; stroke: #e3e5f5; stroke-width: 30; stroke-linecap: round; }
 .trail-svg .road.done { stroke: var(--gold-soft); }
@@ -403,7 +420,7 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 @keyframes fadeup { from { opacity: 0; transform: translate(-50%, 10px); } }
 @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .node.open, .card-letter.pulse, .here { animation: none; }
+  .node.open, .card-letter.pulse, .here, .trail.sky .cl, #app.enter > * { animation: none !important; }
   .confetti { display: none; }
 }
 </style>
@@ -731,6 +748,20 @@ let actx = null;
 function sfx(kind) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    // قفزة بين الجزر: صفير صاعد قصير + رنّة، ودخول الدرس: نغمتان صاعدتان
+    if (kind === "hop" || kind === "enter") {
+      const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(kind === "hop" ? 420 : 520, t0); o.frequency.exponentialRampToValueAtTime(kind === "hop" ? 980 : 1040, t0 + 0.28);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 0.34);
+      [kind === "hop" ? 1318 : 784, kind === "hop" ? 1760 : 1175].forEach((f, i) => {
+        const o2 = actx.createOscillator(), g2 = actx.createGain(), t = t0 + 0.3 + i * 0.09;
+        o2.type = "triangle"; o2.frequency.value = f;
+        g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.09, t + 0.02); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o2.connect(g2).connect(actx.destination); o2.start(t); o2.stop(t + 0.32);
+      });
+      return;
+    }
     const notes = kind === "ok" ? [660, 880] : kind === "win" ? [523, 659, 784, 1046] : [220, 180];
     notes.forEach((f, i) => {
       const o = actx.createOscillator(), g = actx.createGain();
@@ -965,7 +996,25 @@ async function loadGroups() {
 
 /* ---------- screens ---------- */
 let screen = { name: P ? "home" : "login" };
-function go(name, data) { spellToken++; stopAudio(); screen = Object.assign({ name }, data || {}); render(); window.scrollTo(0, 0); }
+function go(name, data, fromHistory) {
+  spellToken++; stopAudio();
+  const prev = screen.name;
+  screen = Object.assign({ name }, data || {});
+  // زر «رجوع» في المتصفح يرجع داخل الموقع خطوة خطوة
+  if (!fromHistory && name !== prev) {
+    const d = name === "stage" ? { i: screen.i } : name === "cert" ? { lesson: screen.lesson } : {};
+    try { history.pushState({ rh: name, l: CUR, d }, ""); } catch (e) {}
+  }
+  render(); window.scrollTo(0, 0);
+  if (["lesson", "stage", "quiz", "balloons", "home"].includes(name) && name !== prev) { $app.classList.remove("enter"); void $app.offsetWidth; $app.classList.add("enter"); }
+}
+window.addEventListener("popstate", (e) => {
+  const st = e.state && e.state.rh ? e.state : { rh: P ? "home" : "login", l: CUR, d: {} };
+  let n = st.rh; if (st.l) CUR = st.l;
+  if (["quiz", "result", "balloons"].includes(n)) n = "lesson";
+  if (["home", "lesson", "stage", "cert"].includes(n) && !P) n = "login";
+  go(n, st.d || {}, true);
+});
 
 function render() {
   ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
@@ -1001,9 +1050,10 @@ function Login() {
       <p class="note">اسم المستخدم يعطيك إياه معلمك، وهو مكتوب في بطاقة الدخول. يمكنك أيضاً مسح رمز QR الذي في البطاقة.</p>
     </form>`;
   html += `<p class="note">ليس عندك اسم مستخدم؟ يسجّلك معلم الحلقة أو المدير، ثم يعطيك بطاقة الدخول.</p>
-    <button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم</button></div></div>` + credit();
+    ${teacherSession() ? `<a class="go small ghost backbtn" href="teacher.html">↩ العودة إلى سجل المعلم</a>` : `<button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم</button>`}
+    <a class="linkbtn" href="about.html">🏠 الصفحة التعريفية للموقع</a></div></div>` + credit();
   $app.innerHTML = html;
-  document.getElementById("tlogin").onclick = () => go("tlogin");
+  const tl = document.getElementById("tlogin"); if (tl) tl.onclick = () => go("tlogin");
   $app.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => { screen.remove = b.dataset.remove; render(); flush().then(() => { if (screen.name === "login" && screen.remove) render(); }); });
   const dr = document.getElementById("doremove"), nr = document.getElementById("noremove");
   if (nr) nr.onclick = () => { screen.remove = null; render(); };
@@ -1085,7 +1135,9 @@ function TLogin() {
     showErr(CFG.backendUrl ? "تحتاج اتصالاً بالإنترنت لأول دخول للمعلم على هذا الجهاز." : "وضع المعلم يحتاج ربط الموقع بسجل المعلم.");
   };
 }
-function exitTeacher() { TEACHER = null; P = DB.students[DB.current] || null; go(P ? "home" : "login"); }
+const teacherSession = () => { try { return !!JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) { return false; } };
+// الخروج من وضع المعلم يعيده إلى سجل المعلم إن كان قد دخله
+function exitTeacher() { TEACHER = null; P = DB.students[DB.current] || null; if (teacherSession()) { location.href = "teacher.html"; return; } go(P ? "home" : "login"); }
 /* وضع المعلم يُغلق بعد 30 دقيقة دون استعمال */
 let lastAct = Date.now();
 ["pointerdown", "keydown", "touchstart"].forEach(ev => addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
@@ -1124,21 +1176,28 @@ function esc(t) { return String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<"
 /* --- الطريق المتعرّج: تُرسم المحطات يميناً ويساراً، ويصل بينها طريق منقّط --- */
 const TRAIL_X = [0.72, 0.28, 0.64, 0.24, 0.7, 0.34];
 const TRAIL_ROW = 124;
-// stops: [{ node, label, cls }]، cur: رقم المحطة الحالية (أو عدد المحطات إن انتهت كلها)
-function trailHTML(stops, cur) {
-  return `<div class="trail" data-cur="${cur}" style="height:${(stops.length - 1) * TRAIL_ROW + 96}px">
+// stops: [{ node, label, cls, state, zone }]، cur: رقم المحطة الحالية (أو عدد المحطات إن انتهت كلها)
+// opts.sky: خريطة «جزر في السماء» (opts.mood: "home" للخريطة، "inside" لداخل الدرس)
+const SKY_ROW = 150, SKY_TOP = 56;
+function trailHTML(stops, cur, opts) {
+  opts = opts || {};
+  const row = opts.sky ? SKY_ROW : TRAIL_ROW, top = opts.sky ? SKY_TOP : 0;
+  return `<div class="trail ${opts.sky ? "sky " + (opts.mood || "home") : ""}" data-cur="${cur}" data-row="${row}" data-top="${top}"
+    data-states="${stops.map(s => s.state || "").join(",")}" data-zones="${stops.map(s => s.zone || 0).join(",")}"
+    style="height:${(stops.length - 1) * row + 96 + top + (opts.sky ? 70 : 0)}px">
     <svg class="trail-svg" aria-hidden="true"></svg>
     ${stops.map((s, i) => {
       const x = TRAIL_X[i % TRAIL_X.length];
-      return `<div class="tstop ${x < 0.5 ? "r" : ""} ${i === cur ? "cur" : ""} ${s.cls || ""}" style="--x:${x};top:${i * TRAIL_ROW}px">
+      return `<div class="tstop ${x < 0.5 ? "r" : ""} ${i === cur ? "cur" : ""} ${s.cls || ""}" data-i="${i}" style="--x:${x};top:${i * row + top}px">
         ${s.deco ? `<span class="tdeco" aria-hidden="true">${s.deco}</span>` : ""}${i === cur ? `<span class="here">أنت هنا</span>` : ""}${s.node}${s.ok ? `<span class="badge-ok" aria-hidden="true">✓</span>` : ""}${s.label}</div>`;
     }).join("")}</div>`;
 }
 function drawTrails() {
   $app.querySelectorAll(".trail").forEach(tr => {
-    const W = tr.clientWidth, cur = +tr.dataset.cur;
-    const pts = [...tr.querySelectorAll(".tstop")].map((st, i) => [TRAIL_X[i % TRAIL_X.length] * W, i * TRAIL_ROW + 42]);
+    const W = tr.clientWidth, cur = +tr.dataset.cur, row = +tr.dataset.row || TRAIL_ROW, top = +tr.dataset.top || 0;
+    const pts = [...tr.querySelectorAll(".tstop")].map((st, i) => [TRAIL_X[i % TRAIL_X.length] * W, i * row + top + 42]);
     if (!W || pts.length < 2) return;
+    if (tr.classList.contains("sky")) return drawSky(tr, pts, cur, W);
     const seg = (a, b) => { let d = `M${pts[a][0]},${pts[a][1]}`; for (let i = a + 1; i <= b; i++) { const p = pts[i - 1], q = pts[i], m = (q[1] - p[1]) / 2; d += ` C${p[0]},${p[1] + m} ${q[0]},${q[1] - m} ${q[0]},${q[1]}`; } return d; };
     const k = Math.min(cur, pts.length - 1), last = pts.length - 1;
     let svg = `<path class="road" d="${seg(0, last)}"/>`;
@@ -1147,6 +1206,67 @@ function drawTrails() {
     if (k > 0) svg += `<path class="lane done" d="${seg(0, k)}"/>`;
     tr.querySelector(".trail-svg").innerHTML = svg;
   });
+}
+/* --- رسم «جزر في السماء»: سماء، وغيوم بعيدة وقريبة، وجزر صغيرة للعمق، وجزيرة تحت كل محطة، وأقواس منقّطة بينها --- */
+const ZONE_GRASS = [["#7cc7a2", "#93d6b4", "#4fae86"], ["#f0c76a", "#f6d98f", "#d19b3a"], ["#a9b6f3", "#c1cbf8", "#6f7fd6"], ["#f2a7b9", "#f7c3cf", "#d9748e"], ["#8fd3d8", "#aee2e6", "#3fa6ae"]];
+function rnd(seed) { let x = Math.sin(seed * 9301 + 49297) * 233280; return x - Math.floor(x); }
+function drawSky(tr, pts, cur, W) {
+  const H = tr.clientHeight, inside = tr.classList.contains("inside");
+  const states = (tr.dataset.states || "").split(","), zones = (tr.dataset.zones || "").split(",").map(Number);
+  const k = Math.min(1.15, Math.max(.8, W / 420));
+  const cloud = (x, y, sc, cls) => `<g class="${cls}">${[[0, 0, 38], [30, -14, 30], [60, 0, 34], [30, 8, 40]].map(([dx, dy, r]) => `<ellipse cx="${x + dx * sc}" cy="${y + dy * sc}" rx="${r * sc}" ry="${r * sc * .62}" fill="#fff"/>`).join("")}</g>`;
+  const island = (x, y, sc, st, z, i) => {
+    const [g1, g2, tree] = ZONE_GRASS[z % ZONE_GRASS.length], lock = st === "locked";
+    const trees = [[-46, -9, 9], [48, -10, 8], [-34, -13, 7]].map(([tx, ty, r], j) => rnd(i * 7 + j) > .35 || j === 0 ? `<rect x="${tx - 2}" y="${ty - 3}" width="4" height="12" fill="#7d5c3f"/><circle cx="${tx}" cy="${ty - 9}" r="${r}" fill="${lock ? "#c9cbe0" : tree}"/>` : "").join("");
+    return `<g transform="translate(${x},${y}) scale(${sc})" class="isl ${lock ? "locked" : ""}">
+      <ellipse cx="6" cy="78" rx="44" ry="10" fill="#23266b" opacity=".08"/>
+      <path d="M-72,0 Q-62,40 -26,62 Q0,94 22,64 Q56,40 72,0 Z" fill="${lock ? "#c4b6a8" : "#9b7653"}"/>
+      <path d="M-30,60 L-12,98 L2,68 Z" fill="${lock ? "#b9ab9d" : "#8a6646"}"/>
+      <path d="M10,66 L24,88 L30,58 Z" fill="${lock ? "#b9ab9d" : "#8a6646"}"/>
+      <ellipse cx="0" cy="0" rx="76" ry="21" fill="${lock ? "#d6d8ea" : g1}"/>
+      <ellipse cx="0" cy="-3" rx="68" ry="15" fill="${lock ? "#e3e5f1" : g2}"/>${trees}</g>`;
+  };
+  let svg = `<defs><linearGradient id="skyg${inside ? "i" : ""}" x1="0" y1="0" x2="0" y2="1">${inside
+      ? `<stop offset="0" stop-color="#ffe3b8"/><stop offset=".45" stop-color="#fff1d8"/><stop offset="1" stop-color="#e6f3ff"/>`
+      : `<stop offset="0" stop-color="#c9d3ff"/><stop offset=".5" stop-color="#eef0ff"/><stop offset="1" stop-color="#fff4d6"/>`}</linearGradient>
+    <filter id="sblur"><feGaussianBlur stdDeviation="3"/></filter></defs>
+    <rect width="${W}" height="${H}" fill="url(#skyg${inside ? "i" : ""})"/>
+    <circle cx="${W * .82}" cy="80" r="44" fill="#ffd23f" opacity=".5" filter="url(#sblur)"/>`;
+  // طبقة بعيدة: غيوم ضبابية وجزر صغيرة باهتة
+  for (let i = 0; i < Math.ceil(H / 260); i++) {
+    svg += `<g filter="url(#sblur)" opacity=".55">${cloud(rnd(i) * (W - 80), 160 + i * 260, .7 + rnd(i + 3) * .3, "cl far")}</g>`;
+    if (i % 2 === 0) svg += `<g opacity=".3">${island(rnd(i + 11) > .5 ? W * .12 : W * .88, 260 + i * 260, .36, "", (i + 1) % 4, i + 50)}</g>`;
+  }
+  // الأقواس المنقّطة بين الجزر
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 46;
+    svg += `<path class="hopline ${i < cur ? "done" : ""}" d="M${x1},${y1 - 10} Q${mx},${my} ${x2},${y2 - 10}"/>`;
+  }
+  // الجزر تحت المحطات (المحطة الحالية أكبر قليلاً)
+  pts.forEach(([x, y], i) => {
+    const st = states[i] || "", big = tr.querySelectorAll(".tstop")[i].classList.contains("big");
+    svg += island(x, y + 34, k * (i === cur ? 1.1 : big ? 1.15 : 1), st, zones[i] || 0, i);
+  });
+  // طبقة قريبة: غيوم على الأطراف
+  for (let i = 0; i < Math.ceil(H / 420); i++) svg += cloud(i % 2 ? W - 70 : -50, 300 + i * 420, 1.05, "cl near");
+  if (!inside && cur < pts.length) svg += `<rect x="0" y="${pts[Math.min(cur + 1, pts.length - 1)][1] + 40}" width="${W}" height="${H}" fill="#fff" opacity=".22"/>`;
+  tr.querySelector(".trail-svg").innerHTML = svg;
+}
+/* النقطة المسافرة تقفز من الجزيرة الحالية إلى الجزيرة المختارة، مع صوت */
+let travelling = false;
+function travel(tr, from, to, done, sound) {
+  if (travelling) return;
+  sfx(sound || "hop");
+  const stops = tr.querySelectorAll(".tstop"), a = stops[Math.min(from, stops.length - 1)], b = stops[to];
+  if (!a || !b || matchMedia("(prefers-reduced-motion: reduce)").matches || a === b) { travelling = true; return setTimeout(() => { travelling = false; done(); }, a === b ? 380 : 150); }
+  const r = tr.getBoundingClientRect(), pa = a.getBoundingClientRect(), pb = b.getBoundingClientRect();
+  const P0 = [pa.left - r.left, pa.top - r.top + 42], P1 = [pb.left - r.left, pb.top - r.top + 42], C = [(P0[0] + P1[0]) / 2, Math.min(P0[1], P1[1]) - 70];
+  const dot = document.createElement("span"); dot.className = "traveler"; tr.appendChild(dot);
+  const frames = Array.from({ length: 13 }, (_, i) => { const t = i / 12, u = 1 - t;
+    return { transform: `translate(${u * u * P0[0] + 2 * u * t * C[0] + t * t * P1[0] - 11}px, ${u * u * P0[1] + 2 * u * t * C[1] + t * t * P1[1] - 11}px) scale(${1 + Math.sin(t * Math.PI) * .5})` }; });
+  travelling = true;
+  b.scrollIntoView({ block: "center", behavior: "smooth" });
+  dot.animate(frames, { duration: 700, easing: "ease-in-out", fill: "forwards" }).onfinish = () => { travelling = false; done(); };
 }
 let trailResize = 0;
 window.addEventListener("resize", () => { clearTimeout(trailResize); trailResize = setTimeout(drawTrails, 120); });
@@ -1176,12 +1296,12 @@ function Home() {
     const n = i + 1, open = lessonOpen(n), done = lessonPassed(n);
     const st = n <= AVAILABLE ? starsFor(LP(n).best) : 0;
     const cls = done ? "done" : open ? "open" : "";
-    return { deco: "ابتثجحخدذرزسشصض"[i],
+    return { state: done ? "done" : open ? "cur" : "locked", zone: i < 3 ? 0 : i < 6 ? 1 : i < 10 ? 2 : i < 12 ? 3 : 4,
       node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">🔒</span>`}</button>`,
       label: `<button class="tlabel" data-lesson="${i}" tabindex="-1"><small>الدرس ${ORDINALS[i]}</small><b>${name}</b>
         ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}</button>`
     };
-  }), curL);
+  }), curL, { sky: true, mood: "home" });
   html += `</section></div><p class="note" id="ttsnote" ${usingTTS ? "" : "hidden"}>🔈 بعض التعليمات بصوت آلي مؤقت.</p>` + credit();
   $app.innerHTML = html;
 }
@@ -1213,10 +1333,10 @@ function Lesson() {
       title = `<small>نهاية الدرس</small><b>اختبار الدرس</b>`;
       more = `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>`;
     }
-    return { cls: s.kind === "test" ? "big" : "", ok: done,
+    return { cls: s.kind === "test" ? "big" : "", ok: done, state: done ? "done" : idx === cur ? "cur" : open ? "" : "locked", zone: s.kind === "stage" ? 0 : s.kind === "game" ? 4 : 1,
       node: `<button class="tnode ${cls}" data-step="${idx}" ${dis} aria-label="${stepName(s, n)}">${face}</button>`,
       label: `<button class="tlabel" data-step="${idx}" ${dis} tabindex="-1">${title}${more}</button>` };
-  }), cur);
+  }), cur, { sky: true, mood: "inside" });
   if (n === 1) html += "";
   $app.innerHTML = html;
 }
@@ -1670,11 +1790,15 @@ $app.addEventListener("click", (e) => {
     const n = +ls.dataset.lesson + 1;
     if (!lessonOpen(n)) return toast("🔒 أنهِ الدرس السابق أولاً");
     if (n > AVAILABLE) return toast("الدرس " + ORDINALS[n - 1] + " قيد الإعداد ✨");
+    const tr = ls.closest(".trail");
+    if (tr) return travel(tr, +tr.dataset.cur, n - 1, () => { CUR = n; go("lesson", { enter: true }); });
     CUR = n; return go("lesson");
   }
   const st = e.target.closest("[data-step]");
   if (st && !st.disabled) {
-    const s = stepsOf(CUR)[+st.dataset.step];
+    const tr = st.closest(".trail"), idx = +st.dataset.step;
+    if (tr && !st.dataset.went) return travel(tr, +tr.dataset.cur, idx, () => { st.dataset.went = 1; st.click(); }, "enter");
+    const s = stepsOf(CUR)[idx];
     if (s.kind === "stage") {
       go("stage", { i: s.i });
       if (CUR === 1) setTimeout(() => sayLetter(STAGES[s.i][0]), 150);
@@ -1709,6 +1833,7 @@ if (/^#u=/.test(location.hash)) {
 }
 render();
 if (location.hash === "#teacher") autoTeacher();
+try { history.replaceState({ rh: screen.name, l: CUR, d: {} }, ""); } catch (e) {}
 flush().then(() => { purgeTemp(); if (screen.name === "login") render(); if (P && !P.pending && ["home"].includes(screen.name)) render(); }); syncDown(); loadGroups();
 window.addEventListener("online", () => { syncDown(); loadGroups(); });
 
