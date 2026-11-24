@@ -70,4 +70,4 @@
 `audio/prompts/` (اختياري): listen · pop · same · great · again · done — وإن غابت تُستعمل قراءة آلية.
 
 ## الرفع والتحديث
-الموقع ملفات ثابتة على Netlify. للتحديث: Netlify ← المشروع ← **Deploys** ← اسحب المجلد كاملاً.
+الموقع ملفات ثابتة على **GitHub Pages**: https://rehlat-alhuruf.github.io/ — كل تعديل يُدفع إلى الفرع `main` يُنشر تلقائياً خلال دقيقة أو دقيقتين. (الرابط القديم rehlat-alhuruf.netlify.app يحوّل إليه.)
