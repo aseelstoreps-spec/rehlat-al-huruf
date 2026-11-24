@@ -784,40 +784,62 @@ const sayLetter = (L) => play(`audio/letters/${L.id}.mp3`, L.say);
 const sayPrompt = (k) => play(`audio/prompts/${k}.mp3`, PROMPTS[k]);
 
 let actx = null;
+/* ---------- أصوات مصنوعة في المتصفح (بلا ملفات): مناسبة للأطفال، وتعمل دون إنترنت ---------- */
+function ac() { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended" && actx.resume) { const r = actx.resume(); if (r && r.catch) r.catch(() => {}); } return actx; }
+function tone(f, t, dur, type, vol, f2) {
+  const a = ac(), o = a.createOscillator(), g = a.createGain();
+  o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * .8);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || .12, t + .012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(sfxOut()); o.start(t); o.stop(t + dur + .02);
+}
+// ماريمبا: نغمة خشبية دافئة (الأساس + توافقي سريع الخفوت)
+function marimba(f, t, vol) { tone(f, t, .45, "sine", vol || .16); tone(f * 4, t, .08, "sine", (vol || .16) * .35); }
+// زقزقة طائر: صعود وهبوط سريع مع اهتزاز
+function chirp(t, base, n, vol) {
+  const a = ac();
+  for (let i = 0; i < n; i++) {
+    const o = a.createOscillator(), g = a.createGain(), lfo = a.createOscillator(), lg = a.createGain(), st = t + i * .11;
+    o.type = "sine"; o.frequency.setValueAtTime(base, st); o.frequency.exponentialRampToValueAtTime(base * 1.6, st + .04); o.frequency.exponentialRampToValueAtTime(base * 1.1, st + .09);
+    lfo.frequency.value = 38; lg.gain.value = base * .04; lfo.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(vol, st + .01); g.gain.exponentialRampToValueAtTime(0.0001, st + .09);
+    o.connect(g).connect(sfxOut()); o.start(st); lfo.start(st); o.stop(st + .1); lfo.stop(st + .1);
+  }
+}
+// فرقعة: ضجيج قصير مصفّى
+function pop(t) {
+  const a = ac(), len = a.sampleRate * .09, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const src = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; bp.type = "bandpass"; bp.frequency.value = 1400; bp.Q.value = .8; g.gain.value = .5;
+  src.connect(bp).connect(g).connect(sfxOut()); src.start(t);
+}
+let sfxBus = null;
+function sfxOut() { const a = ac(); if (!sfxBus) { sfxBus = a.createGain(); sfxBus.gain.value = .9; sfxBus.connect(a.destination); } return sfxBus; }
 function sfx(kind) {
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    // قفزة بين الجزر: صفير صاعد قصير + رنّة، ودخول الدرس: نغمتان صاعدتان
-    if (kind === "step") {
-      const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
-      o.type = "triangle"; o.frequency.setValueAtTime(700, t0); o.frequency.exponentialRampToValueAtTime(1100, t0 + 0.08);
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
-      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 0.16); return;
-    }
-    if (kind === "hop" || kind === "enter") {
-      const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
-      o.type = "sine"; o.frequency.setValueAtTime(kind === "hop" ? 420 : 520, t0); o.frequency.exponentialRampToValueAtTime(kind === "hop" ? 980 : 1040, t0 + 0.28);
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
-      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 0.34);
-      [kind === "hop" ? 1318 : 784, kind === "hop" ? 1760 : 1175].forEach((f, i) => {
-        const o2 = actx.createOscillator(), g2 = actx.createGain(), t = t0 + 0.3 + i * 0.09;
-        o2.type = "triangle"; o2.frequency.value = f;
-        g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.09, t + 0.02); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-        o2.connect(g2).connect(actx.destination); o2.start(t); o2.stop(t + 0.32);
-      });
-      return;
-    }
-    const notes = kind === "ok" ? [660, 880] : kind === "win" ? [523, 659, 784, 1046] : [220, 180];
-    notes.forEach((f, i) => {
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.type = kind === "bad" ? "square" : "sine"; o.frequency.value = f;
-      const t = actx.currentTime + i * 0.11;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === "bad" ? 0.05 : 0.18, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.25);
-    });
+    const t = ac().currentTime + .01;
+    if (kind === "ok") { marimba(784, t); marimba(1175, t + .1); chirp(t + .22, 2600, 2, .05); }                      // صحيح: نغمتان صاعدتان وزقزقة
+    else if (kind === "bad") { tone(330, t, .22, "sine", .09, 247); tone(262, t + .14, .26, "sine", .08, 220); }          // خطأ: «أووه» ناعمة
+    else if (kind === "win") { [523, 659, 784, 1047, 1319].forEach((f, i) => marimba(f, t + i * .11, .14)); chirp(t + .65, 2800, 4, .06); [2093, 2637, 3136].forEach((f, i) => tone(f, t + .7 + i * .07, .4, "triangle", .04)); }
+    else if (kind === "hop") { tone(300, t, .32, "sine", .14, 900); marimba(1319, t + .3, .1); chirp(t + .42, 3000, 2, .045); } // قفزة مرنة بين الجزر
+    else if (kind === "enter") { [784, 988, 1175, 1568].forEach((f, i) => tone(f, t + i * .06, .5, "triangle", .06)); tone(2349, t + .26, .6, "sine", .03); } // لمعة سحرية
+    else if (kind === "step") { marimba(880 + Math.random() * 220, t, .09); }                                              // نقرة خشبية خفيفة
+    else if (kind === "pop") { pop(t); marimba(1568, t + .03, .06); }
   } catch (e) {}
 }
+
+/* زقزقة طيور هادئة في الخريطة وداخل الدرس (تتوقف أثناء نطق الحروف، ويمكن إيقافها) */
+let birdsTimer = 0;
+const birdsOn = () => DB.birds !== false;
+function birdsTick() {
+  clearTimeout(birdsTimer);
+  birdsTimer = setTimeout(birdsTick, 2500 + Math.random() * 4500);
+  if (!birdsOn() || !actx || document.hidden || !["home", "lesson", "stage"].includes(screen.name) || (cur && !cur.paused) || (window.speechSynthesis && speechSynthesis.speaking)) return;
+  const t = actx.currentTime + .05, base = 2200 + Math.random() * 1600;
+  chirp(t, base, 2 + Math.floor(Math.random() * 3), .018);
+  if (Math.random() < .4) chirp(t + .6 + Math.random() * .4, base * (.85 + Math.random() * .3), 2, .012);
+}
+addEventListener("pointerdown", () => { if (!birdsTimer) { ac(); birdsTick(); } }, { once: false, passive: true });
 
 /* ---------- helpers ---------- */
 const $app = document.getElementById("app");
@@ -1322,6 +1344,7 @@ function Home() {
   for (let n = 1; n <= AVAILABLE; n++) total += starsFor(LP(n).best);
   let html = bar(`<img class="wordmark" src="icons/wordmark-light.svg" alt="رحلة الحروف">`, null,
     `<span class="pill" aria-label="النجوم">⭐ ${total}</span>
+     <button class="icon-btn" id="birds" aria-label="${birdsOn() ? "إيقاف أصوات الطيور" : "تشغيل أصوات الطيور"}" title="أصوات الطيور">${birdsOn() ? "🐦" : "🔇"}</button>
      <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
@@ -1723,7 +1746,7 @@ function Balloons() {
   const sky = document.getElementById("sky");
   sky.querySelectorAll(".balloon").forEach(b => b.onclick = (ev) => {
     if (b.dataset.c === T.c) {
-      sfx("ok"); b.classList.add("popped");
+      sfx("pop"); b.classList.add("popped");
       const r = sky.getBoundingClientRect(), br = b.getBoundingClientRect();
       const boom = document.createElement("span"); boom.className = "boom"; boom.textContent = "💥";
       boom.style.left = (br.left - r.left + 20) + "px"; boom.style.top = (br.top - r.top + 20) + "px";
@@ -1854,6 +1877,7 @@ $app.addEventListener("click", (e) => {
     else startLessonTest(CUR);
   }
   if (e.target.closest("#signout")) return signOut();
+  if (e.target.closest("#birds")) { DB.birds = !birdsOn(); save(); if (DB.birds) { ac(); chirp(actx.currentTime + .05, 2800, 3, .05); } toast(DB.birds ? "🐦 أصوات الطيور تعمل" : "🔇 أُوقفت أصوات الطيور"); return render(); }
   if (e.target.closest("#keepme")) { P.temp = false; save(); toast("حُفظ اسمك على هذا الجهاز ✓"); return render(); }
   if (e.target.closest("#lang")) {
     DB.lang = LANGS[(LANGS.indexOf(DB.lang) + 1) % LANGS.length]; save(); render();
