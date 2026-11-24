@@ -111,7 +111,9 @@ function caption(i) {
   setTimeout(() => { if (!alive) return; c.textContent = LINES[i]; c.classList.add("ri-on"); }, 250);
 }
 // يعرض النص ويشغّل صوت الراوي؛ يعيد وعداً ينتهي بانتهاء الصوت (أو مباشرة إن لم يوجد ملف)
-function narrate(i) { caption(i); return audio(`audio/intro/${i + 1}.mp3`); }
+// أسماء ملفات الراوي (يُغيَّر الاسم عند استبدال مقطع حتى لا يبقى القديم في ذاكرة الأجهزة)
+const VOICE = ["1", "2", "3b", "4", "5"];
+function narrate(i) { caption(i); return audio(`audio/intro/${VOICE[i]}.mp3`); }
 // المدة تكفي لقراءة النص إن لم يوجد صوت راوٍ
 const readMs = (i) => 1800 + LINES[i].length * 55;
 
@@ -181,7 +183,8 @@ async function run() {
   ltrs.forEach((n, i) => { const r = n.getBoundingClientRect(), s = stage.getBoundingClientRect(), dx = cx - (r.left - s.left + 32) + (1.5 - i) * 60, dy = cy - (r.top - s.top + 32);
     n.animate([{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) scale(1.3)` }], { duration: 1100, delay: i * 120, easing: "ease-in-out", fill: "forwards" }); });
   await wait(1500); check();
-  ltrs.forEach(n => { n.style.transition = "opacity .5s"; n.style.opacity = 0; });
+  // الإخفاء بحركة أيضاً: الحركات السابقة (fill: forwards) تتقدّم على style.opacity
+  ltrs.forEach(n => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }));
   $(".ri-word").classList.add("ri-on"); sfx("win");
   el.querySelectorAll(".ri-isl.ri-far").forEach(n => { n.style.opacity = .35; n.style.transform = "translateY(30px)"; });
   await wait(1600); check();
