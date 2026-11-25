@@ -180,7 +180,7 @@ function lessonOf(s, n) {
   return { stages: x.stages || [], games: x.games || [], best: Number(x.best) || 0, tries: Number(x.tries) || 0, passedAt: x.passedAt };
 }
 const passedList = (s) => LESSONS_T.filter(L => lessonOf(s, L.n).best >= 8).map(L => L.n);
-const NEED_VERSION = 10;
+const NEED_VERSION = 11;
 // عدد الخطوات المنجزة في درس (المراحل + اللعبتان + الاختبار)
 function stepsDone(s, L) {
   const x = lessonOf(s, L.n);
@@ -223,7 +223,7 @@ const errText = (e) => ERR[e] || ("خطأ: " + e);
 
 let cred = null; try { cred = JSON.parse(sessionStorage.getItem("teacher-cred") || "null"); } catch (e) {}
 const UI = { picked: new Set(), tab: "students", sel: null, q: "", grp: "", sortBy: "lastSeen", lastCode: null, confirm: null, editT: null, editG: null };
-let wdata = null, sdata = null, adata = null, hwdata = null;
+let wdata = null, sdata = null, adata = null, hwdata = null, vdata = null;
 let data = null, tdata = null, gdata = null, loginErr = "", offline = false, cachedAt = null;
 /* نسخة محفوظة من آخر بيانات، لعرضها دون إنترنت (على جهاز المعلم فقط) */
 async function sha(t) {
@@ -270,7 +270,7 @@ async function call(action, extra) {
 }
 function flash(id, text, good) { const el = $(id); if (el) { el.className = good ? "ok msg" : "err msg"; el.textContent = text || ""; } }
 async function busy(btn, fn) { if (btn) btn.disabled = true; try { return await fn(); } finally { if (btn && btn.isConnected) btn.disabled = false; } }
-function logout() { cred = null; data = tdata = gdata = wdata = sdata = adata = hwdata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
+function logout() { cred = null; data = tdata = gdata = wdata = sdata = adata = hwdata = vdata = null; offline = false; try { sessionStorage.removeItem("teacher-cred"); localStorage.removeItem(CACHE_KEY); } catch (e) {} render(); }
 /* الخروج التلقائي بعد 30 دقيقة دون استعمال (لحماية السجل على الأجهزة المشتركة) */
 const IDLE_MIN = 30;
 let lastAct = Date.now();
@@ -292,6 +292,7 @@ async function load() {
   render();
 }
 async function loadStats() { const j = await call("stats"); sdata = j.error ? { error: j.error } : j; }
+async function loadVoices() { const j = await call("voice.list", { status: UI.vst || "new" }); vdata = j.error ? { error: j.error } : j; }
 async function loadHw() { const j = await call("hw.list"); hwdata = j.error ? { error: j.error } : j; }
 async function loadAudit() { const j = await call("audit.list"); adata = j.error ? { error: j.error } : j; }
 async function loadWeekly() { const j = await call("weekly"); wdata = j.error ? { error: j.error } : j; }
@@ -308,7 +309,7 @@ function render() {
   const me = data.me;
   const tabs = me.admin
     ? [["students", "👧 الطلاب"], ["hw", "📝 الواجبات"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["teachers", "👩‍🏫 المعلمون"], ["groups", "🏷️ الحلقات"],
-       ...(me.main ? [["audit", "🧾 سجل التعديلات"]] : []), ["account", "🔐 حسابي"]]
+       ["voices", "🎙️ بنك الأصوات"], ...(me.main ? [["audit", "🧾 سجل التعديلات"]] : []), ["account", "🔐 حسابي"]]
     : [["students", "👧 طلابي"], ["hw", "📝 الواجبات"], ["weekly", "📊 الأسبوع"], ["stats", "📈 الإحصاءات"], ["account", "🔐 حسابي"]];
   if (!tabs.some(t => t[0] === UI.tab)) UI.tab = "students";
   let h = `<header><img class="logo" src="icons/rehla.svg" alt="" width="40" height="40"><h1>${me.admin ? "لوحة المدير" : "سجل المعلم"}</h1>
@@ -318,12 +319,12 @@ function render() {
     <button class="btn ghost" id="refresh">↻ تحديث</button><button class="btn ghost" id="out">خروج</button></header>
   <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${UI.tab === k ? "on" : ""}" role="tab" aria-selected="${UI.tab === k}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
   if (!offline && !(Number(data.version) >= NEED_VERSION)) h += `<div class="warnbar"><b>⚠️ كود الجدول المنشور قديم${data.version ? " (الإصدار " + esc(data.version) + ")" : ""}، والمطلوب الإصدار ${NEED_VERSION}.</b>
-    ${Number(data.version) >= 6 ? "لذلك لا تعمل الميزات الجديدة (الواجبات)." : "لذلك لا يُحفظ تقدّم الدروس من الثاني فما بعد، وتظهر الشهادات ناقصة."} الحل (مرة واحدة):
+    ${Number(data.version) >= 6 ? "لذلك لا تعمل الميزات الجديدة (الواجبات وبنك الأصوات)." : "لذلك لا يُحفظ تقدّم الدروس من الثاني فما بعد، وتظهر الشهادات ناقصة."} الحل (مرة واحدة):
     <ol><li>افتح الجدول ← الإضافات ← Apps Script، واحذف الكود، والصق محتوى <code>google-apps-script/Code.gs</code> الجديد، ثم احفظ.</li>
     <li>اختر الدالة <code>setup</code> واضغط «تنفيذ» (تُصلح السجلات القديمة من سجل النشاط).</li>
     <li>نشر ← إدارة عمليات النشر ← ✏️ ← الإصدار: <b>إصدار جديد</b> ← نشر.</li></ol></div>`;
   if (offline) h += `<div class="offbar">📴 غير متصل بالإنترنت — تعرض آخر بيانات محفوظة (${new Date(cachedAt).toLocaleString("ar-EG")}). التعديل يعود عند الاتصال.</div>`;
-  h += ({ students: studentsTab, hw: hwTab, weekly: weeklyTab, stats: statsTab, audit: auditTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
+  h += ({ students: studentsTab, hw: hwTab, voices: voicesTab, weekly: weeklyTab, stats: statsTab, audit: auditTab, teachers: teachersTab, groups: groupsTab, account: accountTab })[UI.tab]();
   h += credit();
   root.innerHTML = h;
   if (offline) root.querySelectorAll("form button[type=submit], #askreset, #askdel").forEach(b => b.disabled = true);
@@ -338,9 +339,10 @@ function render() {
     if (UI.tab === "stats" && !sdata) { render(); await loadStats(); }
     if (UI.tab === "audit" && !adata) { render(); await loadAudit(); }
     if (UI.tab === "hw" && !hwdata) { render(); await loadHw(); }
+    if (UI.tab === "voices" && !vdata) { render(); await loadVoices(); }
     render();
   });
-  ({ students: bindStudents, hw: bindHw, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
+  ({ students: bindStudents, hw: bindHw, voices: bindVoices, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
 }
 
 const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
@@ -868,6 +870,59 @@ function bindHw() {
     if (j.error) { render(); return flash("hwmsg", errText(j.error)); }
     if (UI.editHw) { UI.editHw = null; UI.hwfFor = null; } await loadHw(); render();
   });
+}
+
+/* ---------------- بنك الأصوات (للمدير) ---------------- */
+// تسجيلات المشاركين من «استوديو الأصوات»: يستمع المدير ويقبل الصحيح، ويختار «أفضل صوت» لكل مقطع (يسمعه الطلاب في الدروس)
+const VST = { new: "جديد", ok: "مقبول", bad: "مرفوض", all: "الكل" };
+const vAudio = {};
+let vPlaying = null;
+const vLabel = (k) => k.startsWith("sp:") ? `<span class="muted">تهجئة</span> ${esc(k.slice(3))}` : esc(k);
+function voicesTab() {
+  const st = UI.vst || "new";
+  let h = `<div class="panel stack"><p class="muted" style="margin:0">تصل هنا تسجيلات المشاركين من <a href="studio.html" target="_blank">استوديو الأصوات</a> (رابط الدعوة: <a href="voices.html" target="_blank">voices.html</a>).
+    استمع إلى كل تسجيل: <b>✓</b> يُدخله البنك (فيتعلّم منه الحكم الآلي)، <b>✗</b> يستبعده، و<b>⭐</b> يجعله «أفضل صوت» للمقطع فيسمعه الطلاب في الدروس.</p>
+    <div class="row r2" style="grid-template-columns:1fr auto"><select id="vst" aria-label="الحالة">${Object.keys(VST).map(k => `<option value="${k}" ${k === st ? "selected" : ""}>${VST[k]}</option>`).join("")}</select>
+    <button class="btn ghost" id="vref">↻ تحديث</button></div></div>`;
+  if (!vdata) return h + `<div class="panel"><p class="muted">⏳ جارٍ التحميل...</p></div>`;
+  if (vdata.error) return h + `<div class="panel"><p class="err">${vdata.error === "unknown_action" ? "بنك الأصوات يحتاج نشر كود الجدول الجديد (الإصدار 11)." : esc(errText(vdata.error))}</p></div>`;
+  const c = vdata.counts || {}, cover = vdata.cover || {}, keys = Object.keys(cover), syl = keys.filter(k => !k.startsWith("sp:"));
+  h += `<div class="tiles"><div class="tile"><b>${c.new || 0}</b><span>بانتظار المراجعة</span></div><div class="tile"><b>${c.ok || 0}</b><span>مقبول</span></div>
+    <div class="tile"><b>${syl.length}/87</b><span>مقاطع في البنك</span></div><div class="tile"><b>${keys.filter(k => cover[k].best).length}</b><span>لها «أفضل صوت»</span></div></div>`;
+  const items = vdata.items || [], groups = {};
+  items.forEach(x => (groups[x.sub + "|" + x.name] = groups[x.sub + "|" + x.name] || []).push(x));
+  h += Object.keys(groups).map(g => { const list = groups[g], f = list[0];
+    return `<div class="panel stack"><div class="row r2" style="grid-template-columns:1fr auto;align-items:center"><span><b>${esc(f.name)}</b> <span class="chip grp">${esc(f.voice)}${f.age ? " · " + esc(f.age) + " سنة" : ""}</span> <span class="muted">${list.length} تسجيل · ${ago(f.ts)}</span></span>
+      ${st === "new" ? `<span class="actions" style="margin:0"><button class="btn small" data-vall="ok" data-g="${esc(g)}">✓ قبول الكل</button><button class="btn ghost small" data-vall="bad" data-g="${esc(g)}">✗ رفض الكل</button></span>` : ""}</div>
+      <div class="tablebox"><table><tbody>${list.map(x => `<tr><td style="font-family:var(--f-letter, serif);font-size:1.3rem;white-space:nowrap">${vLabel(x.key)}</td>
+        <td><button class="btn ghost small" data-vplay="${esc(x.id)}" aria-label="استمع">▶</button></td>
+        <td><span class="chip ${x.status === "ok" ? "ok" : x.status === "bad" ? "bad" : "idle"}">${VST[x.status]}</span>${x.best ? ` <span class="chip adm">⭐ أفضل صوت</span>` : ""}</td>
+        <td style="white-space:nowrap"><button class="btn small" data-vrev="ok" data-id="${esc(x.id)}" title="قبول">✓</button>
+          <button class="btn ghost small" data-vrev="bad" data-id="${esc(x.id)}" title="رفض">✗</button>
+          <button class="btn ghost small" data-vbest="${esc(x.id)}" title="أفضل صوت لهذا المقطع">⭐</button>
+          ${data.me.main ? `<button class="btn ghost small" data-vdel="${esc(x.id)}" title="حذف نهائي" style="color:var(--red)">🗑️</button>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`; }).join("")
+    || `<div class="panel"><p class="muted">لا توجد تسجيلات ${st === "all" ? "" : "«" + VST[st] + "»"} بعد.</p></div>`;
+  return h + `<p class="msg" id="vmsg"></p>`;
+}
+function bindVoices() {
+  if (!$("vst")) return;
+  $("vst").onchange = async (e) => { UI.vst = e.target.value; vdata = null; render(); await loadVoices(); render(); };
+  $("vref").onclick = (e) => busy(e.currentTarget, async () => { await loadVoices(); render(); });
+  const after = async (j) => { if (j.error) return flash("vmsg", j.error === "unknown_action" ? "انشر كود الجدول الجديد أولاً (الإصدار 11)." : errText(j.error)); await loadVoices(); render(); };
+  root.querySelectorAll("[data-vplay]").forEach(b => b.onclick = () => busy(b, async () => {
+    const id = b.dataset.vplay;
+    if (!vAudio[id]) { const j = await call("voice.audio", { id }); if (j.error) return flash("vmsg", errText(j.error));
+      const s = atob(j.b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+      vAudio[id] = URL.createObjectURL(new Blob([a], { type: j.mime || "audio/wav" })); }
+    if (vPlaying) vPlaying.pause(); vPlaying = new Audio(vAudio[id]); vPlaying.play().catch(() => {});
+  }));
+  root.querySelectorAll("[data-vrev]").forEach(b => b.onclick = () => busy(b, async () => after(await call("voice.review", { ids: [b.dataset.id], status: b.dataset.vrev }))));
+  root.querySelectorAll("[data-vall]").forEach(b => b.onclick = () => busy(b, async () => {
+    const ids = (vdata.items || []).filter(x => x.sub + "|" + x.name === b.dataset.g).map(x => x.id);
+    after(await call("voice.review", { ids, status: b.dataset.vall }));
+  }));
+  root.querySelectorAll("[data-vbest]").forEach(b => b.onclick = () => busy(b, async () => after(await call("voice.best", { id: b.dataset.vbest }))));
+  root.querySelectorAll("[data-vdel]").forEach(b => b.onclick = () => { if (confirm("حذف هذا التسجيل نهائياً من Drive ومن البنك؟")) busy(b, async () => after(await call("voice.delete", { ids: [b.dataset.vdel] }))); });
 }
 
 /* ---------------- الإحصاءات ---------------- */

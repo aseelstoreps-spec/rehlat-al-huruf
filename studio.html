@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>استوديو الأصوات</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<script src="config.js"></script>
+<script src="voice.js"></script>
+<style>
+/* استوديو الأصوات: يسجّل المشارك المقاطع، ويجرّب الحكم الآلي، ثم يوافق ويرسل تسجيلاته إلى بنك الأصوات */
+:root {
+  --bg: #f7f7fc; --card: #fff; --ink: #1b1d45; --soft: #565a86; --line: #dcddf0;
+  --navy: #23266b; --gold: #ffd23f; --gold-soft: #fff6d1; --red: #c8233a; --green: #17804f;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; --f-title: "Lalezar", var(--f-ui); --f-letter: "Noto Naskh Arabic", serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); }
+.wrap { max-width: 820px; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; align-items: center; gap: 10px; }
+header img { width: 40px; height: 40px; }
+h1 { margin: 0; flex: 1; font-family: var(--f-title); font-weight: 400; font-size: 1.7rem; color: var(--navy); }
+h2 { margin: 0 0 10px; font-size: 1.1rem; }
+p { margin: 0; line-height: 1.7; }
+a { color: var(--navy); }
+.muted { color: var(--soft); font-size: .92rem; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.note { background: var(--gold-soft); border-color: #f2df9b; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tab { border: 0; border-radius: 14px; padding: 12px 6px; font: inherit; font-weight: 800; background: #eceefa; color: var(--soft); cursor: pointer; }
+.tab.on { background: var(--navy); color: #fff; }
+button { font: inherit; cursor: pointer; }
+.btn { border: 0; border-radius: 14px; padding: 10px 16px; font-weight: 800; background: var(--navy); color: #fff; }
+.btn.gold { background: var(--gold); color: var(--ink); box-shadow: 0 4px 0 #d9a800; }
+.btn.green { background: var(--green); }
+.btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 6px 12px; font-size: .9rem; }
+.btn[disabled] { opacity: .45; cursor: default; }
+input, select { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafaff; width: 100%; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .92rem; }
+.form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: end; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.seg label { display: inline-flex; gap: 6px; align-items: center; background: #f3f4fb; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-weight: 600; }
+.seg input { width: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { min-width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff; font-family: var(--f-letter); font-size: 1.4rem; }
+.chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.item { border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fbfbff; }
+.item.ok { border-color: #b9e4c8; background: #f2fbf5; }
+.syl { font-family: var(--f-letter); font-size: 2.4rem; line-height: 1.6; }
+.syl.sp { font-size: 1.1rem; line-height: 2; text-align: center; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.meter { height: 8px; border-radius: 99px; background: #eceefa; overflow: hidden; width: 100%; }
+.meter i { display: block; height: 100%; width: 0; background: var(--red); }
+.sticky { position: sticky; top: 0; z-index: 5; }
+.big { font-family: var(--f-letter); font-size: clamp(5rem, 28vw, 8rem); line-height: 1.5; text-align: center; color: var(--navy); }
+.big.sp { font-size: clamp(2.2rem, 10vw, 3.2rem); }
+.mic { width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--red); color: #fff; font-size: 2.4rem; box-shadow: 0 6px 0 #8f1a2a; align-self: center; }
+.mic.rec { animation: pulse 1s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 6px 0 #8f1a2a, 0 0 0 14px #c8233a33; } }
+.verdict { font-size: 1.35rem; font-weight: 800; text-align: center; }
+.verdict.good { color: var(--green); } .verdict.bad { color: var(--red); }
+.score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.score div { background: #f5f6fd; border-radius: 12px; padding: 8px; } .score b { display: block; font-size: 1.5rem; }
+.consent { border: 2px solid var(--navy); }
+.consent ul { margin: 0; padding-inline-start: 20px; line-height: 1.9; }
+.prog { height: 12px; border-radius: 99px; background: #eceefa; overflow: hidden; } .prog i { display: block; height: 100%; background: var(--green); width: 0; transition: width .3s; }
+.err { color: var(--red); font-weight: 700; }
+.ok { color: var(--green); font-weight: 700; }
+.credit { text-align: center; color: var(--soft); font-size: .82rem; }
+@media (max-width: 560px) { .form { grid-template-columns: 1fr 1fr; } .form label:first-child { grid-column: 1 / -1; } .syl { font-size: 2rem; } }
+@media (prefers-reduced-motion: reduce) { .mic.rec { animation: none; outline: 4px solid #c8233a55; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script>
+(function () {
+"use strict";
+const V = window.Voice, CFG = window.QAIDA_CONFIG || {};
+const root = document.getElementById("root");
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const LS = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; } };
+const SAVE = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const CONSENT_V = "1";
+
+const P = LS("rehla-studio-profile", null) || { name: "", voice: "adult", age: "", sub: Math.random().toString(36).slice(2, 12) + Date.now().toString(36) };
+const UI = { tab: "rec", kind: "syl", letters: LS("rehla-studio-letters", ["ب", "ت", "س", "م"]), scope: "letter", source: "mine", target: null, last: null, busy: false, msg: "", sent: null, refused: false };
+let LOG = LS("rehla-studio-log", []);
+let RECS = [];
+const audioOf = {}; // روابط تشغيل محلية
+const keyOf = (k) => UI.kind === "sp" ? V.spKey(k) : k;
+const mine = (key) => RECS.filter(r => r.key === key);
+const items = () => V.ITEMS.filter(it => UI.letters.includes(it.c));
+const dev = () => { const ua = navigator.userAgent; return /iPhone|iPad/.test(ua) ? "آيفون/آيباد" : /Android/.test(ua) ? "أندرويد" : "حاسوب"; };
+
+async function reload() { RECS = (await V.store.all()).sort((a, b) => a.at - b.at); }
+
+/* ---------- العرض ---------- */
+function render() {
+  const unsent = RECS.filter(r => !r.sent).length;
+  let h = `<header><img src="icons/rehla.svg" alt=""><h1>🎙️ استوديو الأصوات</h1><a class="btn ghost small" href="voices.html">ما هذا؟</a></header>
+    <div class="tabs"><button class="tab ${UI.tab === "rec" ? "on" : ""}" data-tab="rec">١. التسجيل</button>
+      <button class="tab ${UI.tab === "test" ? "on" : ""}" data-tab="test">٢. جرّب الحكم</button>
+      <button class="tab ${UI.tab === "send" ? "on" : ""}" data-tab="send">٣. الإرسال${unsent ? " (" + unsent + ")" : ""}</button></div>`;
+  h += ({ rec: recTab, test: testTab, send: sendTab })[UI.tab]();
+  h += UI.msg ? `<p class="err">${esc(UI.msg)}</p>` : "";
+  h += `<p class="credit">رحلة الحروف · من إنشاء م. كريم عادل اللوح · تبقى التسجيلات على جهازك حتى توافق على إرسالها</p>`;
+  root.innerHTML = h; bind();
+}
+function kindPicker() {
+  return `<div class="seg"><b>طريقة القراءة:</b>
+    <label><input type="radio" name="kind" value="syl" ${UI.kind === "syl" ? "checked" : ""}> المقطع وحده «بِ»</label>
+    <label><input type="radio" name="kind" value="sp" ${UI.kind === "sp" ? "checked" : ""}> التهجئة «با كسرة بِ»</label></div>`;
+}
+function recTab() {
+  const sp = UI.kind === "sp";
+  return `<div class="panel"><h2>من يقرأ؟</h2><div class="form">
+      <label class="f">الاسم<input id="pname" maxlength="40" value="${esc(P.name)}" placeholder="مثال: أبو أحمد"></label>
+      <label class="f">الصوت<select id="pvoice"><option value="adult" ${P.voice === "adult" ? "selected" : ""}>بالغ</option><option value="child" ${P.voice === "child" ? "selected" : ""}>طفل</option></select></label>
+      <label class="f">العمر<input id="page" type="number" min="3" max="90" value="${esc(P.age)}" placeholder="اختياري"></label></div>
+      <p class="muted">إن تناوب على التسجيل أكثر من شخص (أنت ثم طفل)، غيّر الاسم والصوت قبل تسجيل الآخر.</p></div>
+    <div class="panel"><h2>الحروف</h2><div class="chips">${V.LET.map(L => `<button class="chip ${UI.letters.includes(L.c) ? "on" : ""}" data-l="${L.c}" aria-pressed="${UI.letters.includes(L.c)}">${L.c}</button>`).join("")}</div>
+      <div class="row" style="justify-content:flex-start"><button class="btn ghost small" id="lall">اختر الكل</button><button class="btn ghost small" id="lnone">إلغاء الكل</button></div>${kindPicker()}</div>
+    <div class="panel note"><b>كيف؟</b><p>اضغط 🎙️ ثم اقرأ ${sp ? "التهجئة كاملة كما في الكتاب: «با كسرة بِ» (عندك أربع ثوانٍ ونصف)" : "المقطع وحده مرة واحدة بوضوح: «بِ» (عندك ثانيتان ونصف)"}. اسمع تسجيلك بـ ▶، وإن لم يكن واضحاً احذفه بـ ↶ وأعده. تسجيل واحد جيد لكل مقطع يكفي، واثنان أفضل.</p></div>
+    <div class="panel sticky"><div class="meter" id="meter"><i></i></div></div>
+    <div class="grid">${items().map(it => { const key = keyOf(it.k), list = mine(key), sent = list.filter(r => r.sent).length;
+      return `<div class="item ${list.length ? "ok" : ""}"><span class="syl ${sp ? "sp" : ""}">${sp ? it.sp : it.k}</span>
+        <span class="muted">${list.length ? list.length + " تسجيل" + (sent ? " · أُرسل " + sent : "") : "لم يُسجَّل"}</span>
+        <div class="row"><button class="btn small" data-rec="${esc(key)}" ${UI.busy ? "disabled" : ""} aria-label="سجّل ${esc(sp ? it.sp : it.k)}">🎙️</button>
+          ${list.length ? `<button class="btn ghost small" data-play="${esc(list[list.length - 1].id)}" aria-label="استمع">▶</button>` : ""}
+          ${list.some(r => !r.sent) ? `<button class="btn ghost small" data-undo="${esc(key)}" title="حذف آخر تسجيل" aria-label="حذف آخر تسجيل">↶</button>` : ""}</div></div>`; }).join("") || `<p class="muted">اختر حرفاً واحداً على الأقل.</p>`}</div>
+    ${RECS.length ? `<div class="row"><button class="btn gold" data-tab="send">التالي: الإرسال ⬅</button></div>` : ""}`;
+}
+function testTab() {
+  const sp = UI.kind === "sp";
+  const refsOf = (key) => UI.source === "bank" ? V.bankRefs(key) : mine(key).map(r => r.f);
+  const ready = items().filter(it => refsOf(keyOf(it.k)).length);
+  let h = `<div class="panel">${kindPicker()}
+    <div class="seg"><b>نقارن بـ:</b><label><input type="radio" name="source" value="mine" ${UI.source === "mine" ? "checked" : ""}> تسجيلاتي</label>
+      <label><input type="radio" name="source" value="bank" ${UI.source === "bank" ? "checked" : ""}> بنك الأصوات</label></div>
+    <div class="seg"><b>المرشّحون:</b><label><input type="radio" name="scope" value="letter" ${UI.scope === "letter" ? "checked" : ""}> الحركات الثلاث للحرف</label>
+      <label><input type="radio" name="scope" value="all" ${UI.scope === "all" ? "checked" : ""}> كل المقاطع المختارة</label></div></div>`;
+  if (ready.length < 3) return h + `<div class="panel"><p>${UI.source === "bank" ? "البنك لا يحوي بعد مراجع كافية لهذه الحروف." : "سجّل أولاً في تبويب «التسجيل» (على الأقل حرفاً واحداً بحركاته الثلاث)."}</p></div>`;
+  if (!UI.target || !ready.some(it => it.k === UI.target)) UI.target = ready[Math.floor(Math.random() * ready.length)].k;
+  const it = V.ITEMS.find(x => x.k === UI.target), R = UI.last;
+  const L = LOG.filter(x => x.kind === UI.kind && x.scope === UI.scope && x.source === UI.source), right = L.filter(x => x.ok).length;
+  h += `<div class="panel"><p class="muted" style="text-align:center">يقرأ الطالب:</p><div class="big ${sp ? "sp" : ""}">${sp ? it.sp : it.k}</div>
+      <button class="mic" id="mic" aria-label="سجّل" ${UI.busy ? "disabled" : ""}>🎙️</button><div class="meter" id="meter"><i></i></div>
+      <div class="row"><button class="btn ghost small" id="another">🔀 مقطع آخر</button></div></div>`;
+  if (R) h += `<div class="panel">${R.err ? `<p class="err">${esc(R.err)}</p>` : `<div class="verdict ${R.good ? "good" : "bad"}">سمعتُ: <span style="font-family:var(--f-letter)">${esc(R.heard)}</span> ${R.good ? "✓" : "✗"}</div>
+      <p class="muted" style="text-align:center">${esc(R.detail)}</p>
+      ${R.judged ? `<p class="ok" style="text-align:center">سُجّل حكمك ✓</p>` : `<p style="text-align:center"><b>هل حكم الموقع صحيح؟</b> (هل نطق الطالب فعلاً «${esc(R.heard)}»؟)</p>
+      <div class="row"><button class="btn" data-judge="1">✓ نعم، صحيح</button><button class="btn ghost" data-judge="0">✗ لا، أخطأ الموقع</button></div>`}`}</div>`;
+  h += `<div class="panel"><h2>دقة الحكم حتى الآن</h2><div class="score"><div><b>${L.length}</b>محاولة</div><div><b>${right}</b>صحيح</div><div><b>${L.length ? Math.round(right / L.length * 100) : 0}%</b>الدقة</div></div>
+      <div class="row"><button class="btn ghost small" id="clearlog">مسح النتائج</button></div></div>`;
+  return h;
+}
+function sendTab() {
+  const unsent = RECS.filter(r => !r.sent), sentN = RECS.length - unsent.length;
+  const by = (k) => unsent.filter(r => (k === "sp") === r.key.startsWith("sp:")).length;
+  let h = `<div class="panel"><h2>تسجيلاتك</h2>
+    <div class="score"><div><b>${by("syl")}</b>مقطع وحده</div><div><b>${by("sp")}</b>تهجئة</div><div><b>${sentN}</b>أُرسل سابقاً</div></div>
+    ${P.name ? `<p>باسم: <b>${esc(P.name)}</b> · ${P.voice === "child" ? "طفل" : "بالغ"}${P.age ? " · " + esc(P.age) + " سنة" : ""}</p>` : `<p class="err">اكتب الاسم في تبويب «التسجيل» أولاً.</p>`}</div>`;
+  if (UI.sent) h += `<div class="panel"><p class="ok">جزاك الله خيراً! 🌱 وصل ${UI.sent.saved} تسجيل إلى بنك الأصوات.</p><p class="muted">سيستمع إليها صاحب المشروع، ويُدخل الصحيح منها إلى البنك.</p></div>`;
+  if (UI.sending) h += `<div class="panel"><p>⏳ جارٍ الإرسال... ${UI.sending.done} من ${UI.sending.total}</p><div class="prog"><i style="width:${Math.round(UI.sending.done / UI.sending.total * 100)}%"></i></div></div>`;
+  else if (unsent.length) {
+    h += `<div class="panel consent"><h2>✋ الموافقة قبل الإرسال</h2>
+      <p>بالضغط على «نعم، أوافق»:</p>
+      <ul><li>تُرسل تسجيلاتك (${unsent.length} تسجيل) إلى مشروع «رحلة الحروف»، وتُحفظ في حساب صاحب المشروع على Google Drive.</li>
+        <li>تُستعمل لتعليم الموقع كيف يحكم على نطق الطلاب.</li>
+        <li>قد يُختار تسجيلك «أفضل صوت» لمقطع ما، فيسمعه الطلاب داخل الدروس.</li>
+        <li>إن كان في التسجيلات صوت طفل، فأنا وليّ أمره أو مأذون منه بذلك.</li>
+        <li>أستطيع طلب حذف تسجيلاتي في أي وقت من صاحب المشروع.</li></ul>
+      <p><b>هل توافق؟</b></p>
+      <div class="row"><button class="btn green" id="yes" ${P.name ? "" : "disabled"}>✅ نعم، أوافق وأرسل</button><button class="btn ghost" id="no">❌ لا، لا أوافق</button></div></div>`;
+    if (UI.refused) h += `<div class="panel"><p>لم يُرسل شيء. تبقى تسجيلاتك على هذا الجهاز فقط.</p>
+      <div class="row"><button class="btn ghost small" id="wipe">🗑️ حذف تسجيلاتي من هذا الجهاز</button></div></div>`;
+  } else if (!UI.sent) h += `<div class="panel"><p class="muted">لا توجد تسجيلات جديدة للإرسال. سجّل من تبويب «التسجيل».</p></div>`;
+  return h;
+}
+function summary() {
+  let t = "";
+  ["syl", "sp"].forEach(kd => ["letter", "all"].forEach(sc => ["mine", "bank"].forEach(so => {
+    const L = LOG.filter(x => x.kind === kd && x.scope === sc && x.source === so); if (!L.length) return;
+    const ok = L.filter(x => x.ok).length;
+    t += `${kd === "sp" ? "التهجئة" : "المقطع"} · ${sc === "letter" ? "الحركات الثلاث" : "كل المقاطع"} · ${so === "bank" ? "البنك" : "تسجيلاتي"}: ${ok}/${L.length} (${Math.round(ok / L.length * 100)}%)`;
+    const bad = L.filter(x => !x.ok); if (bad.length) t += " — أخطاء: " + bad.slice(0, 12).map(x => x.target + "←" + x.heard).join("، ");
+    t += "\n"; })));
+  return t.trim();
+}
+
+/* ---------- التسجيل والحكم ---------- */
+function level(v, p) { const m = document.querySelector("#meter i"); if (m) { m.style.width = Math.min(100, p * 100) + "%"; m.style.opacity = .35 + Math.min(1, v * 3) * .65; } }
+async function capture() {
+  UI.busy = true; UI.msg = ""; render();
+  const b = document.getElementById("mic"); if (b) b.classList.add("rec");
+  try {
+    const pcm = await V.record(UI.kind === "sp" ? 4500 : 2500, level), seg = V.trim(pcm);
+    if (!seg) throw new Error("quiet");
+    return { seg, f: V.mfcc(seg) };
+  } catch (e) {
+    UI.msg = e && e.message === "quiet" ? "لم أسمع صوتاً واضحاً. اقترب من الميكروفون وأعد المحاولة."
+      : e && e.name === "NotAllowedError" ? "يحتاج الاستوديو إذن الميكروفون: اسمح به من إعدادات المتصفح ثم أعد المحاولة."
+      : "تعذّر التسجيل على هذا المتصفح: " + (e && e.message || e);
+    return null;
+  } finally { UI.busy = false; }
+}
+function judge(r, it) {
+  const sp = UI.kind === "sp";
+  const refsOf = (key) => UI.source === "bank" ? V.bankRefs(key) : mine(key).map(x => x.f);
+  const cands = (UI.scope === "letter" ? V.ITEMS.filter(x => x.c === it.c) : items()).map(x => x.k);
+  if (!sp) {
+    const rank = V.classify(r.f, cands.map(keyOf), refsOf);
+    if (!rank.length) return { err: "لا توجد مراجع كافية لهذا الحرف." };
+    return { target: it.k, heard: rank[0].k, good: rank[0].k === it.k, detail: "ثقة " + rank[0].p + "%" };
+  }
+  // التهجئة: اسم الحركة من المقارنة الكاملة، والصوت الأخير من آخر الكلام
+  const rank = V.classify(r.f, cands.map(V.spKey), refsOf);
+  if (!rank.length) return { err: "لا توجد مراجع تهجئة كافية لهذا الحرف." };
+  const top = V.ITEMS.find(x => V.spKey(x.k) === rank[0].k);
+  const sylC = cands.filter(k => refsOf(k).length);
+  let syl = null;
+  if (sylC.length) {
+    const lens = sylC.flatMap(k => refsOf(k).map(f => f.length));
+    const sr = V.classify(V.mfcc(V.tail(r.seg, lens)), sylC, refsOf);
+    if (sr.length) syl = sr[0];
+  }
+  const nameOk = top.h === it.h, sylOk = !syl || syl.k === it.k;
+  const heardIt = syl ? V.ITEMS.find(x => x.k === syl.k) : top;
+  return { target: it.sp, heard: heardIt.name + " " + top.h + " " + (syl ? syl.k : "…"), good: nameOk && sylOk,
+    detail: `اسم الحركة: ${top.h} ${nameOk ? "✓" : "✗"} (ثقة ${rank[0].p}%) · الصوت الأخير: ${syl ? syl.k + " " + (sylOk ? "✓" : "✗") + " (ثقة " + syl.p + "%)" : "يحتاج مراجع «المقطع وحده»"}` };
+}
+
+/* ---------- الإرسال على دفعات ---------- */
+async function send() {
+  const list = RECS.filter(r => !r.sent);
+  if (!list.length) return;
+  if (!CFG.backendUrl) { UI.msg = "الموقع غير مربوط بالسجل."; return render(); }
+  if (!navigator.onLine) { UI.msg = "تحتاج اتصالاً بالإنترنت للإرسال."; return render(); }
+  UI.sending = { done: 0, total: list.length }; UI.msg = ""; UI.sent = null; render();
+  let saved = 0;
+  try {
+    for (let i = 0; i < list.length; i += 15) {
+      const batch = list.slice(i, i + 15);
+      const body = { action: "voice.submit", consent: true, consentVersion: CONSENT_V, sub: P.sub, name: P.name, voice: P.voice, age: P.age, device: dev(), summary: summary(),
+        items: await Promise.all(batch.map(async r => ({ key: r.key, f: r.f, b64: await V.toB64(r.wav) }))) };
+      const res = await fetch(CFG.backendUrl, { method: "POST", body: JSON.stringify(body) });
+      const j = await res.json();
+      if (j.error) throw new Error(j.error);
+      saved += j.saved || 0;
+      for (const r of batch) { r.sent = true; await V.store.put(r); }
+      UI.sending.done = Math.min(list.length, i + batch.length); render();
+    }
+    UI.sent = { saved };
+  } catch (e) {
+    const m = String(e && e.message || e);
+    UI.msg = m === "unknown_action" || m === "bad_request" ? "السجل لم يُحدَّث بعد لاستقبال التسجيلات (يحتاج الإصدار 11). أخبر صاحب المشروع." :
+      m === "daily_limit" ? "وصل البنك إلى الحد اليومي. حاول غداً، وتسجيلاتك محفوظة على جهازك." : "تعذّر الإرسال: تأكد من الإنترنت ثم أعد المحاولة. ما لم يُرسل يبقى محفوظاً.";
+  }
+  UI.sending = null; await reload(); render();
+}
+
+/* ---------- الأحداث ---------- */
+function bind() {
+  root.querySelectorAll("[data-tab]").forEach(b => b.onclick = async () => { UI.tab = b.dataset.tab; UI.msg = ""; UI.last = null; if (UI.tab === "test" && UI.source === "bank") await V.loadBank(bankKeys()); render(); window.scrollTo(0, 0); });
+  const pn = document.getElementById("pname"), pv = document.getElementById("pvoice"), pa = document.getElementById("page");
+  if (pn) { const sync = () => { P.name = pn.value.trim(); P.voice = pv.value; P.age = pa.value; SAVE("rehla-studio-profile", P); }; pn.oninput = sync; pv.onchange = sync; pa.oninput = sync; }
+  root.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { const c = b.dataset.l; UI.letters = UI.letters.includes(c) ? UI.letters.filter(x => x !== c) : [...UI.letters, c]; SAVE("rehla-studio-letters", UI.letters); render(); });
+  const la = document.getElementById("lall"); if (la) la.onclick = () => { UI.letters = V.LET.map(L => L.c); SAVE("rehla-studio-letters", UI.letters); render(); };
+  const ln = document.getElementById("lnone"); if (ln) ln.onclick = () => { UI.letters = []; SAVE("rehla-studio-letters", UI.letters); render(); };
+  root.querySelectorAll("input[name=kind]").forEach(r => r.onchange = () => { UI.kind = r.value; UI.last = null; UI.target = null; render(); });
+  root.querySelectorAll("input[name=scope]").forEach(r => r.onchange = () => { UI.scope = r.value; UI.last = null; render(); });
+  root.querySelectorAll("input[name=source]").forEach(r => r.onchange = async () => { UI.source = r.value; UI.last = null; UI.target = null; if (UI.source === "bank") { UI.msg = "⏳ جارٍ تحميل البنك..."; render(); await V.loadBank(bankKeys()); UI.msg = ""; } render(); });
+  root.querySelectorAll("[data-rec]").forEach(b => b.onclick = async () => {
+    if (!P.name) { UI.msg = "اكتب الاسم أولاً (في أعلى الصفحة)."; return render(); }
+    const key = b.dataset.rec, r = await capture();
+    if (r) { await V.store.put({ id: Math.random().toString(36).slice(2) + Date.now().toString(36), key, f: r.f, wav: V.wav(r.seg), at: Date.now(), sent: false, name: P.name, voice: P.voice }); await reload(); }
+    render();
+  });
+  root.querySelectorAll("[data-play]").forEach(b => b.onclick = () => { const r = RECS.find(x => x.id === b.dataset.play); if (r) { audioOf[r.id] = audioOf[r.id] || URL.createObjectURL(r.wav); new Audio(audioOf[r.id]).play(); } });
+  root.querySelectorAll("[data-undo]").forEach(b => b.onclick = async () => { const l = mine(b.dataset.undo).filter(r => !r.sent); if (l.length) { await V.store.del(l[l.length - 1].id); await reload(); render(); } });
+  const mic = document.getElementById("mic");
+  if (mic) mic.onclick = async () => { const it = V.ITEMS.find(x => x.k === UI.target), r = await capture(); UI.last = r ? judge(r, it) : null; render(); };
+  const an = document.getElementById("another"); if (an) an.onclick = () => { UI.target = null; UI.last = null; render(); };
+  root.querySelectorAll("[data-judge]").forEach(b => b.onclick = () => {
+    const R = UI.last; LOG.push({ kind: UI.kind, scope: UI.scope, source: UI.source, target: R.target, heard: R.heard, ok: b.dataset.judge === "1", at: Date.now() });
+    SAVE("rehla-studio-log", LOG.slice(-500)); R.judged = true; render();
+  });
+  const cl = document.getElementById("clearlog"); if (cl) cl.onclick = () => { if (confirm("مسح نتائج التجربة؟")) { LOG = []; SAVE("rehla-studio-log", LOG); render(); } };
+  const y = document.getElementById("yes"); if (y) y.onclick = () => { UI.refused = false; send(); };
+  const n = document.getElementById("no"); if (n) n.onclick = () => { UI.refused = true; render(); };
+  const w = document.getElementById("wipe"); if (w) w.onclick = async () => { if (confirm("حذف كل تسجيلاتك من هذا الجهاز؟ لا يمكن التراجع.")) { await V.store.clear(); await reload(); UI.refused = false; render(); } };
+}
+const bankKeys = () => items().flatMap(it => [it.k, V.spKey(it.k)]);
+
+if (!navigator.mediaDevices || !window.MediaRecorder || !window.indexedDB) UI.msg = "هذا المتصفح لا يدعم التسجيل. استعمل Chrome على أندرويد أو Safari على آيفون.";
+SAVE("rehla-studio-profile", P);
+reload().then(render).catch(() => { UI.msg = "تعذّر فتح التخزين على هذا الجهاز (ربما التصفح الخاص)."; render(); });
+})();
+</script>
+</body>
+</html>

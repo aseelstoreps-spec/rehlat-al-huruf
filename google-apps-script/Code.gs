@@ -1,5 +1,5 @@
 /**
- * سجل المعلم — رحلة الحروف (الإصدار 10: الواجبات من المعلم + شهادة ختم المستوى)
+ * سجل المعلم — رحلة الحروف (الإصدار 11: بنك الأصوات — استقبال التسجيلات، المراجعة، أفضل صوت)
  * بعد التحديث: شغّل setup، ثم (مرة واحدة) installTriggers للنسخة الاحتياطية والبريد الأسبوعي، ثم انشر «إصدار جديد»
  * من إنشاء م. كريم عادل اللوح · Created by Eng. Kareem Adel Allouh
  *
@@ -12,7 +12,7 @@
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "غير-هذه-الكلمة";
 
-const VERSION = 10;
+const VERSION = 11;
 const STUDENTS = "الطلاب";
 const EVENTS = "سجل النشاط";
 const TEACHERS = "المعلمون";
@@ -333,6 +333,7 @@ function hwFor_(group) {
 function doPost(e) {
   const d = JSON.parse(e.postData.contents || "{}");
   if (d.action === "student.register") return json_(withLock_(() => selfRegister_(d)));
+  if (d.action === "voice.submit") return json_(withLock_(() => voiceSubmit_(d)));
   if (d.action) return json_(command_(d));
   return withLock_(() => logEvent_(d));
 }
@@ -580,6 +581,39 @@ function command_(d) {
         return { ok: true };
       });
 
+      /* --- بنك الأصوات (للمدير والمدير المساعد؛ الحذف للمدير الرئيسي) --- */
+      case "voice.list": needAdmin(); return voiceList_(d);
+      case "voice.audio": needAdmin(); {
+        const r = voiceRows_().find(x => x.id === String(d.id || ""));
+        if (!r) return { error: "not_found" };
+        const b = DriveApp.getFileById(r.fileId).getBlob();
+        return { ok: true, mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };
+      }
+      case "voice.review": needAdmin(); return withLock_(() => {
+        const st = d.status === "ok" ? V_OK : d.status === "bad" ? V_BAD : V_NEW, ids = (d.ids || []).map(String).slice(0, 500);
+        const sh = voiceSheet_(), rows = voiceRows_(), keys = {};
+        rows.filter(r => ids.indexOf(r.id) >= 0).forEach(r => { sh.getRange(r.row, 9, 1, 2).setValues([[st, st === V_OK ? r.best : ""]]); keys[r.key] = 1; });
+        rebuildBank_(Object.keys(keys));
+        audit_(t, "مراجعة تسجيلات", st, ids.length + " تسجيل · " + Object.keys(keys).slice(0, 15).join(" "));
+        return { ok: true, changed: ids.length };
+      });
+      case "voice.best": needAdmin(); return withLock_(() => {
+        const sh = voiceSheet_(), rows = voiceRows_(), me = rows.find(x => x.id === String(d.id || ""));
+        if (!me) return { error: "not_found" };
+        rows.filter(r => r.key === me.key && r.best).forEach(r => sh.getRange(r.row, 10).setValue(""));
+        sh.getRange(me.row, 9, 1, 2).setValues([[V_OK, "⭐"]]);
+        rebuildBank_([me.key]);
+        audit_(t, "أفضل صوت", me.key, me.name);
+        return { ok: true };
+      });
+      case "voice.delete": needMain(); return withLock_(() => {
+        const ids = (d.ids || []).map(String), sh = voiceSheet_(), rows = voiceRows_().filter(r => ids.indexOf(r.id) >= 0).sort((a, b) => b.row - a.row), keys = {};
+        rows.forEach(r => { try { DriveApp.getFileById(r.fileId).setTrashed(true); } catch (e) {} sh.deleteRow(r.row); keys[r.key] = 1; });
+        rebuildBank_(Object.keys(keys));
+        audit_(t, "حذف تسجيلات", rows.length + " تسجيل", rows.slice(0, 10).map(r => r.name + " " + r.key).join("، "));
+        return { ok: true, deleted: rows.length };
+      });
+
       /* --- سجل التعديلات (للمدير الرئيسي) --- */
       case "audit.list": needMain(); {
         const au = auditSheet_(), last = au.getLastRow();
@@ -707,6 +741,8 @@ function doGet(e) {
   const { st, te, gr } = sheets_();
   if (p.action === "groups") return json_({ groups: allGroups_(te, gr), teachers: groupTeacher_(te) });
   if (p.action === "report") return json_(parentReport_(st, te, String(p.k || "")));
+  if (p.action === "bank") return json_(bankGet_(String(p.keys || "")));
+  if (p.action === "voice") return json_(bestVoice_(String(p.k || "")));
   if (p.action === "student") {
     let r = -1;
     const code = String(p.code || "").replace(/\D/g, "");
@@ -787,6 +823,104 @@ function recentEvents_(ev, days) {
     }
     if (out.length > 20000) break;
   }
+  return out;
+}
+
+/* ---------- بنك الأصوات ---------- */
+// المقاطع المقبولة: كل حرف (من الهمزة إلى الياء، والتاء المربوطة) بالفتحة والكسرة والضمة، والتهجئة «sp:»
+const V_LET = "ءبتثجحخدذرزسشصضطظعغفقكلمنهوية", V_HAR = [["َ", "أ"], ["ِ", "إ"], ["ُ", "أ"]];
+const V_KEYS = (() => { const s = {}; V_LET.split("").forEach(c => V_HAR.forEach(([m, hz]) => { const k = (c === "ء" ? hz : c) + m; s[k] = 1; s["sp:" + k] = 1; })); return s; })();
+const VOICES = "التسجيلات", BANK = "بنك الأصوات", PARTS = "المشاركون";
+const V_NEW = "جديد", V_OK = "مقبول", V_BAD = "مرفوض";
+const VOICE_HEADERS = ["المعرّف", "الوقت", "رقم المشاركة", "الاسم", "الصوت", "العمر", "المقطع", "ملف Drive", "الحالة", "أفضل صوت", "البصمة"];
+const voiceSheet_ = () => { const sh = extraSheet_(VOICES, VOICE_HEADERS, "#e7f0ff"); return sh; };
+const bankSheet_ = () => extraSheet_(BANK, ["المقطع", "أفضل صوت (ملف)", "آخر تحديث", "عدد المراجع", "بصمة 1", "بصمة 2", "بصمة 3", "بصمة 4", "بصمة 5", "بصمة 6"], "#fff0c9");
+const partsSheet_ = () => extraSheet_(PARTS, ["رقم المشاركة", "الوقت", "الاسم", "الصوت", "العمر", "الجهاز", "عدد التسجيلات", "ملخص التجربة", "الموافقة"], "#e9ffe0");
+function voiceFolder_() {
+  const name = "رحلة الحروف - بنك الأصوات", it = DriveApp.getFoldersByName(name);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(name);
+}
+function voiceRows_() {
+  const sh = voiceSheet_(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, 10).getValues().map((r, i) => ({ row: i + 2, id: String(r[0]), ts: iso_(r[1]), sub: String(r[2]), name: String(r[3]),
+    voice: String(r[4]), age: r[5], key: String(r[6]), fileId: String(r[7]), status: String(r[8]) || V_NEW, best: String(r[9]) })).filter(r => r.id);
+}
+// المشارك يرسل تسجيلاته (دفعة حتى 25 تسجيلاً) بعد أن يوافق
+function voiceSubmit_(d) {
+  if (d.consent !== true) return { error: "no_consent" };
+  const name = clean_(d.name, 40), voice = d.voice === "child" ? "طفل" : "بالغ", age = num_(d.age), sub = String(d.sub || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 24);
+  if (!name || !sub) return { error: "bad_request" };
+  const items = (d.items || []).slice(0, 25);
+  // حدّ يومي يحمي Drive من الإغراق
+  const p = props_(), today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const day = (p.getProperty("VOICE_DAY") || "").split("|"), used = day[0] === today ? Number(day[1]) || 0 : 0;
+  if (used + items.length > 3000) return { error: "daily_limit" };
+  const folder = voiceFolder_(), now = new Date(), rows = [];
+  items.forEach(it => {
+    const key = String(it.key || ""), b64 = String(it.b64 || ""), f = it.f;
+    if (!V_KEYS[key] || !b64 || b64.length > 400000 || !Array.isArray(f) || !f.length || f.length > 600) return;
+    const feat = JSON.stringify(f.map(fr => (fr || []).slice(0, 12).map(v => Math.round(Number(v) * 10) / 10)));
+    if (feat.length > 49000) return;
+    const id = Utilities.getUuid().replace(/-/g, "").slice(0, 12);
+    const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(b64), "audio/wav", key.replace("sp:", "تهجئة ") + " — " + name + " — " + id + ".wav"));
+    rows.push([id, now, sub, name, voice, age, key, file.getId(), V_NEW, "", "'" + feat]);
+  });
+  if (rows.length) { const sh = voiceSheet_(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, VOICE_HEADERS.length).setValues(rows); }
+  p.setProperty("VOICE_DAY", today + "|" + (used + rows.length));
+  // سجل المشاركة (صف واحد لكل مشاركة، يُحدَّث مع كل دفعة)
+  const ps = partsSheet_(), last = ps.getLastRow(), subs = last > 1 ? ps.getRange(2, 1, last - 1, 1).getValues().map(r => String(r[0])) : [];
+  const i = subs.indexOf(sub), prev = i >= 0 ? Number(ps.getRange(i + 2, 7).getValue()) || 0 : 0;
+  const row = [sub, now, name, voice, age, clean_(d.device || "", 40), prev + rows.length, clean_(d.summary || "", 2000), "نعم، موافق (" + clean_(d.consentVersion || "1", 10) + ")"];
+  if (i >= 0) ps.getRange(i + 2, 1, 1, row.length).setValues([row]); else ps.appendRow(row);
+  return { ok: true, saved: rows.length, skipped: items.length - rows.length };
+}
+function voiceList_(d) {
+  const want = d.status === "ok" ? V_OK : d.status === "bad" ? V_BAD : d.status === "all" ? "" : V_NEW;
+  const rows = voiceRows_(), counts = {}, cover = {};
+  rows.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; if (r.status === V_OK) { const c = cover[r.key] = cover[r.key] || { ok: 0, best: false }; c.ok++; if (r.best) c.best = true; } });
+  const list = rows.filter(r => (!want || r.status === want) && (!d.key || r.key === d.key)).reverse().slice(0, 600)
+    .map(r => ({ id: r.id, ts: r.ts, sub: r.sub, name: r.name, voice: r.voice, age: r.age, key: r.key, status: r.status === V_OK ? "ok" : r.status === V_BAD ? "bad" : "new", best: !!r.best }));
+  return { ok: true, items: list, counts: { new: counts[V_NEW] || 0, ok: counts[V_OK] || 0, bad: counts[V_BAD] || 0 }, cover };
+}
+// يعيد بناء صفوف البنك لمقاطع معيّنة: أفضل صوت أولاً، ثم أصوات مختلفة، ثم الأحدث (حتى 6 مراجع)
+function rebuildBank_(keys) {
+  if (!keys.length) return;
+  const vs = voiceSheet_(), rows = voiceRows_(), bs = bankSheet_(), last = bs.getLastRow();
+  const bkeys = last > 1 ? bs.getRange(2, 1, last - 1, 1).getValues().map(r => String(r[0])) : [];
+  keys.forEach(key => {
+    const ok = rows.filter(r => r.key === key && r.status === V_OK).sort((a, b) => (b.best ? 1 : 0) - (a.best ? 1 : 0) || String(b.ts).localeCompare(String(a.ts)));
+    const pick = [], names = {};
+    ok.forEach(r => { if (pick.length < 6 && !names[r.name]) { pick.push(r); names[r.name] = 1; } });
+    ok.forEach(r => { if (pick.length < 6 && pick.indexOf(r) < 0) pick.push(r); });
+    const feats = pick.map(r => String(vs.getRange(r.row, 11).getValue()).replace(/^'/, ""));
+    const best = ok.find(r => r.best);
+    const row = [key, best ? best.fileId : "", new Date(), pick.length].concat(feats.map(f => "'" + f), Array(6 - feats.length).fill(""));
+    const i = bkeys.indexOf(key);
+    if (i >= 0) bs.getRange(i + 2, 1, 1, row.length).setValues([row]);
+    else if (pick.length) { bs.appendRow(row); bkeys.push(key); }
+  });
+  CacheService.getScriptCache().removeAll(keys.map(k => "best:" + k));
+}
+// عام: بصمات البنك لمقاطع معيّنة (أو كلها)، ورمز أفضل صوت لكل مقطع
+function bankGet_(keysParam) {
+  const bs = bankSheet_(), last = bs.getLastRow(), want = keysParam ? keysParam.split(",").filter(k => V_KEYS[k]) : null, out = {};
+  if (last > 1) bs.getRange(2, 1, last - 1, 10).getValues().forEach(r => {
+    const key = String(r[0]); if (!key || (want && want.indexOf(key) < 0) || !Number(r[3])) return;
+    out[key] = { f: r.slice(4).filter(Boolean).map(s => safeParse_(s)).filter(a => Array.isArray(a) && a.length), best: String(r[1] || "").slice(-10) };
+  });
+  return { ok: true, bank: out };
+}
+// عام: ملف «أفضل صوت» لمقطع (فقط الصوت الذي اختاره المدير)
+function bestVoice_(key) {
+  if (!V_KEYS[key]) return { error: "not_found" };
+  const cache = CacheService.getScriptCache(), hit = cache.get("best:" + key);
+  if (hit) return JSON.parse(hit);
+  const bs = bankSheet_(), last = bs.getLastRow();
+  const row = last > 1 ? bs.getRange(2, 1, last - 1, 2).getValues().find(r => String(r[0]) === key) : null;
+  if (!row || !row[1]) return { error: "not_found" };
+  const b = DriveApp.getFileById(String(row[1])).getBlob(), out = { ok: true, mime: b.getContentType() || "audio/wav", b64: Utilities.base64Encode(b.getBytes()) };
+  const s = JSON.stringify(out); if (s.length < 95000) cache.put("best:" + key, s, 21600);
   return out;
 }
 

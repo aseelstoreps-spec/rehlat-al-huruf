@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>شارك بصوتك · رحلة الحروف</title>
+<meta name="description" content="بنك أصوات «رحلة الحروف»: سجّل مقاطع قصيرة بصوتك ليتعلّم الموقع الحكم على نطق الأطفال.">
+<meta property="og:title" content="شارك بصوتك في «رحلة الحروف» 🎙️">
+<meta property="og:description" content="10 دقائق من صوتك تساعد الأطفال على تعلّم قراءة القرآن.">
+<meta property="og:image" content="icons/rehla-512.png">
+<link rel="icon" href="icons/rehla.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+/* صفحة الدعوة: لماذا نجمع الأصوات، وماذا يفعل المشارك، وكيف نحمي خصوصيته ← زر الاستوديو */
+:root {
+  --bg: #f7f7fc; --card: #fff; --ink: #1b1d45; --soft: #565a86; --line: #dcddf0;
+  --navy: #23266b; --navy-2: #2f3388; --gold: #ffd23f; --gold-soft: #fff6d1; --green: #17804f; --red: #c8233a;
+  --f-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; --f-title: "Lalezar", var(--f-ui); --f-letter: "Noto Naskh Arabic", serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); line-height: 1.75; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+.top img { height: 34px; }
+.top a { color: var(--navy); font-weight: 700; text-decoration: none; font-size: .95rem; }
+.hero { background: var(--navy); color: #fff; border-radius: 26px; padding: 28px 22px; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(#ffd23f, #ffd23f00 70%); opacity: .35; left: -60px; top: -70px; }
+.hero h1 { margin: 0 0 8px; font-family: var(--f-title); font-weight: 400; font-size: clamp(2rem, 7vw, 2.8rem); line-height: 1.3; color: var(--gold); position: relative; }
+.hero p { margin: 0 0 18px; font-size: 1.08rem; color: #e4e6ff; max-width: 34em; position: relative; }
+.mics { font-family: var(--f-letter); font-size: clamp(2.4rem, 9vw, 3.4rem); letter-spacing: .3em; color: #fff; opacity: .9; margin-bottom: 10px; position: relative; }
+.cta { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.2rem; padding: 14px 26px; border-radius: 18px; box-shadow: 0 6px 0 #d9a800; position: relative; }
+.cta:active { transform: translateY(3px); box-shadow: 0 3px 0 #d9a800; }
+h2 { font-family: var(--f-title); font-weight: 400; font-size: 1.7rem; color: var(--navy); margin: 30px 0 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 14px; }
+.step b.n { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color: #fff; margin-bottom: 6px; }
+.step h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.step p { margin: 0; color: var(--soft); font-size: .95rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; }
+th { color: var(--soft); font-size: .9rem; }
+td.l { font-family: var(--f-letter); font-size: 1.6rem; }
+td.sp { font-family: var(--f-letter); font-size: 1.15rem; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tip { display: flex; gap: 10px; align-items: flex-start; }
+.tip span { font-size: 1.5rem; line-height: 1.4; }
+ul { margin: 0; padding-inline-start: 20px; }
+.privacy { background: #f2fbf5; border-color: #b9e4c8; }
+.end { text-align: center; margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.share { background: none; border: 1px solid var(--line); border-radius: 14px; padding: 10px 18px; font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; background: #fff; }
+.credit { text-align: center; color: var(--soft); font-size: .85rem; margin-top: 26px; }
+@media (max-width: 720px) { .steps { grid-template-columns: 1fr 1fr; } .two { grid-template-columns: 1fr; } }
+@media (max-width: 380px) { .steps { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><img src="icons/wordmark-light.svg" alt="رحلة الحروف"><a href="about.html">عن الموقع ←</a></div>
+
+  <section class="hero">
+    <div class="mics" aria-hidden="true">بَ بِ بُ</div>
+    <h1>شارك بصوتك 🎙️</h1>
+    <p>«رحلة الحروف» موقع مجاني يعلّم الأطفال قراءة القرآن الكريم على منهج «القاعدة الذهبية». نريده أن <b>يسمع الطفل ويقول له: أحسنت، أو: أعد</b>. ولكي يتعلّم ذلك يحتاج أصواتاً صحيحة من أناس كثيرين، كباراً وصغاراً. صوتك يساعده.</p>
+    <a class="cta" href="studio.html">🎙️ ادخل الاستوديو</a>
+  </section>
+
+  <h2>ماذا ستفعل؟</h2>
+  <div class="steps">
+    <div class="step"><b class="n">1</b><h3>اكتب اسمك</h3><p>واختر: صوت بالغ أو طفل، والعمر إن شئت.</p></div>
+    <div class="step"><b class="n">2</b><h3>اختر الحروف</h3><p>4 حروف تكفي (نحو 10 دقائق)، أو كلها على مهل.</p></div>
+    <div class="step"><b class="n">3</b><h3>سجّل</h3><p>اضغط 🎙️ واقرأ المقطع الظاهر مرة واحدة بوضوح.</p></div>
+    <div class="step"><b class="n">4</b><h3>وافق وأرسل</h3><p>في النهاية تقرأ الموافقة، وتختار: نعم أوافق، أو لا.</p></div>
+  </div>
+
+  <h2>ماذا تقرأ بالضبط؟</h2>
+  <div class="card">
+    <p>لكل حرف ثلاث حركات. وفي الاستوديو طريقتان للقراءة (سجّل الاثنتين إن استطعت):</p>
+    <table>
+      <thead><tr><th>الحركة</th><th>المقطع وحده</th><th>التهجئة كما في الكتاب</th></tr></thead>
+      <tbody>
+        <tr><td>الفتحة</td><td class="l">بَ</td><td class="sp">با فتحة بَ</td></tr>
+        <tr><td>الكسرة</td><td class="l">بِ</td><td class="sp">با كسرة بِ</td></tr>
+        <tr><td>الضمة</td><td class="l">بُ</td><td class="sp">با ضمة بُ</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;color:var(--soft)">«بِ» تُقرأ كأول صوت في «بِنت»، و«بَ» كأول صوت في «بَحر»، و«بُ» كأول صوت في «بُرتقال». مرة واحدة، بلا تكرار.</p>
+  </div>
+
+  <h2>نصائح لتسجيل جيد</h2>
+  <div class="two">
+    <div class="card tip"><span>🤫</span><p>غرفة هادئة: بلا تلفاز ولا مروحة قريبة.</p></div>
+    <div class="card tip"><span>📱</span><p>الجوال قريب من الفم (نحو شبر)، وبالصوت المعتاد.</p></div>
+    <div class="card tip"><span>👂</span><p>اسمع تسجيلك بـ ▶، وإن لم يكن واضحاً احذفه بـ ↶ وأعده.</p></div>
+    <div class="card tip"><span>👧</span><p>صوت الأطفال مهم جداً: إن كان عندك طفل يقرأ صحيحاً، سجّل معه.</p></div>
+  </div>
+
+  <h2>خصوصيتك</h2>
+  <div class="card privacy">
+    <ul>
+      <li>تبقى تسجيلاتك <b>على جهازك</b>، ولا يُرسل شيء حتى تضغط «نعم، أوافق».</li>
+      <li>عند الموافقة تُرسل إلى حساب صاحب المشروع على Google Drive، ويستمع إليها قبل أن تدخل البنك.</li>
+      <li>تُستعمل لتعليم الموقع الحكم على النطق، وقد يُختار تسجيل منها «أفضل صوت» لمقطع فيسمعه الطلاب في الدروس.</li>
+      <li>تسجيل صوت طفل يحتاج موافقة وليّ أمره.</li>
+      <li>تستطيع طلب حذف تسجيلاتك في أي وقت من صاحب المشروع.</li>
+    </ul>
+  </div>
+
+  <div class="end">
+    <a class="cta" href="studio.html">🎙️ ابدأ التسجيل الآن</a>
+    <button class="share" id="share" type="button">📤 أرسل هذه الصفحة لغيرك</button>
+    <p style="margin:0;color:var(--soft)">جزاكم الله خيراً على كل حرف يُتعلَّم بصوتكم 🌱</p>
+  </div>
+
+  <p class="credit">رحلة الحروف · من إنشاء م. كريم عادل اللوح · Created by Eng. Kareem Adel Allouh</p>
+</div>
+<script>
+// مشاركة رابط الدعوة (أو نسخه إن لم تدعم المتصفح المشاركة)
+document.getElementById("share").onclick = async function () {
+  const url = location.href.split("#")[0], text = "شارك بصوتك في «رحلة الحروف» 🎙️ — 10 دقائق تساعد الأطفال على تعلّم قراءة القرآن:";
+  try { if (navigator.share) return await navigator.share({ title: document.title, text, url }); } catch (e) { return; }
+  try { await navigator.clipboard.writeText(text + " " + url); this.textContent = "نُسخ الرابط ✓"; }
+  catch (e) { window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank", "noopener"); }
+};
+</script>
+</body>
+</html>
