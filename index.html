@@ -14,6 +14,7 @@
 <script src="config.js"></script>
 <script src="cert.js"></script>
 <script src="intro.js"></script>
+<script src="write.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
@@ -258,6 +259,9 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
   box-shadow: 0 8px 0 #d5d7ee; border: 4px solid var(--green);
 }
 .card-letter .glyph { font-family: var(--f-letter); font-size: clamp(9rem, 48vw, 13rem); line-height: 1.05; }
+.card-letter .wrhost { display: block; width: min(60vw, 250px); aspect-ratio: 1; margin: 6px auto 0; }
+.card-letter .wrhost svg { width: 100%; height: 100%; display: block; }
+.wrbtn { margin-top: -4px; }
 .card-letter .name { color: var(--red); font-size: 1.6rem; font-weight: 800; position: absolute; top: 12px; inset-inline-end: 22px; }
 .card-letter.pulse { animation: pulse .5s ease; }
 .speak {
@@ -1485,7 +1489,7 @@ function Stage() {
   html += hint("learn");
   if (L2S) html += `<div class="l2head ${L2S.kind}">${L2S.tag} · ${L2S.title}</div>`;
   html += `<div class="learn">
-    <div class="card-letter pulse ${L2S ? "k-" + L2S.kind : ""}" id="card"><span class="name">${L.name}</span><span class="glyph ${L2S && L2S.kind === "heavy" ? "heavy" : ""}">${L.c}</span>
+    <div class="card-letter pulse ${L2S ? "k-" + L2S.kind : ""}" id="card"><span class="name">${L.name}</span>${screen.writing === screen.idx ? `<span class="wrhost" id="wrhost" aria-live="polite"></span>` : `<span class="glyph ${L2S && L2S.kind === "heavy" ? "heavy" : ""}">${L.c}</span>`}
       ${L2S ? `<span class="badge ${L2S.kind}">${L2S.tag}</span>` : ""}</div>
     ${L2S && L2_NOTES[L.c] ? `<p class="l2note">${L2_NOTES[L.c]}</p>` : ""}
     <div class="navrow">
@@ -1493,6 +1497,7 @@ function Stage() {
       <button class="speak" id="say" aria-label="استمع">🔊</button>
       <button class="arrow" id="next" aria-label="التالي" ${screen.idx === letters.length - 1 ? "disabled" : ""}>‹</button>
     </div>
+    ${window.LetterWriter ? `<button class="go small ghost wrbtn" id="write">${screen.writing === screen.idx ? "↻ اكتبه مرة أخرى" : "✍️ كيف يُكتب؟"}</button>` : ""}
     <div class="strip">${letters.map((l, k) =>
       `<button class="chip ${screen.seen.has(k) ? "seen" : ""} ${k === screen.idx ? "cur" : ""}" data-k="${k}">${l.c}</button>`).join("")}
     </div>
@@ -1500,7 +1505,12 @@ function Stage() {
   </div>`;
   $app.innerHTML = html;
   // في واجهة عربية: السهم الأيسر = التالي
-  const moveTo = (k) => { sfx("step"); screen.idx = k; screen.seen.add(k); render(); setTimeout(() => sayLetter(letters[k]), 160); };
+  const moveTo = (k) => { sfx("step"); if (window.LetterWriter) LetterWriter.stop(); screen.writing = null; screen.idx = k; screen.seen.add(k); render(); setTimeout(() => sayLetter(letters[k]), 160); };
+  // ✍️ يكتب الحرف أمام الطفل: الجسم أولاً ثم النقاط، والنقطة الصفراء رأس القلم
+  const wb = document.getElementById("write");
+  if (wb) wb.onclick = () => { stopAudio(); screen.writing = screen.idx; render(); sfx("enter"); };
+  const host = document.getElementById("wrhost");
+  if (host) LetterWriter.play(host, L.c, { onStroke: (dot) => { if (dot) sfx("pop"); } }).catch(() => { screen.writing = null; render(); toast("تعذّر عرض الكتابة الآن"); });
   document.getElementById("say").onclick = () => { sayLetter(L); const c = document.getElementById("card"); c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); };
   document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
   document.getElementById("prev").onclick = () => moveTo(screen.idx - 1);
