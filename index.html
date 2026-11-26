@@ -16,7 +16,6 @@
 <script src="intro.js"></script>
 <script src="write.js"></script>
 <script src="voice.js"></script>
-<script src="times.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Lalezar&family=Noto+Naskh+Arabic:wght@700&display=swap">
@@ -140,29 +139,12 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .st-label small { display: block; color: var(--ink-soft); font-size: .8rem; }
 .st-label span { font-weight: 700; line-height: 1.3; }
 .st-stars { font-size: .9rem; letter-spacing: 2px; }
-/* نقاط القلم: معيّن ممتلئ بالأصفر لما أُنجز */
-.rhs { display: inline-flex; gap: 6px; align-items: center; padding: 4px 2px 2px; }
-.rhs i, .pill.rh i, i.rd { display: inline-block; width: 10px; height: 10px; transform: rotate(45deg); border: 2px solid #d9a800; background: transparent; border-radius: 1px; }
-.rhs i.f, .pill.rh i.f, i.rd { background: var(--gold); }
-.pill.rh { gap: 7px; padding: 8px 14px; }
-.pill.rh i.c { background: #fff; box-shadow: 0 0 0 3px var(--gold); border-color: var(--gold); }
-/* شارة الوقت ومسار اليوم في بطاقة الترحيب */
-.timechip { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-weight: 800; font-size: .9rem; }
-.daystrip { display: flex; gap: 4px; margin-top: 8px; }
-.daystrip span { flex: 1; height: 22px; border-radius: 7px; font-size: .62rem; font-weight: 800; color: #fff; display: grid; place-items: center; text-shadow: 0 1px 2px #0007; border: 2px solid transparent; }
-.daystrip span.on { border-color: var(--gold); box-shadow: 0 0 0 2px #fff inset; }
-.daystrip span.no { filter: grayscale(.75) brightness(.9); opacity: .55; }
-/* قلم التظليل: يمرّ على الحرف وقت نطقه (كما في فيديوهات القارئ) */
-.card-letter .glyph { padding-inline: .12em; border-radius: .12em; background: linear-gradient(#ffe14d, #ffe14d) no-repeat right 58% / 0% 42%; }
-.card-letter.hl .glyph { animation: hlsweep 1.5s ease forwards; }
-@keyframes hlsweep { 0% { background-size: 0% 42%; } 30% { background-size: 100% 42%; } 80% { background-size: 100% 42%; } 100% { background-size: 0% 42%; } }
-@media (prefers-reduced-motion: reduce) { .card-letter.hl .glyph { animation: none; background-size: 100% 42%; } }
 .connector { width: 6px; height: 18px; border-radius: 3px; background: #d5d7ee; margin-inline: 36px; }
 .station:nth-child(4n+3) + .connector { margin-inline-start: auto; }
 
 
 /* ===== داخل الدرس: عالم الجزر (المراحل، الأسئلة، الألعاب، النتيجة) ===== */
-body.scene { background: var(--scene, linear-gradient(180deg, #ffe3b8 0%, #fff1d8 38%, #e8f1ff 100%) fixed); }
+body.scene { background: linear-gradient(180deg, #ffe3b8 0%, #fff1d8 38%, #e8f1ff 100%) fixed; }
 body.scene::before { content: ""; position: fixed; inset: 0; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22900%22%20height%3D%22700%22%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.75%22%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22120%22%20rx%3D%2270%22%20ry%3D%2226%22/%3E%3Cellipse%20cx%3D%22160%22%20cy%3D%22104%22%20rx%3D%2246%22%20ry%3D%2230%22/%3E%3Cellipse%20cx%3D%2290%22%20cy%3D%22110%22%20rx%3D%2240%22%20ry%3D%2224%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.55%22%3E%3Cellipse%20cx%3D%22720%22%20cy%3D%22300%22%20rx%3D%2290%22%20ry%3D%2230%22/%3E%3Cellipse%20cx%3D%22760%22%20cy%3D%22282%22%20rx%3D%2252%22%20ry%3D%2234%22/%3E%3Cellipse%20cx%3D%22690%22%20cy%3D%22290%22%20rx%3D%2244%22%20ry%3D%2226%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.6%22%3E%3Cellipse%20cx%3D%22260%22%20cy%3D%22560%22%20rx%3D%2280%22%20ry%3D%2226%22/%3E%3Cellipse%20cx%3D%22300%22%20cy%3D%22544%22%20rx%3D%2244%22%20ry%3D%2230%22/%3E%3C/g%3E%3Cg%20fill%3D%22%239b7653%22%20opacity%3D%22.18%22%3E%3Cpath%20d%3D%22M560%2C560%20h70%20q-10%2C26%20-35%2C34%20q-25%2C-8%20-35%2C-34z%22/%3E%3C/g%3E%3Cellipse%20cx%3D%22595%22%20cy%3D%22560%22%20rx%3D%2238%22%20ry%3D%229%22%20fill%3D%22%237cc7a2%22%20opacity%3D%22.35%22/%3E%3C/svg%3E") 0 0 / 900px 700px repeat; opacity: .9; pointer-events: none; z-index: 0; animation: skydrift 60s linear infinite; }
 @keyframes skydrift { to { background-position: 900px 0; } }
 body.scene #app { position: relative; z-index: 1; }
@@ -1171,16 +1153,8 @@ function maybeIntro() {
   DB.introSeen[P.id] = Date.now(); save();
   showIntro();
 }
-/* «أوقات اليوم»: مستوى الدرس (0 الفجر … 4 العشاء) */
-const rhombs = (n) => `<span class="rhs" aria-label="${n} من 3">${[0, 1, 2].map(k => `<i class="${k < n ? "f" : ""}"></i>`).join("")}</span>`;
-// يمرّر قلم التظليل على الحرف الكبير في البطاقة
-function hlCard() { const c = document.getElementById("card"); if (!c) return; c.classList.remove("hl"); void c.offsetWidth; c.classList.add("hl"); }
-const levelOf = (n) => window.REHLA_LEVEL_OF ? REHLA_LEVEL_OF(n) : 0;
-const timeOf = (n) => (window.REHLA_TIMES || [])[levelOf(n)];
 function render() {
   document.body.classList.toggle("scene", ["stage", "quiz", "balloons", "result"].includes(screen.name));
-  const tm = timeOf(CUR);
-  if (tm) document.body.style.setProperty("--scene", `linear-gradient(180deg, ${tm.light[0]} 0%, ${tm.light[1]} 38%, ${tm.light[2]} 100%) fixed`);
   ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
   drawTrails();
   maybeIntro();
@@ -1347,7 +1321,7 @@ const SKY_ROW = 150, SKY_TOP = 56;
 function trailHTML(stops, cur, opts) {
   opts = opts || {};
   const row = opts.sky ? SKY_ROW : TRAIL_ROW, top = opts.sky ? SKY_TOP : 0;
-  return `<div class="trail ${opts.sky ? "sky " + (opts.mood || "home") : ""}" data-cur="${cur}" data-row="${row}" data-top="${top}" data-level="${opts.level || 0}"
+  return `<div class="trail ${opts.sky ? "sky " + (opts.mood || "home") : ""}" data-cur="${cur}" data-row="${row}" data-top="${top}"
     data-states="${stops.map(s => s.state || "").join(",")}" data-zones="${stops.map(s => s.zone || 0).join(",")}"
     style="height:${(stops.length - 1) * row + 96 + top + (opts.sky ? 70 : 0)}px">
     <svg class="trail-svg" aria-hidden="true"></svg>
@@ -1391,42 +1365,15 @@ function drawSky(tr, pts, cur, W) {
       <ellipse cx="0" cy="0" rx="76" ry="21" fill="${lock ? "#d6d8ea" : g1}"/>
       <ellipse cx="0" cy="-3" rx="68" ry="15" fill="${lock ? "#e3e5f1" : g2}"/>${trees}</g>`;
   };
-  /* «أوقات اليوم»: الخريطة يوم كامل من الفجر (أعلى) إلى العشاء (أسفل)، وكل مستوى في وقته */
-  const TM = window.REHLA_TIMES, row = +tr.dataset.row || SKY_ROW;
-  const bands = [];
-  if (!inside && TM) {
-    TM.forEach((t, z) => { const ix = zones.map((v, i) => v === z ? i : -1).filter(i => i >= 0); if (ix.length) bands.push({ z, t, y0: pts[ix[0]][1] - row / 2, y1: pts[ix[ix.length - 1]][1] + row / 2 }); });
-    if (bands.length) { bands[0].y0 = 0; bands[bands.length - 1].y1 = H; for (let i = 1; i < bands.length; i++) bands[i].y0 = bands[i - 1].y1; }
-  }
-  const bandAt = (y) => bands.find(b => y >= b.y0 && y < b.y1) || bands[bands.length - 1];
-  const lt = inside && TM ? TM[+tr.dataset.level || 0].light : null;
-  const stops = bands.length ? bands.flatMap(b => b.t.band.map((c, j) => `<stop offset="${Math.min(1, (b.y0 + (b.y1 - b.y0) * [0, .35, .72, 1][j]) / H).toFixed(4)}" stop-color="${c}"/>`)).join("")
-    : lt ? `<stop offset="0" stop-color="${lt[0]}"/><stop offset=".45" stop-color="${lt[1]}"/><stop offset="1" stop-color="${lt[2]}"/>`
-    : `<stop offset="0" stop-color="#ffe3b8"/><stop offset=".45" stop-color="#fff1d8"/><stop offset="1" stop-color="#e6f3ff"/>`;
-  const gid = "skyg" + (inside ? "i" : "");
-  let svg = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient>
-    <radialGradient id="sunglow"><stop offset="0" stop-color="#ffd23f" stop-opacity=".9"/><stop offset=".45" stop-color="#ffd23f" stop-opacity=".35"/><stop offset="1" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
+  let svg = `<defs><linearGradient id="skyg${inside ? "i" : ""}" x1="0" y1="0" x2="0" y2="1">${inside
+      ? `<stop offset="0" stop-color="#ffe3b8"/><stop offset=".45" stop-color="#fff1d8"/><stop offset="1" stop-color="#e6f3ff"/>`
+      : `<stop offset="0" stop-color="#c9d3ff"/><stop offset=".5" stop-color="#eef0ff"/><stop offset="1" stop-color="#fff4d6"/>`}</linearGradient>
     <filter id="sblur"><feGaussianBlur stdDeviation="3"/></filter></defs>
-    <rect width="${W}" height="${H}" fill="url(#${gid})"/>`;
-  if (!bands.length) svg += `<circle cx="${W * .82}" cy="80" r="44" fill="#ffd23f" opacity=".5" filter="url(#sblur)"/>`;
-  bands.forEach((b, bi) => {
-    const h = b.y1 - b.y0, at = (f) => b.y0 + h * f;
-    // النجوم: كثيرة في العشاء، تتلاشى في أول الفجر، وقليلة في آخر المغرب
-    const n = Math.round(b.t.stars * h / 18);
-    for (let i = 0; i < n; i++) { const fy = b.t.k === "fajr" ? rnd(i + 7) * .45 : b.t.k === "maghrib" ? .62 + rnd(i + 7) * .38 : rnd(i + 7);
-      svg += `<circle cx="${(rnd(i * 3 + bi * 41) * W).toFixed(1)}" cy="${at(fy).toFixed(1)}" r="${rnd(i + 13) > .82 ? 1.7 : 1}" fill="#fff" opacity="${(.35 + rnd(i + 5) * .6).toFixed(2)}"/>`; }
-    // الشمس أو القمر في موضعها من اليوم
-    const B = b.t.body;
-    if (B === "rise") svg += `<circle cx="${W * .8}" cy="${at(.96)}" r="120" fill="url(#sunglow)"/><circle cx="${W * .8}" cy="${at(.99)}" r="34" fill="#ffd23f"/>`;
-    if (B === "high") svg += `<circle cx="${W * .84}" cy="${at(.2)}" r="90" fill="url(#sunglow)"/><circle cx="${W * .84}" cy="${at(.2)}" r="32" fill="#ffe37a"/>`;
-    if (B === "low") svg += `<circle cx="${W * .16}" cy="${at(.55)}" r="100" fill="url(#sunglow)"/><circle cx="${W * .16}" cy="${at(.55)}" r="30" fill="#ffd23f"/>`;
-    if (B === "set") svg += `<circle cx="${W * .22}" cy="${at(.28)}" r="110" fill="url(#sunglow)" opacity=".8"/><circle cx="${W * .22}" cy="${at(.28)}" r="36" fill="#ff9f5a"/>`;
-    if (B === "moon") svg += `<circle cx="${W * .8}" cy="${at(.18)}" r="60" fill="#fff6d0" opacity=".12"/><circle cx="${W * .8}" cy="${at(.18)}" r="26" fill="#fff6d0"/><circle cx="${W * .8 - 11}" cy="${at(.18) - 6}" r="24" fill="${b.t.band[1]}"/>`;
-  });
+    <rect width="${W}" height="${H}" fill="url(#skyg${inside ? "i" : ""})"/>
+    <circle cx="${W * .82}" cy="80" r="44" fill="#ffd23f" opacity=".5" filter="url(#sblur)"/>`;
   // طبقة بعيدة: غيوم ضبابية وجزر صغيرة باهتة
   for (let i = 0; i < Math.ceil(H / 260); i++) {
-    const by = 160 + i * 260, dk = bands.length && bandAt(by).t.dark;
-    svg += `<g filter="url(#sblur)" opacity="${dk ? .16 : .55}">${cloud(rnd(i) * (W - 80), by, .7 + rnd(i + 3) * .3, "cl far")}</g>`;
+    svg += `<g filter="url(#sblur)" opacity=".55">${cloud(rnd(i) * (W - 80), 160 + i * 260, .7 + rnd(i + 3) * .3, "cl far")}</g>`;
     if (i % 2 === 0) svg += `<g opacity=".3">${island(rnd(i + 11) > .5 ? W * .12 : W * .88, 260 + i * 260, .36, "", (i + 1) % 4, i + 50)}</g>`;
   }
   // الأقواس المنقّطة بين الجزر
@@ -1440,10 +1387,8 @@ function drawSky(tr, pts, cur, W) {
     svg += island(x, y + 34, k * (i === cur ? 1.1 : big ? 1.15 : 1), st, zones[i] || 0, i);
   });
   // طبقة قريبة: غيوم على الأطراف
-  for (let i = 0; i < Math.ceil(H / 420); i++) { const dk = bands.length && bandAt(300 + i * 420).t.dark; svg += `<g opacity="${dk ? .2 : 1}">${cloud(i % 2 ? W - 70 : -50, 300 + i * 420, 1.05, "cl near")}</g>`; }
-  if (!inside && cur < pts.length) { const fy = pts[Math.min(cur + 1, pts.length - 1)][1] + 40;
-    if (bands.length) bands.forEach(b => { const y0 = Math.max(fy, b.y0); if (y0 < b.y1) svg += `<rect x="0" y="${y0}" width="${W}" height="${b.y1 - y0}" fill="#fff" opacity="${b.t.dark ? .1 : .22}"/>`; });
-    else svg += `<rect x="0" y="${fy}" width="${W}" height="${H}" fill="#fff" opacity=".22"/>`; }
+  for (let i = 0; i < Math.ceil(H / 420); i++) svg += cloud(i % 2 ? W - 70 : -50, 300 + i * 420, 1.05, "cl near");
+  if (!inside && cur < pts.length) svg += `<rect x="0" y="${pts[Math.min(cur + 1, pts.length - 1)][1] + 40}" width="${W}" height="${H}" fill="#fff" opacity=".22"/>`;
   tr.querySelector(".trail-svg").innerHTML = svg;
 }
 /* النقطة المسافرة تقفز من الجزيرة الحالية إلى الجزيرة المختارة، مع صوت */
@@ -1460,10 +1405,7 @@ function travel(tr, from, to, done, sound) {
     return { transform: `translate(${u * u * P0[0] + 2 * u * t * C[0] + t * t * P1[0] - 11}px, ${u * u * P0[1] + 2 * u * t * C[1] + t * t * P1[1] - 11}px) scale(${1 + Math.sin(t * Math.PI) * .5})` }; });
   travelling = true;
   b.scrollIntoView({ block: "center", behavior: "smooth" });
-  // مؤقّت احتياطي: إن توقّفت الحركة (المتصفح في الخلفية) لا يبقى الموقع «في منتصف القفزة» فيتجاهل الضغطات
-  let ended = false; const end = () => { if (ended) return; ended = true; travelling = false; done(); };
-  dot.animate(frames, { duration: 700, easing: "ease-in-out", fill: "forwards" }).onfinish = end;
-  setTimeout(end, 1100);
+  dot.animate(frames, { duration: 700, easing: "ease-in-out", fill: "forwards" }).onfinish = () => { travelling = false; done(); };
 }
 let trailResize = 0;
 window.addEventListener("resize", () => { clearTimeout(trailResize); trailResize = setTimeout(drawTrails, 120); });
@@ -1472,18 +1414,13 @@ function Home() {
   let total = 0;
   for (let n = 1; n <= AVAILABLE; n++) total += starsFor(LP(n).best);
   let html = bar(`<img class="wordmark" src="icons/wordmark-light.svg" alt="رحلة الحروف">`, null,
-    `<span class="pill" aria-label="نقاط القلم: ${total}"><i class="rd"></i> ${total}</span>
+    `<span class="pill" aria-label="النجوم">⭐ ${total}</span>
      <button class="icon-btn" id="birds" aria-label="${birdsOn() ? "إيقاف أصوات الطيور" : "تشغيل أصوات الطيور"}" title="أصوات الطيور">${birdsOn() ? "🐦" : "🔇"}</button>
      <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
   html += `<div class="homegrid"><aside class="side">`;
-  const nowIdx = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1)), lvNow = levelOf(nowIdx < 0 ? LESSONS.length : nowIdx + 1);
-  const TM = window.REHLA_TIMES || [];
-  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.
-    ${TM.length ? `<span class="timechip">سماؤك الآن: ${TM[lvNow].name}</span>
-    <span class="daystrip" aria-label="مستويات الرحلة من الفجر إلى العشاء">${TM.map((t, i) => `<span class="${i === lvNow ? "on" : i > lvNow ? "no" : ""}" style="background:linear-gradient(${t.band[0]}, ${t.band[2]})">${t.name}</span>`).join("")}</span>` : ""}
-    <button class="linkbtn storybtn" id="story">🎬 شاهد قصة الرحلة</button></p></div>`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.<br><button class="linkbtn storybtn" id="story">🎬 شاهد قصة الرحلة</button></p></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
       screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
@@ -1509,7 +1446,7 @@ function Home() {
     return { state: done ? "done" : open ? "cur" : "locked", zone: i < 3 ? 0 : i < 6 ? 1 : i < 10 ? 2 : i < 12 ? 3 : 4,
       node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">🔒</span>`}</button>`,
       label: `<button class="tlabel" data-lesson="${i}" tabindex="-1"><small>الدرس ${ORDINALS[i]}</small><b>${name}</b>
-        ${n <= AVAILABLE ? rhombs(st) : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}
+        ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}
         ${hwLeft.some(h => h.lesson === n) ? `<span class="hwflag">📝 واجب</span>` : ""}</button>`
     };
   }), curL, { sky: true, mood: "home" });
@@ -1542,12 +1479,12 @@ function Lesson() {
       const st = starsFor(L.best);
       face = "🏆";
       title = `<small>نهاية الدرس</small><b>اختبار الدرس</b>`;
-      more = rhombs(st);
+      more = `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>`;
     }
     return { cls: s.kind === "test" ? "big" : "", ok: done, state: done ? "done" : idx === cur ? "cur" : open ? "" : "locked", zone: s.kind === "stage" ? 0 : s.kind === "game" ? 4 : 1,
       node: `<button class="tnode ${cls}" data-step="${idx}" ${dis} aria-label="${stepName(s, n)}">${face}</button>`,
       label: `<button class="tlabel" data-step="${idx}" ${dis} tabindex="-1">${title}${more}</button>` };
-  }), cur, { sky: true, mood: "inside", level: levelOf(n) });
+  }), cur, { sky: true, mood: "inside" });
   if (n === 1) html += "";
   $app.innerHTML = html;
 }
@@ -1563,7 +1500,7 @@ function Stage() {
   const L = letters[screen.idx];
   const allSeen = screen.seen.size === letters.length || !!TEACHER;
   let html = bar(`المرحلة ${["الأولى","الثانية","الثالثة","الرابعة"][screen.i]}`, "lesson",
-    `<span class="pill rh" aria-label="${screen.seen.size} من ${letters.length}">${letters.map((_, k) => `<i class="${k === screen.idx ? "c" : screen.seen.has(k) ? "f" : ""}"></i>`).join("")}</span>`);
+    `<span class="pill">${screen.seen.size} من ${letters.length}</span>`);
   html += hint("learn");
   if (L2S) html += `<div class="l2head ${L2S.kind}">${L2S.tag} · ${L2S.title}</div>`;
   html += `<div class="learn">
@@ -1583,13 +1520,13 @@ function Stage() {
   </div>`;
   $app.innerHTML = html;
   // في واجهة عربية: السهم الأيسر = التالي
-  const moveTo = (k) => { sfx("step"); if (window.LetterWriter) LetterWriter.stop(); screen.writing = null; screen.idx = k; screen.seen.add(k); render(); setTimeout(() => { hlCard(); sayLetter(letters[k]); }, 160); };
+  const moveTo = (k) => { sfx("step"); if (window.LetterWriter) LetterWriter.stop(); screen.writing = null; screen.idx = k; screen.seen.add(k); render(); setTimeout(() => sayLetter(letters[k]), 160); };
   // ✍️ يكتب الحرف أمام الطفل: الجسم أولاً ثم النقاط، والنقطة الصفراء رأس القلم
   const wb = document.getElementById("write");
   if (wb) wb.onclick = () => { stopAudio(); screen.writing = screen.idx; render(); sfx("enter"); };
   const host = document.getElementById("wrhost");
   if (host) LetterWriter.play(host, L.c, { onStroke: (dot) => { if (dot) sfx("pop"); } }).catch(() => { screen.writing = null; render(); toast("تعذّر عرض الكتابة الآن"); });
-  document.getElementById("say").onclick = () => { hlCard(); sayLetter(L); const c = document.getElementById("card"); c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); };
+  document.getElementById("say").onclick = () => { sayLetter(L); const c = document.getElementById("card"); c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); };
   document.getElementById("next").onclick = () => moveTo(screen.idx + 1);
   document.getElementById("prev").onclick = () => moveTo(screen.idx - 1);
   $app.querySelectorAll(".chip").forEach(b => b.onclick = () => moveTo(+b.dataset.k));
@@ -2075,8 +2012,8 @@ $app.addEventListener("click", (e) => {
     const s = stepsOf(CUR)[idx];
     if (s.kind === "stage") {
       go("stage", { i: s.i });
-      if (CUR === 1) setTimeout(() => { hlCard(); sayLetter(STAGES[s.i][0]); }, 150);
-      if (CUR === 2) setTimeout(() => { hlCard(); sayLetter(byChar(L2_STAGES[s.i].letters[0])); }, 150);
+      if (CUR === 1) setTimeout(() => sayLetter(STAGES[s.i][0]), 150);
+      if (CUR === 2) setTimeout(() => sayLetter(byChar(L2_STAGES[s.i].letters[0])), 150);
     }
     else if (s.kind === "game") startGame(CUR, s.i);
     else startLessonTest(CUR);
