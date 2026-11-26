@@ -2243,12 +2243,17 @@ function Result() {
     ${cfg.mode === "test" && pass ? `<button class="go gold" data-cert="${(cfg.lesson || CUR) - 1}">${ic("medal")} استلم شهادتك</button>` : ""}
   </div>`;
   $app.innerHTML = html;
-  for (let k = 0; k < stars; k++) setTimeout(() => sfx("star", k), 250 + k * 350);
-  // العبارة بعد انتهاء أصوات النجوم والفوز، ثم (إن وُجد) إعلان الوسام الجديد بعد انتهائها، دون تداخل
-  const me = screen, afterFx = 250 + stars * 350 + (pass ? 1300 : 200);
-  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); }
+  // الترتيب: عبارة الراوي أولاً، ثم أجراس النجوم ولحن الفوز، ثم (إن وُجد) إعلان الوسام الجديد، دون تداخل
+  const me = screen;
+  if (pass) confetti();
   const said = new Promise(res => setTimeout(() => { if (screen !== me) return res(false);
-    cheer(pass ? (cfg.mode === "test" ? "pass" : "great") : "again").then(res); }, afterFx));
+    cheer(pass ? (cfg.mode === "test" ? "pass" : "great") : "again").then(() => {
+      if (screen !== me) return res(false);
+      for (let k = 0; k < stars; k++) setTimeout(() => sfx("star", k), 150 + k * 350);
+      const fx = 150 + stars * 350;
+      if (pass) setTimeout(() => sfx("win"), fx);
+      setTimeout(() => res(true), fx + (pass ? 1300 : 200));
+    }); }, 300));
   const rt = document.getElementById("retry"); if (rt) rt.onclick = () => startLessonTest(cfg.lesson || CUR);
   // وسام جديد؟
   if (!TEACHER && P) {
