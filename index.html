@@ -442,10 +442,8 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
   background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 55%, #d9a800); box-shadow: 0 8px 0 #a77f00, 0 14px 24px #0005, inset 0 -6px 10px #0002; animation: bob 2.6s ease-in-out infinite; }
 .trophy3d .ic { width: 58px; height: 58px; }
 .trophy3d.has3d { background: none; box-shadow: none; animation: none; width: 120px; height: 120px; }
-.mark3d { width: 84px; height: 84px; flex: none; display: grid; place-items: center; margin: -10px -6px -10px 0; }
-.mark3d.has3d { filter: drop-shadow(0 6px 8px #0006); background: radial-gradient(circle, #ffffff40 0, #ffffff00 68%); border-radius: 50%; }
 .res3d { display: flex; justify-content: center; align-items: flex-end; gap: 0; margin-bottom: -10px; }
-.res3d .r3 { width: 130px; height: 130px; }
+.res3d .r3 { width: 140px; height: 140px; }
 canvas.r3d { display: block; }
 .achbar { display: block; height: 12px; border-radius: 99px; background: #0002; overflow: hidden; }
 .achhero .achbar { background: #ffffff2e; }
@@ -963,6 +961,16 @@ function playFile(file) {
 }
 const sayLetter = (L) => play(`audio/letters/${L.id}.mp3`, L.say);
 const sayPrompt = (k) => play(`audio/prompts/${k}.mp3`, PROMPTS[k]);
+// عبارات التشجيع بصوت الراوي (audio/cheer)؛ إن لم يوجد الملف يُستعمل الصوت الآلي
+const CHEER_TXT = { great: "أَحْسَنْت", again: "حَاوِلْ مَرَّةً أُخْرَى", pass: "مُبَارَك! نَجَحْتَ فِي الدَّرْس", badge: "أَحْسَنْت! حَصَلْتَ عَلَى وِسَامٍ جَدِيد" };
+let lastCheer = "";
+function cheer(kind) {
+  const n = { great: 4, again: 2 }[kind] || 0;
+  let k = kind;
+  if (n) { do { k = kind + (1 + Math.floor(Math.random() * n)); } while (k === lastCheer && n > 1); }
+  lastCheer = k;
+  return playFile(`audio/cheer/${k}.mp3`).then(ok => ok || tts(CHEER_TXT[kind]));
+}
 
 let actx = null;
 /* ---------- أصوات مصنوعة في المتصفح (بلا ملفات): مناسبة للأطفال، وتعمل دون إنترنت ---------- */
@@ -1345,12 +1353,12 @@ function maybeIntro() {
   DB.introSeen[P.id] = Date.now(); save();
   showIntro();
 }
-// المجسّمات الثلاثية الأبعاد (الكأس والطائر): تُرسم مكان أي عنصر فيه data-3d
+// الوسام الثلاثي الأبعاد (نجمة ثمانية ذهبية): يُرسم مكان أي عنصر فيه data-3d
 function mount3d() {
   if (!window.Rehla3D) return;
   $app.querySelectorAll("[data-3d]").forEach(el => {
     const size = +el.dataset.size || 110, kind = el.dataset["3d"];
-    const p = kind === "trophy" ? Rehla3D.trophy(el, { size }) : Rehla3D.bird(el, { size, mood: el.dataset.mood || "idle" });
+    const p = Rehla3D.medal(el, { size, label: el.dataset.label });
     p && p.then && p.then(() => { if (el.querySelector("canvas")) el.classList.add("has3d"); });
   });
 }
@@ -1367,7 +1375,7 @@ function Login() {
   const rm = screen.remove && DB.students[screen.remove];
   let html = bar("رحلة الحروف", P && !TEACHER ? "home" : null, `<button class="icon-btn" id="lang" aria-label="لغة الإرشاد">${ic("globe")}</button>`);
   html += offlineNote() + hint("login") + `<div class="logingrid"><div class="lside">`;
-  html += `<div class="hero"><div class="mark3d" data-3d="bird" data-size="84"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"></div><p><b>من سيتعلم الآن؟</b><br>${list.length ? "اختر اسمك، أو ادخل باسم المستخدم." : "ادخل باسم المستخدم الذي أعطاك إياه معلمك."}</p></div>`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>من سيتعلم الآن؟</b><br>${list.length ? "اختر اسمك، أو ادخل باسم المستخدم." : "ادخل باسم المستخدم الذي أعطاك إياه معلمك."}</p></div>`;
   if (list.length) {
     html += `<div class="kids">${list.map((k, n) => `<div class="kidwrap">
       <button class="kid ${P && k.id === P.id && !TEACHER ? "on" : ""}" data-student="${k.id}">
@@ -1625,7 +1633,7 @@ function Home() {
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? ic("exit") : ic("user")}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
   html += `<div class="homegrid"><aside class="side">`;
-  html += `<div class="hero"><div class="mark3d" data-3d="bird" data-size="84"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"></div><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p>
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p>
     <div class="herobtns"><button class="hbtn" id="story">${ic("play")} قصة الرحلة</button><a class="hbtn" href="about.html">${ic("info")} عن الموقع</a></div></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
@@ -1999,7 +2007,10 @@ function Quiz() {
     if (ok) {
       if (screen.firstTry) screen.score++;
       b.classList.add("right"); optsEl.classList.add("lock"); sfx("ok");
-      setTimeout(nextQ, 800);
+      // عبارة تشجيع بعد كل إجابتين صحيحتين، ثم السؤال التالي بعد انتهائها
+      screen.okCount = (screen.okCount || 0) + 1;
+      if (screen.okCount % 2 === 0) setTimeout(() => cheer("great").then(() => setTimeout(nextQ, 150)), 420);
+      else setTimeout(nextQ, 800);
     } else {
       b.classList.add("wrong"); sfx("bad");
       screen.firstTry = false;
@@ -2008,11 +2019,13 @@ function Quiz() {
         optsEl.querySelector(`[data-i="${Q.opts.findIndex(o => o.k === Q.ans)}"]`).classList.add("reveal");
         setTimeout(nextQ, 1300);
       } else {
-        setTimeout(() => { b.classList.remove("wrong"); ask(); }, 600);
+        setTimeout(() => { b.classList.remove("wrong"); cheer("again").then(ask); }, 500);
       }
     }
   });
+  const myScreen = screen;
   function nextQ() {
+    if (screen !== myScreen || screen.name !== "quiz") return; // غادر الطالب الاختبار أثناء عبارة التشجيع
     spellToken++;
     if (screen.q + 1 < cfg.questions.length) { screen.q++; screen.firstTry = true; screen.answered = false; stopAudio(); render(); }
     else finish(cfg, screen.score, cfg.questions.length, screen.answers);
@@ -2112,7 +2125,7 @@ function Achieve() {
   const A = achieveStats();
   let html = bar("إنجازاتي", "home") + teacherBanner();
   const pct = A.stepsAll ? Math.round(A.steps / A.stepsAll * 100) : 0;
-  html += `<div class="achhero"><div class="trophy3d" aria-hidden="true" data-3d="trophy" data-size="120">${ic("trophy")}</div>
+  html += `<div class="achhero"><div class="trophy3d" aria-hidden="true" data-3d="medal" data-size="120" data-label="${(A.passed || 0).toLocaleString("ar-EG")}">${ic("trophy")}</div>
     <div><small>إنجازات</small><b>${esc(P.name)}</b><span class="achbar"><i style="width:${pct}%"></i></span><small>أتممتَ ${A.steps} من ${A.stepsAll} خطوة (${pct}%)</small></div></div>`;
   html += `<div class="achstats">
     <div><b>${A.stars}</b><span>${ic("star")} نجمة</span></div>
@@ -2196,7 +2209,7 @@ function Result() {
     title = "أحسنت!"; msg = cfg.mode === "practice" ? "أنهيت هذه المرحلة." : "أنهيت اللعبة.";
   }
   let html = `<div class="result">
-    <div class="res3d">${cfg.mode === "test" && pass ? `<div class="r3" data-3d="trophy" data-size="130"></div>` : ""}<div class="r3" data-3d="bird" data-mood="${pass ? "cheer" : "sad"}" data-size="130"></div></div>
+    ${cfg.mode === "test" && pass ? `<div class="res3d"><div class="r3" data-3d="medal" data-size="140" data-label="${(cfg.lesson || CUR).toLocaleString("ar-EG")}"></div></div>` : ""}
     <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}" style="--d:${.25 + k * .35}s">${ic("star")}</span>`).join("")}</div>
     <h2>${title}</h2>
     ${cfg.mode !== "game" || cfg.game === 0 ? `<div class="score">${score} من ${total}</div>` : ""}
@@ -2207,15 +2220,15 @@ function Result() {
   </div>`;
   $app.innerHTML = html;
   for (let k = 0; k < stars; k++) setTimeout(() => sfx("star", k), 250 + k * 350);
-  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); setTimeout(() => sayPrompt("great"), 500); }
-  else { setTimeout(() => sayPrompt("again"), 300); }
+  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); setTimeout(() => cheer(cfg.mode === "test" ? "pass" : "great"), 500); }
+  else { setTimeout(() => cheer("again"), 300); }
   const rt = document.getElementById("retry"); if (rt) rt.onclick = () => startLessonTest(cfg.lesson || CUR);
   // وسام جديد؟
   if (!TEACHER && P) {
     DB.badgesSeen = DB.badgesSeen || {};
     const got = achieveStats().badges.filter(b => b.ok).map(b => b.t), seen = DB.badgesSeen[P.id] || [];
     const fresh = got.filter(t => seen.indexOf(t) < 0);
-    if (fresh.length) { DB.badgesSeen[P.id] = got; save(); setTimeout(() => { sfx("badge"); toast((fresh.length > 1 ? "🎖️ أوسمة جديدة: " : "🎖️ وسام جديد: ") + fresh.slice(0, 2).join("، ") + (fresh.length > 2 ? " وغيرها" : "") + " — تجدها في «إنجازاتي»"); }, 1900); }
+    if (fresh.length) { DB.badgesSeen[P.id] = got; save(); setTimeout(() => { sfx("badge"); cheer("badge"); toast((fresh.length > 1 ? "🎖️ أوسمة جديدة: " : "🎖️ وسام جديد: ") + fresh.slice(0, 2).join("، ") + (fresh.length > 2 ? " وغيرها" : "") + " — تجدها في «إنجازاتي»"); }, 3300); }
   }
 }
 
