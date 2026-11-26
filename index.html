@@ -921,6 +921,7 @@ function pickVoice() {
 if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function stopAudio() {
   if (cur) { try { cur.pause(); } catch (e) {} cur = null; }
+  if (typeof cheerStop === "function") cheerStop();
   if ("speechSynthesis" in window) speechSynthesis.cancel();
 }
 function tts(text) {
@@ -961,15 +962,35 @@ function playFile(file) {
 }
 const sayLetter = (L) => play(`audio/letters/${L.id}.mp3`, L.say);
 const sayPrompt = (k) => play(`audio/prompts/${k}.mp3`, PROMPTS[k]);
-// عبارات التشجيع بصوت الراوي (audio/cheer): تُسمع في شاشة النتيجة فقط (لا أثناء الأسئلة)، وبلا صوت آلي أبداً
-let lastCheer = "";
+// عبارات التشجيع بصوت الراوي (audio/cheer): تُسمع في شاشة النتيجة فقط (لا أثناء الأسئلة)، وبلا صوت آلي أبداً.
+// تُشغَّل عبر WebAudio (المفتوح منذ أول لمسة) لأن الجوال يمنع تشغيل <audio> متأخراً بعد اللمسة بثوانٍ.
+let lastCheer = "", cheerSrc = null;
+const cheerBuf = {};
+function cheerLoad(k) {
+  return cheerBuf[k] = cheerBuf[k] || fetch(`audio/cheer/${k}.mp3`).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); })
+    .then(b => new Promise((res, rej) => ac().decodeAudioData(b, res, rej))).catch(() => { delete cheerBuf[k]; return null; });
+}
+function cheerStop() { if (cheerSrc) { try { cheerSrc.stop(); } catch (e) {} cheerSrc = null; } }
 function cheer(kind) {
   const n = { great: 4, again: 2 }[kind] || 0;
   let k = kind;
   if (n) { do { k = kind + (1 + Math.floor(Math.random() * n)); } while (k === lastCheer && n > 1); }
   lastCheer = k;
-  return playFile(`audio/cheer/${k}.mp3`);
+  stopAudio();
+  return cheerLoad(k).then(buf => new Promise(res => {
+    if (!buf) return res(false);
+    try {
+      const a = ac(), src = a.createBufferSource(); src.buffer = buf; src.connect(a.destination);
+      cheerSrc = src; src.onended = () => { if (cheerSrc === src) cheerSrc = null; res(true); };
+      src.start();
+    } catch (e) { res(false); }
+  }));
 }
+// تجهيز العبارات مسبقاً بعد أول لمسة (حتى تُسمع فوراً في شاشة النتيجة)
+addEventListener("pointerdown", function warm() {
+  removeEventListener("pointerdown", warm);
+  ["great1", "great2", "great3", "great4", "again1", "again2", "pass", "badge"].forEach(cheerLoad);
+}, { once: true });
 
 let actx = null;
 /* ---------- أصوات مصنوعة في المتصفح (بلا ملفات): مناسبة للأطفال، وتعمل دون إنترنت ---------- */
