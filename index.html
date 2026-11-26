@@ -964,7 +964,9 @@ const sayPrompt = (k) => play(`audio/prompts/${k}.mp3`, PROMPTS[k]);
 // عبارات التشجيع بصوت الراوي (audio/cheer)؛ إن لم يوجد الملف يُستعمل الصوت الآلي
 const CHEER_TXT = { great: "أَحْسَنْت", again: "حَاوِلْ مَرَّةً أُخْرَى", pass: "مُبَارَك! نَجَحْتَ فِي الدَّرْس", badge: "أَحْسَنْت! حَصَلْتَ عَلَى وِسَامٍ جَدِيد" };
 let lastCheer = "";
+const CHEER_ON = false; // موقوفة مؤقتاً حتى يراجع المستخدم مقاطع audio/cheer
 function cheer(kind) {
+  if (!CHEER_ON) return Promise.resolve(false);
   const n = { great: 4, again: 2 }[kind] || 0;
   let k = kind;
   if (n) { do { k = kind + (1 + Math.floor(Math.random() * n)); } while (k === lastCheer && n > 1); }
@@ -2009,7 +2011,7 @@ function Quiz() {
       b.classList.add("right"); optsEl.classList.add("lock"); sfx("ok");
       // عبارة تشجيع بعد كل إجابتين صحيحتين، ثم السؤال التالي بعد انتهائها
       screen.okCount = (screen.okCount || 0) + 1;
-      if (screen.okCount % 2 === 0) setTimeout(() => cheer("great").then(() => setTimeout(nextQ, 150)), 420);
+      if (CHEER_ON && screen.okCount % 2 === 0) setTimeout(() => cheer("great").then(() => setTimeout(nextQ, 150)), 420);
       else setTimeout(nextQ, 800);
     } else {
       b.classList.add("wrong"); sfx("bad");
@@ -2019,7 +2021,7 @@ function Quiz() {
         optsEl.querySelector(`[data-i="${Q.opts.findIndex(o => o.k === Q.ans)}"]`).classList.add("reveal");
         setTimeout(nextQ, 1300);
       } else {
-        setTimeout(() => { b.classList.remove("wrong"); cheer("again").then(ask); }, 500);
+        setTimeout(() => { b.classList.remove("wrong"); cheer("again").then(ask); }, CHEER_ON ? 500 : 600);
       }
     }
   });
@@ -2220,8 +2222,8 @@ function Result() {
   </div>`;
   $app.innerHTML = html;
   for (let k = 0; k < stars; k++) setTimeout(() => sfx("star", k), 250 + k * 350);
-  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); setTimeout(() => cheer(cfg.mode === "test" ? "pass" : "great"), 500); }
-  else { setTimeout(() => cheer("again"), 300); }
+  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); setTimeout(() => CHEER_ON ? cheer(cfg.mode === "test" ? "pass" : "great") : sayPrompt("great"), 500); }
+  else { setTimeout(() => CHEER_ON ? cheer("again") : sayPrompt("again"), 300); }
   const rt = document.getElementById("retry"); if (rt) rt.onclick = () => startLessonTest(cfg.lesson || CUR);
   // وسام جديد؟
   if (!TEACHER && P) {
