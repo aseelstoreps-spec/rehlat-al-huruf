@@ -10,6 +10,30 @@ const INK = "#23266b";
 const START_K = { "ا": 4, "ل": 4, "ك": 1.2, "ط": 2, "ظ": 2, "ج": 4, "ح": 4, "خ": 4, "ي": 2 };
 // حروف تبدأ برأس مستدير: يبدأ القلم من أعلى يمين الرأس لا من طرف الذيل
 const FROM_HEAD = "وفقمهصض";
+// مسار القلم المرسوم يدوياً للحروف المركّبة: كل خط = نقاط على هيكل الحرف (لوحة 240)، والقلم يمشي على الهيكل بينها.
+// خطان منفصلان = رفع القلم. الحروف البسيطة (خط واحد) تُحسب تلقائياً من طرف البداية إلى أبعد طرف.
+const ROUTES = {
+  "ج": [[[68,57],[125,67],[180,58],[125,67],[67,150],[117,189],[170,178]]],
+  "ح": [[[68,57],[125,67],[180,58],[125,67],[67,150],[117,189],[170,178]]],
+  "خ": [[[79,90],[126,98],[165,91],[126,98],[80,160],[117,191],[165,180]]],
+  "س": [[[193,72],[187,118],[153,117],[160,86],[153,117],[117,121],[111,96],[117,121],[110,150],[70,164],[44,119]]],
+  "ش": [[[193,89],[188,135],[153,133],[160,103],[153,133],[117,138],[111,113],[117,138],[110,165],[67,181],[44,136]]],
+  "ص": [[[121,119],[140,92],[170,79],[197,106],[150,122],[121,119],[107,96],[110,150],[60,160],[43,120]]],
+  "ض": [[[110,137],[130,112],[169,96],[197,122],[150,140],[110,137],[106,115],[103,160],[60,180],[43,138]]],
+  "ط": [[[48,172],[85,184],[140,187],[193,149],[152,121],[96,151]], [[87,48],[96,151]]],
+  "ظ": [[[48,172],[85,184],[140,186],[195,150],[155,121],[96,152]], [[87,48],[96,152]]],
+  "ع": [[[122,56],[98,50],[72,80],[96,108],[143,89],[96,108],[76,160],[120,190],[166,178]]],
+  "غ": [[[117,86],[100,83],[83,105],[100,128],[131,117],[100,128],[85,171],[115,191],[150,185]]],
+  "ف": [[[190,142],[180,112],[160,102],[138,125],[160,150],[190,142],[197,170],[100,190],[45,136]]],
+  "ق": [[[161,134],[155,105],[137,93],[112,120],[131,139],[161,134],[164,160],[104,190],[74,138]]],
+  "م": [[[90,74],[117,54],[150,95],[82,118],[86,180],[80,197]]],
+  "ه": [[[141,88],[138,130],[132,158],[175,171],[192,150],[170,98],[141,88],[110,92],[90,130],[106,158],[49,158]]],
+  "و": [[[166,118],[162,95],[126,58],[93,100],[122,127],[166,118],[168,140],[106,185],[73,176]]],
+  "ي": [[[167,56],[155,51],[120,90],[160,113],[168,120],[105,155],[72,104]]],
+  "ء": [[[150,91],[126,66],[71,105],[70,130],[93,161]], [[172,153],[93,161],[52,183]]]
+};
+// أجزاء ليست نقاطاً ولا هيكلاً واضحاً (مثل همزة الكاف): مسار مباشر
+const MARKS = { "ك": [[124,100],[112,108],[116,118],[125,123],[110,135],[95,145]] };
 
 /* ---------- تحميل Anime.js عند الحاجة فقط ---------- */
 let animeP = null;
@@ -143,6 +167,41 @@ function strokesOf(img, set, k, fromHead) {
   }
   return strokes.filter(l => l.length >= 3);
 }
+// أقصر طريق على الهيكل بين بكسلين (البحث بالعرض)
+function geodesic(img, set, a, b) {
+  if (a === b) return [a];
+  const prev = new Map([[a, -1]]), q = [a];
+  for (let h = 0; h < q.length; h++) { const p = q[h]; if (p === b) break;
+    for (const n of nbrs(img, p)) if (set.has(n) && !prev.has(n)) { prev.set(n, p); q.push(n); } }
+  if (!prev.has(b)) return null;
+  const out = []; for (let p = b; p !== -1; p = prev.get(p)) out.push(p); return out.reverse();
+}
+const snap = (img, set, x, y) => { let best = -1, bd = 30 * 30;
+  set.forEach(p => { if (!img[p]) return; const d = (p % S - x) ** 2 + (((p / S) | 0) - y) ** 2; if (d < bd) { bd = d; best = p; } }); return best; };
+// مسار من نقاط يدوية؛ null إن لم يتطابق مع الهيكل (فيُستعمل الحساب التلقائي)
+function routed(img, set, route) {
+  const lines = [];
+  for (const wps of route) {
+    const pts = wps.map(([x, y]) => snap(img, set, x, y)); if (pts.some(p => p < 0)) return null;
+    let line = [pts[0]];
+    for (let i = 1; i < pts.length; i++) { const g = geodesic(img, set, pts[i - 1], pts[i]); if (!g) return null; line = line.concat(g.slice(1)); }
+    lines.push(line);
+  }
+  return lines;
+}
+// الحروف البسيطة: من طرف البداية إلى أبعد طرف على الهيكل، خطاً واحداً
+function simpleRoute(img, set, k) {
+  const pts = [...set].filter(p => img[p]); if (pts.length < 10) return null;
+  // أبعد نقطتين على الهيكل (قطر الهيكل): طرفا الخط
+  const farthest = (from) => { const seen = new Set([from]), q = [from];
+    for (let h = 0; h < q.length; h++) for (const n of nbrs(img, q[h])) if (set.has(n) && !seen.has(n)) { seen.add(n); q.push(n); }
+    return { last: q[q.length - 1], count: q.length }; };
+  const A = farthest(pts[0]).last, B = farthest(A).last;
+  const score = (p) => (p % S) - k * ((p / S) | 0);
+  const line = score(A) >= score(B) ? geodesic(img, set, A, B) : geodesic(img, set, B, A);
+  // يقبل فقط إن غطّى معظم الهيكل (أي أن الحرف خط واحد فعلاً)
+  return line && line.length >= pts.length * .55 ? [line] : null;
+}
 const toPath = (line) => {
   const keep = line.filter((_, i) => i % 3 === 0 || i === line.length - 1);
   return keep.map((p, i) => `${i ? "L" : "M"}${p % S} ${(p / S) | 0}`).join(" ");
@@ -163,7 +222,14 @@ async function analyze(ch) {
     c.dot = c.px.length < big * .6 && Math.max(w / h, h / w) < 2.2 && c.px.length / (w * h) > .38; });
   comps.sort((a, b) => (a.dot - b.dot) || (a.dot ? (b.cx - a.cx) || (a.cy - b.cy) : b.px.length - a.px.length));
   const skel = thin(bin.slice());
+  const body = comps.find(c => !c.dot);
   const parts = comps.map(c => {
+    if (MARKS[ch] && c !== body) {
+      const m = MARKS[ch], inBox = c.px.some(p => Math.abs(p % S - m[0][0]) < 14 && Math.abs(((p / S) | 0) - m[0][1]) < 14);
+      if (inBox) { let r = 0; c.px.forEach(p => { r = Math.max(r, dist[p]); });
+        const line = m.map(([x, y]) => y * S + x);
+        return { dot: false, r, strokes: [m.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ")], len: line.length * 8 }; }
+    }
     const set = new Set(c.px.filter(p => skel[p]));
     if (!c.dot) prune(skel, set, 12);
     let r = 0; set.forEach(p => { if (skel[p]) r = Math.max(r, dist[p]); });
@@ -173,7 +239,9 @@ async function analyze(ch) {
       c.px.forEach(p => { r = Math.max(r, dist[p]); });
       return { dot: true, r, strokes: [`M${x1} ${cy} L${x0} ${cy}`], len: x1 - x0 + 4 };
     }
-    const lines = strokesOf(skel, set, START_K[ch] != null ? START_K[ch] : .5, FROM_HEAD.indexOf(ch) >= 0);
+    const k = START_K[ch] != null ? START_K[ch] : .5;
+    const lines = (c === body && ROUTES[ch] && routed(skel, set, ROUTES[ch])) || simpleRoute(skel, set, k)
+      || strokesOf(skel, set, k, FROM_HEAD.indexOf(ch) >= 0);
     return { dot: false, r, strokes: lines.map(toPath), len: lines.reduce((s, l) => s + l.length, 0) };
   });
   return cache[ch] = { url, parts };

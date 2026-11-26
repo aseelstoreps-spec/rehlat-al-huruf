@@ -14,6 +14,7 @@
 <script src="config.js"></script>
 <script src="cert.js"></script>
 <script src="intro.js"></script>
+<script src="icons.js"></script>
 <script src="write.js"></script>
 <script src="voice.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,7 +82,7 @@ body {
   .logingrid { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 32px; align-items: start; }
   .lmain { position: sticky; top: 16px; }
   .kids { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
-  #app > .trail, #app > .explain, #app > .learn, #app > .ask, #app > .progress, #app > .result,
+  #app > .trail, #app > .learn, #app > .ask, #app > .progress, #app > .result,
   #app > .certwrap, #app > .certactions, #app > .sky, #app > .steps, #app > .tbanner + .trail { width: 100%; max-width: 880px; margin-inline: auto; }
   #app > .progress, #app > .ask { max-width: 760px; }
   #app > .opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; max-width: 900px; margin-inline: auto; }
@@ -104,6 +105,17 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
   box-shadow: 0 3px 0 #d5d7ee; font-size: 1.5rem; display: grid; place-items: center;
 }
 .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #d5d7ee; }
+/* أيقونات SVG الموحّدة (icons.js) */
+.ic { width: 1.15em; height: 1.15em; flex: none; vertical-align: -.2em; }
+.icon-btn { color: var(--green); }
+.icon-btn .ic { width: 27px; height: 27px; }
+.pill .ic { width: 20px; height: 20px; }
+.speak .ic { width: 46%; height: 46%; }
+.node .lock .ic { width: 22px; height: 22px; opacity: .75; }
+.tnode .ic { width: 52%; height: 52%; }
+.askic { display: inline-grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: var(--gold-soft); color: var(--green); }
+.askic .ic { width: 50px; height: 50px; }
+.l3head small .ic { width: 18px; height: 18px; }
 .pill {
   display: inline-flex; flex: none; white-space: nowrap; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
   background: var(--gold-soft); color: #1b1d45; font-weight: 800; font-variant-numeric: tabular-nums;
@@ -339,6 +351,9 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 .result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 20px; }
 .stars { font-size: 3.6rem; letter-spacing: 6px; }
 .stars .off { filter: grayscale(1); opacity: .35; }
+.stars span { display: inline-block; animation: starIn .55s cubic-bezier(.3,1.6,.5,1) both; animation-delay: var(--d, 0s); }
+@keyframes starIn { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stars span { animation: none; } }
 .result h2 { margin: 0; font-family: var(--f-title); font-weight: 400; font-size: 2.3rem; }
 .result p { margin: 0; color: var(--ink-soft); }
 .score { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -365,9 +380,6 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 .l2note { margin: 0; background: var(--card); border-radius: 14px; padding: 10px 14px; line-height: 1.7; max-width: 420px; }
 .st-soon { font-size: .8rem; color: var(--ink-soft); }
 .step .lbl small { display: block; font-weight: 600; color: var(--ink-soft); font-size: .8rem; }
-.explain { background: var(--card); border-radius: 16px; padding: 10px 14px; box-shadow: 0 3px 0 #d5d7ee; }
-.explain summary { font-weight: 800; cursor: pointer; }
-.explain audio { width: 100%; margin-top: 10px; }
 .l3row { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .l3head { font-family: var(--f-letter); font-size: 4.2rem; line-height: 1.1; background: var(--card); border: 4px solid var(--blue); border-radius: 24px; padding: 6px 28px; display: flex; align-items: center; gap: 10px; color: var(--blue); box-shadow: 0 5px 0 #d5d7ee; }
 .l3head.heavy { border-color: var(--red); color: var(--red); }
@@ -405,6 +417,48 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 .opt.cls { font-size: 3.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .opt.cls small { font-family: var(--f-ui); font-size: 1.2rem; font-weight: 800; }
 .certs { display: flex; flex-direction: column; gap: 10px; }
+.certbtn > .ic { width: 38px; height: 38px; color: var(--green); }
+.certbtn.level > .ic { color: #fff; }
+/* إنجازاتي */
+.achcard { background: linear-gradient(135deg, #fff6d1, #ffe58a); border-radius: var(--r); padding: 14px 16px; display: flex; gap: 12px; align-items: center; text-align: start; box-shadow: 0 5px 0 #e0bd3a; width: 100%; }
+.achcard .achic { width: 52px; height: 52px; border-radius: 16px; background: var(--green); color: #fff; display: grid; place-items: center; flex: none; box-shadow: 0 4px 0 #15174a; }
+.achcard .achic .ic { width: 32px; height: 32px; }
+.achcard .tx { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.achcard .tx b { font-size: 1.1rem; } .achcard small { color: #4a4d7a; }
+.achcard .goarrow { font-weight: 800; color: var(--green); white-space: nowrap; }
+.achhero { display: flex; gap: 16px; align-items: center; background: linear-gradient(135deg, #23266b, #3b3f9a); color: #fff; border-radius: var(--r); padding: 18px; box-shadow: 0 6px 0 #15174a; }
+.achhero > div:last-child { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.achhero b { font-family: var(--f-title); font-weight: 400; font-size: 1.8rem; line-height: 1.1; }
+.achhero small { color: #c9cbf0; }
+.trophy3d { width: 92px; height: 92px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #23266b;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 55%, #d9a800); box-shadow: 0 8px 0 #a77f00, 0 14px 24px #0005, inset 0 -6px 10px #0002; animation: bob 2.6s ease-in-out infinite; }
+.trophy3d .ic { width: 58px; height: 58px; }
+.trophy3d model-viewer { width: 130px; height: 130px; }
+.achbar { display: block; height: 12px; border-radius: 99px; background: #0002; overflow: hidden; }
+.achhero .achbar { background: #ffffff2e; }
+.achbar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffd23f, #ffe58a); }
+.achstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.achstats > div { background: var(--card); border-radius: 18px; padding: 12px 6px; text-align: center; box-shadow: 0 4px 0 #d5d7ee; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.achstats b { font-size: 1.9rem; color: var(--green); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.achstats b small { font-size: .9rem; color: #8a8db8; }
+.achstats span { font-size: .9rem; display: inline-flex; gap: 4px; align-items: center; }
+.achh { font-family: var(--f-title); font-weight: 400; font-size: 1.4rem; margin: 10px 0 0; color: var(--green); }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.bdg { background: var(--card); border-radius: 18px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: 0 4px 0 #d5d7ee; color: #9a9cc0; }
+.bdg .bic { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #ecedf7; margin-bottom: 4px; }
+.bdg .bic .ic { width: 30px; height: 30px; }
+.bdg small { font-size: .78rem; line-height: 1.35; }
+.bdg.ok { color: #1b1d45; }
+.bdg.ok .bic { color: #23266b; background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 60%, #e0b400); box-shadow: 0 4px 0 #b88d00, inset 0 -4px 6px #0002; }
+.bdg.ok small { color: #55587f; }
+.lprog { display: flex; flex-direction: column; gap: 8px; }
+.lp { background: var(--card); border-radius: 18px; padding: 10px 12px; display: flex; gap: 12px; align-items: center; box-shadow: 0 4px 0 #d5d7ee; }
+.lp .num { width: 40px; height: 40px; border-radius: 50%; background: var(--locked); display: grid; place-items: center; font-weight: 800; flex: none; }
+.lp.ok .num { background: var(--green); color: #fff; }
+.lp .tx { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lp small { color: #6a6d94; font-size: .8rem; }
+.lp .st-stars { display: flex; gap: 1px; } .lp .st-stars .ic { width: 18px; height: 18px; }
+.ic.off { filter: grayscale(1); opacity: .35; }
 /* credit, offline, certificate */
 .credit { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; color: var(--ink-soft); font-size: .82rem; text-align: center; padding-top: 8px; border-top: 1px dashed #d5d7ee; }
 .credit a { color: var(--green); font-weight: 700; }
@@ -487,6 +541,25 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 @media (prefers-reduced-motion: reduce) {
   .node.open, .card-letter.pulse, .here, .trail.sky .cl, #app.enter > * { animation: none !important; }
   .confetti { display: none; }
+}
+
+/* ===== عمق ثلاثي الأبعاد (CSS): إضاءة من الأعلى، حواف سفلية، وظلال ناعمة ===== */
+.go, .opt, .icon-btn, .tnode, .node, .speak, .certbtn, .achcard { position: relative; }
+.go { background-image: linear-gradient(180deg, #ffffff26, #ffffff00 55%, #0000001a); text-shadow: 0 1px 0 #0003; }
+.go.go.gold { background-image: linear-gradient(180deg, #fff8, #fff0 55%, #0000000f); text-shadow: none; }
+.icon-btn { background-image: linear-gradient(180deg, #fff, #f1f2fb); box-shadow: 0 3px 0 #d5d7ee, 0 8px 14px -8px #23266b55; }
+.opt { background-image: linear-gradient(180deg, #fff 60%, #f3f4fb); box-shadow: 0 6px 0 #d5d7ee, 0 14px 20px -12px #23266b55; }
+.trail .node, .trail .tnode { background-image: radial-gradient(circle at 34% 28%, #ffffff40, #ffffff00 45%), radial-gradient(circle at 50% 120%, #0003, #0000 60%); }
+.trail .node.open, .trail .tnode.open { background-image: radial-gradient(circle at 34% 28%, #fffc, #fff0 45%), radial-gradient(circle at 50% 120%, #0002, #0000 60%); }
+.speak { background-image: radial-gradient(circle at 34% 26%, #ffffff40, #fff0 46%), radial-gradient(circle at 50% 125%, #0004, #0000 60%); }
+.card-letter { box-shadow: 0 10px 0 #e4e1d6, 0 26px 40px -18px #23266b66; }
+.card-letter .glyph { text-shadow: 0 2px 0 #3b3f9a, 0 4px 0 #1b1d45, 0 10px 14px #23266b40; }
+.card-letter .glyph.heavy { text-shadow: 0 2px 0 #e0545f, 0 4px 0 #a3222c, 0 10px 14px #a3222c40; }
+.certbtn, .achcard { box-shadow: 0 5px 0 #e0bd3a, 0 14px 22px -12px #a77f0088; }
+.certbtn.level { box-shadow: 0 5px 0 #15174a, 0 14px 22px -12px #15174aaa; }
+@media (hover: hover) {
+  .opt:hover, .certbtn:hover, .achcard:hover, .go:hover { transform: translateY(-2px); }
+  .opt, .certbtn, .achcard, .go { transition: transform .15s ease; }
 }
 </style>
 </head>
@@ -848,18 +921,63 @@ function pop(t) {
   src.buffer = buf; bp.type = "bandpass"; bp.frequency.value = 1400; bp.Q.value = .8; g.gain.value = .5;
   src.connect(bp).connect(g).connect(sfxOut()); src.start(t);
 }
-let sfxBus = null;
-function sfxOut() { const a = ac(); if (!sfxBus) { sfxBus = a.createGain(); sfxBus.gain.value = .9; sfxBus.connect(a.destination); } return sfxBus; }
-function sfx(kind) {
+let sfxBus = null, sfxWet = null, streak = 0;
+// صدى خفيف (قاعة صغيرة) يعطي المؤثرات دفئاً وعمقاً
+function sfxOut() {
+  const a = ac();
+  if (!sfxBus) {
+    sfxBus = a.createGain(); sfxBus.gain.value = .9; sfxBus.connect(a.destination);
+    try {
+      const len = a.sampleRate * 1.3, ir = a.createBuffer(2, len, a.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+      const cv = a.createConvolver(); cv.buffer = ir; sfxWet = a.createGain(); sfxWet.gain.value = .22;
+      sfxBus.connect(cv).connect(sfxWet).connect(a.destination);
+    } catch (e) {}
+  }
+  return sfxBus;
+}
+// جرس لامع (تركيب FM): للإجابة الصحيحة والنجوم
+function bell(f, t, vol, dur) {
+  const a = ac(), c = a.createOscillator(), m = a.createOscillator(), mg = a.createGain(), g = a.createGain(); dur = dur || .9;
+  c.frequency.value = f; m.frequency.value = f * 3.5; mg.gain.setValueAtTime(f * 2.2, t); mg.gain.exponentialRampToValueAtTime(f * .05, t + dur * .6);
+  m.connect(mg).connect(c.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || .12, t + .006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  c.connect(g).connect(sfxOut()); c.start(t); m.start(t); c.stop(t + dur + .05); m.stop(t + dur + .05);
+}
+// هسهسة مصفّاة تتحرك (حفيف/لمعة)
+function swish(t, f0, f1, dur, vol) {
+  const a = ac(), len = Math.ceil(a.sampleRate * dur), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; bp.type = "bandpass"; bp.Q.value = 2.2; bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || .12, t + dur * .35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(bp).connect(g).connect(sfxOut()); src.start(t); src.stop(t + dur);
+}
+const PENTA = [523, 587, 659, 784, 880, 1047, 1175, 1319, 1568, 1760];
+function sfx(kind, n) {
   try {
     const t = ac().currentTime + .01;
-    if (kind === "ok") { marimba(784, t); marimba(1175, t + .1); }                                                    // صحيح: نغمتان صاعدتان
-    else if (kind === "bad") { tone(330, t, .22, "sine", .09, 247); tone(262, t + .14, .26, "sine", .08, 220); }          // خطأ: «أووه» ناعمة
-    else if (kind === "win") { [523, 659, 784, 1047, 1319].forEach((f, i) => marimba(f, t + i * .11, .14)); [2093, 2637, 3136].forEach((f, i) => tone(f, t + .7 + i * .07, .4, "triangle", .04)); }
-    else if (kind === "hop") { tone(300, t, .32, "sine", .14, 900); marimba(1319, t + .3, .1); } // قفزة مرنة بين الجزر
-    else if (kind === "enter") { [784, 988, 1175, 1568].forEach((f, i) => tone(f, t + i * .06, .5, "triangle", .06)); tone(2349, t + .26, .6, "sine", .03); } // لمعة سحرية
+    if (kind === "ok") {                     // صحيح: جرسان صاعدان، ويعلو اللحن مع كل إجابة صحيحة متتالية
+      const k = Math.min(streak++, PENTA.length - 3);
+      bell(PENTA[k + 2], t, .11); bell(PENTA[k + 2] * 1.5, t + .09, .09);
+      if (streak >= 3) swish(t + .12, 3000, 9000, .35, .035);
+    }
+    else if (kind === "bad") { streak = 0; tone(392, t, .18, "triangle", .07, 330); tone(294, t + .13, .3, "triangle", .07, 262); } // «أوه» لطيفة غير مزعجة
+    else if (kind === "win") {               // فوز: لحن احتفالي + أجراس + لمعة
+      streak = 0;
+      [523, 659, 784, 1047].forEach((f, i) => marimba(f, t + i * .1, .14));
+      [1047, 1319, 1568].forEach(f => bell(f, t + .45, .06, 1.6));
+      [2093, 2637, 3136, 4186].forEach((f, i) => tone(f, t + .75 + i * .06, .45, "triangle", .03));
+      swish(t + .4, 2500, 10000, .9, .05);
+    }
+    else if (kind === "star") { bell(PENTA[4 + (n || 0) * 2], t, .12, 1.1); swish(t, 4000, 9000, .25, .03); } // نجمة النتيجة
+    else if (kind === "unlock") { tone(1800, t, .05, "square", .04); [659, 880, 1175, 1568].forEach((f, i) => bell(f, t + .08 + i * .07, .07, .8)); }
+    else if (kind === "badge") { [784, 988, 1175].forEach((f, i) => bell(f, t + i * .09, .09, 1.2)); swish(t + .2, 3000, 10000, .6, .04); }
+    else if (kind === "hop") { swish(t, 600, 2400, .32, .05); tone(300, t, .3, "sine", .12, 880); marimba(1319, t + .3, .09); } // قفزة مرنة بين الجزر
+    else if (kind === "enter") { swish(t, 1500, 7000, .5, .04); [784, 988, 1175, 1568].forEach((f, i) => bell(f, t + i * .06, .045, .7)); } // لمعة سحرية
     else if (kind === "step") { marimba(880 + Math.random() * 220, t, .09); }                                              // نقرة خشبية خفيفة
-    else if (kind === "pop") { pop(t); marimba(1568, t + .03, .06); }
+    else if (kind === "tap") { marimba(1320, t, .045); }
+    else if (kind === "pop") { pop(t); bell(1568 + Math.random() * 300, t + .03, .05, .4); }
   } catch (e) {}
 }
 
@@ -909,7 +1027,7 @@ function confetti() {
 }
 const bar = (title, backTo, extra = "") => `
   <div class="bar">
-    ${backTo ? `<button class="icon-btn" data-go="${backTo}" aria-label="رجوع">➜</button>` : ""}
+    ${backTo ? `<button class="icon-btn" data-go="${backTo}" aria-label="رجوع">${ic("back")}</button>` : ""}
     <h1>${title}</h1>${extra}
   </div>`;
 
@@ -917,15 +1035,14 @@ const bar = (title, backTo, extra = "") => `
 /* ---------- نموذج الدروس: كل درس = مراحل + لعبتان + اختبار ---------- */
 const STAGE_NAMES = ["الأولى","الثانية","الثالثة","الرابعة"];
 const LDEF = {
-  1: { stages: 4, games: [["لعبة: اسمع واختر", "👂"], ["لعبة: البالونات", "🎈"]],
+  1: { stages: 4, games: [["لعبة: اسمع واختر", "listen"], ["لعبة: البالونات", "balloon"]],
        stageChips: (i) => STAGES[i].map(l => l.c).join(" ") },
-  2: { stages: 3, games: [["لعبة: صنّف الحروف", "🐘"], ["لعبة: أين الحرف الثقيل؟", "🔍"]],
-       stageChips: (i) => [...L2_STAGES[i].letters].join(" "), stageSub: (i) => L2_STAGES[i].short,
-       explain: "audio/explain/lesson2.mp3" },
-  3: { stages: 3, games: [["لعبة: طابق الشكل", "🧩"], ["لعبة: أين الحرف؟", "🔎"]],
+  2: { stages: 3, games: [["لعبة: صنّف الحروف", "scale"], ["لعبة: أين الحرف الثقيل؟", "weight"]],
+       stageChips: (i) => [...L2_STAGES[i].letters].join(" "), stageSub: (i) => L2_STAGES[i].short },
+  3: { stages: 3, games: [["لعبة: طابق الشكل", "puzzle"], ["لعبة: أين الحرف؟", "find"]],
        stageChips: (i) => L3_PAGES[i].map(r => r.t).filter((t, k, a) => a.indexOf(t) === k).join(" "),
        stageSub: (i) => "صفحة " + (i + 3) },
-  4: { stages: 3, games: [["لعبة: اسمع واختر الحركة", "👂"], ["لعبة: ما اسم الحركة؟", "🏷️"]],
+  4: { stages: 3, games: [["لعبة: اسمع واختر الحركة", "listen"], ["لعبة: ما اسم الحركة؟", "tag"]],
        stageChips: (i) => ["ب","ت","ث"].map(c => c + HARAKAT[i].m).join(" "), stageSub: (i) => HARAKAT[i].title }
 };
 const AVAILABLE = 4;            // الدروس الجاهزة حالياً
@@ -1136,7 +1253,7 @@ window.addEventListener("popstate", (e) => {
   const st = e.state && e.state.rh ? e.state : { rh: P ? "home" : "login", l: CUR, d: {} };
   let n = st.rh; if (st.l) CUR = st.l;
   if (["quiz", "result", "balloons"].includes(n)) n = "lesson";
-  if (["home", "lesson", "stage", "cert"].includes(n) && !P) n = "login";
+  if (["home", "lesson", "stage", "cert", "achieve"].includes(n) && !P) n = "login";
   go(n, st.d || {}, true);
 });
 
@@ -1155,7 +1272,7 @@ function maybeIntro() {
 }
 function render() {
   document.body.classList.toggle("scene", ["stage", "quiz", "balloons", "result"].includes(screen.name));
-  ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result })[screen.name]();
+  ({ login: Login, tlogin: TLogin, cert: Cert, home: Home, lesson: Lesson, stage: Stage, quiz: Quiz, balloons: Balloons, result: Result, achieve: Achieve })[screen.name]();
   drawTrails();
   maybeIntro();
 }
@@ -1163,7 +1280,7 @@ function render() {
 function Login() {
   const list = Object.values(DB.students).filter(k => !k.temp).sort((a, b) => (b.seen || 0) - (a.seen || 0));
   const rm = screen.remove && DB.students[screen.remove];
-  let html = bar("رحلة الحروف", P && !TEACHER ? "home" : null, `<button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>`);
+  let html = bar("رحلة الحروف", P && !TEACHER ? "home" : null, `<button class="icon-btn" id="lang" aria-label="لغة الإرشاد">${ic("globe")}</button>`);
   html += offlineNote() + hint("login") + `<div class="logingrid"><div class="lside">`;
   html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>من سيتعلم الآن؟</b><br>${list.length ? "اختر اسمك، أو ادخل باسم المستخدم." : "ادخل باسم المستخدم الذي أعطاك إياه معلمك."}</p></div>`;
   if (list.length) {
@@ -1405,7 +1522,10 @@ function travel(tr, from, to, done, sound) {
     return { transform: `translate(${u * u * P0[0] + 2 * u * t * C[0] + t * t * P1[0] - 11}px, ${u * u * P0[1] + 2 * u * t * C[1] + t * t * P1[1] - 11}px) scale(${1 + Math.sin(t * Math.PI) * .5})` }; });
   travelling = true;
   b.scrollIntoView({ block: "center", behavior: "smooth" });
-  dot.animate(frames, { duration: 700, easing: "ease-in-out", fill: "forwards" }).onfinish = () => { travelling = false; done(); };
+  // مؤقّت احتياطي: إن لم تنتهِ الحركة (تبويب في الخلفية مثلاً) لا يتجمّد الموقع
+  let fin = false; const end = () => { if (fin) return; fin = true; travelling = false; done(); };
+  dot.animate(frames, { duration: 700, easing: "ease-in-out", fill: "forwards" }).onfinish = end;
+  setTimeout(end, 1400);
 }
 let trailResize = 0;
 window.addEventListener("resize", () => { clearTimeout(trailResize); trailResize = setTimeout(drawTrails, 120); });
@@ -1414,13 +1534,13 @@ function Home() {
   let total = 0;
   for (let n = 1; n <= AVAILABLE; n++) total += starsFor(LP(n).best);
   let html = bar(`<img class="wordmark" src="icons/wordmark-light.svg" alt="رحلة الحروف">`, null,
-    `<span class="pill" aria-label="النجوم">⭐ ${total}</span>
-     <button class="icon-btn" id="birds" aria-label="${birdsOn() ? "إيقاف أصوات الطيور" : "تشغيل أصوات الطيور"}" title="أصوات الطيور">${birdsOn() ? "🐦" : "🔇"}</button>
-     <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">🌐</button>
-     <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? "🚪" : "👤"}</button>`);
+    `<span class="pill" aria-label="النجوم">${ic("star")} ${total}</span>
+     <button class="icon-btn" id="birds" aria-label="${birdsOn() ? "إيقاف أصوات الطيور" : "تشغيل أصوات الطيور"}" title="أصوات الطيور">${birdsOn() ? ic("bird") : ic("mute")}</button>
+     <button class="icon-btn" id="lang" aria-label="لغة الإرشاد">${ic("globe")}</button>
+     <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? ic("exit") : ic("user")}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
   html += `<div class="homegrid"><aside class="side">`;
-  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.<br><button class="linkbtn storybtn" id="story">🎬 شاهد قصة الرحلة</button></p></div>`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.<br><button class="linkbtn storybtn" id="story">${ic("play")} شاهد قصة الرحلة</button></p></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
       screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
@@ -1432,10 +1552,9 @@ function Home() {
       return `<button class="hwitem ${ok ? "done" : ""}" ${ok ? "" : `data-hw="${h.lesson}"`}><span class="ic">${ok ? "✅" : "📝"}</span>
         <span class="tx"><b>${esc(hwWhat(h))}</b>${h.note ? `<small>💬 ${esc(h.note)}</small>` : ""}<small>${ok ? "أنجزته، أحسنت!" : hwDue(h)}${h.by ? " · " + esc(h.by) : ""}</small></span>
         ${ok ? "" : `<span class="goarrow">ابدأ ⬅</span>`}</button>`; }).join("")}</div>`;
-  const certs = [];
-  for (let n = 1; n <= AVAILABLE; n++) if (lessonPassed(n) || TEACHER) certs.push(n);
-  const lvls = levelsDone();
-  if (certs.length || lvls.length) html += `<div class="certs">${lvls.map(V => `<button class="certbtn level" data-level="${V.n}">🎖️ <span><b>شهادة ختم المستوى ${ORDINALS[V.n - 1]}</b><small>${V.title}</small></span></button>`).join("")}${certs.map(n => `<button class="certbtn" data-cert="${n - 1}">🏅 <span><b>شهادة الدرس ${ORDINALS[n - 1]}</b><small>${LESSONS[n - 1]}</small></span></button>`).join("")}</div>`;
+  const A = achieveStats();
+  html += `<button class="achcard" data-go="achieve"><span class="achic">${ic("trophy")}</span><span class="tx"><b>إنجازاتي وشهاداتي</b>
+    <small>${A.certs} ${A.certs === 1 ? "شهادة" : "شهادات"} · ${A.badges.filter(b => b.ok).length} من ${A.badges.length} أوسمة · ${A.stars} نجمة</small></span><span class="goarrow">افتح ⬅</span></button>`;
   html += `</aside><section class="mapcol" aria-label="خريطة الدروس">`;
   let curL = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1));
   if (curL < 0) curL = LESSONS.length;
@@ -1444,7 +1563,7 @@ function Home() {
     const st = n <= AVAILABLE ? starsFor(LP(n).best) : 0;
     const cls = done ? "done" : open ? "open" : "";
     return { state: done ? "done" : open ? "cur" : "locked", zone: i < 3 ? 0 : i < 6 ? 1 : i < 10 ? 2 : i < 12 ? 3 : 4,
-      node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">🔒</span>`}</button>`,
+      node: `<button class="node ${cls}" data-lesson="${i}" aria-label="الدرس ${ORDINALS[i]}: ${name}">${open || done ? i + 1 : `<span class="lock">${ic("lock")}</span>`}</button>`,
       label: `<button class="tlabel" data-lesson="${i}" tabindex="-1"><small>الدرس ${ORDINALS[i]}</small><b>${name}</b>
         ${n <= AVAILABLE ? `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>` : `<span class="st-soon">${open ? "قريباً ✨" : ""}</span>`}
         ${hwLeft.some(h => h.lesson === n) ? `<span class="hwflag">📝 واجب</span>` : ""}</button>`
@@ -1458,7 +1577,6 @@ function Lesson() {
   const n = CUR, D = LDEF[n], L = LP(n);
   let html = bar("الدرس " + ORDINALS[n - 1] + ": " + LESSONS[n - 1], "home");
   html += teacherBanner() + hint("lesson");
-  if (D.explain) html += `<details class="explain"><summary>🎧 استمع لشرح المعلم للدرس</summary><audio controls preload="none" src="${D.explain}"></audio></details>`;
   const STEPS = stepsOf(n);
   let cur = STEPS.findIndex((s, i) => stepOpen(i) && !stepDone(s));
   if (cur < 0) cur = STEPS.every(s => stepDone(s)) ? STEPS.length : 0;
@@ -1473,11 +1591,11 @@ function Lesson() {
       title = `<small>المرحلة ${STAGE_NAMES[s.i]}</small><b>${D.stageSub ? D.stageSub(s.i) : "الحروف"}</b>`;
       more = `<span class="ltrs">${chips}</span>`;
     } else if (s.kind === "game") {
-      face = D.games[s.i][1];
+      face = ic(D.games[s.i][1]);
       title = `<small>لعبة</small><b>${D.games[s.i][0].replace("لعبة: ", "")}</b>`;
     } else {
       const st = starsFor(L.best);
-      face = "🏆";
+      face = ic("trophy");
       title = `<small>نهاية الدرس</small><b>اختبار الدرس</b>`;
       more = `<span class="st-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span>`;
     }
@@ -1509,10 +1627,10 @@ function Stage() {
     ${L2S && L2_NOTES[L.c] ? `<p class="l2note">${L2_NOTES[L.c]}</p>` : ""}
     <div class="navrow">
       <button class="arrow" id="prev" aria-label="السابق" ${screen.idx === 0 ? "disabled" : ""}>›</button>
-      <button class="speak" id="say" aria-label="استمع">🔊</button>
+      <button class="speak" id="say" aria-label="استمع">${ic("speaker")}</button>
       <button class="arrow" id="next" aria-label="التالي" ${screen.idx === letters.length - 1 ? "disabled" : ""}>‹</button>
     </div>
-    ${window.LetterWriter ? `<button class="go small ghost wrbtn" id="write">${screen.writing === screen.idx ? "↻ اكتبه مرة أخرى" : "✍️ كيف يُكتب؟"}</button>` : ""}
+    ${window.LetterWriter ? `<button class="go small ghost wrbtn" id="write">${screen.writing === screen.idx ? ic("replay") + " اكتبه مرة أخرى" : ic("pen") + " كيف يُكتب؟"}</button>` : ""}
     <div class="strip">${letters.map((l, k) =>
       `<button class="chip ${screen.seen.has(k) ? "seen" : ""} ${k === screen.idx ? "cur" : ""}" data-k="${k}">${l.c}</button>`).join("")}
     </div>
@@ -1549,7 +1667,7 @@ function Stage3() {
   html += hint("l3learn");
   html += `<div class="learn">
     <div class="l3row">
-      <button class="l3head ${isHeavy(R.t) ? "heavy" : ""}" id="sayhead" aria-label="استمع لاسم الحرف">${head}<small>🔊</small></button>
+      <button class="l3head ${isHeavy(R.t) ? "heavy" : ""}" id="sayhead" aria-label="استمع لاسم الحرف">${head}<small>${ic("speaker")}</small></button>
       <div class="l3words">${R.words.map((w, k) => `<button class="l3word" data-w="${k}">${hlWord(w, R.t)}</button>`).join("")}</div>
     </div>
     <p class="spell" id="spell">اضغط على كلمة لتسمع حروفها</p>
@@ -1587,7 +1705,7 @@ function Stage3() {
 
 /* --- محرك الأسئلة: كل سؤال = ما يُعرض + ما يُسمع + خيارات + الإجابة --- */
 const opt = (k, html, cls) => ({ k, html: html == null ? k : html, cls: cls || "" });
-const qListen = (t, options) => ({ hint: "listen", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => sayLetter(t),
+const qListen = (t, options) => ({ hint: "listen", ask: `<span class="askic">${ic("listen")}</span>`, speak: () => sayLetter(t),
   opts: options.map(o => opt(o.c)), ans: t.c });
 const qSame = (t, options) => ({ hint: "same", ask: `<div class="target">${t.c}</div>`, speak: () => sayPrompt("same"),
   opts: options.map(o => opt(o.c)), ans: t.c });
@@ -1622,7 +1740,7 @@ function qShape(r) {
 function qWordHas(r) {
   const w = pick(r.words, 1)[0];
   const others = pick(L3_ROWS.filter(x => x.t !== r.t).flatMap(x => x.words).filter(x => !hasLetter(x, r.t) && x.length <= 5), 2);
-  return { hint: "wordhas", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => sayLetter(byChar(r.t)),
+  return { hint: "wordhas", ask: `<span class="askic">${ic("listen")}</span>`, speak: () => sayLetter(byChar(r.t)),
     opts: shuffle([w, ...others]).map(x => opt(x, x, "word")), ans: w, cols: 3, key: `أين الحرف «${r.t}»` };
 }
 
@@ -1740,13 +1858,13 @@ const randL4 = () => pick(L4_LETTERS.slice(0, 28), 1)[0];
 // اسمع المقطع، واختر الحرف الصحيح بالحركة نفسها
 function qSylListen(L, H) {
   const ds = distractors(L.c === "ء" ? LETTERS[28] : L, 2, LETTERS.slice(1)).filter(x => x.c !== "ا").slice(0, 2);
-  return { hint: "l4listen", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => saySyl(L, H),
+  return { hint: "l4listen", ask: `<span class="askic">${ic("listen")}</span>`, speak: () => saySyl(L, H),
     opts: shuffle([L, ...ds]).map(o => opt(sylOf(o, H))), ans: sylOf(L, H), cols: 3 };
 }
 // اسمع المقطع، واختر حركته: بَ بِ بُ
 function qHListen(L, H, hs) {
   hs = hs || HARAKAT;
-  return { hint: "l4haraka", ask: `<span style="font-size:2.4rem">👂</span>`, speak: () => saySyl(L, H),
+  return { hint: "l4haraka", ask: `<span class="askic">${ic("listen")}</span>`, speak: () => saySyl(L, H),
     opts: hs.map(h => opt(sylOf(L, h))), ans: sylOf(L, H), cols: hs.length === 3 ? 3 : 2 };
 }
 // ما اسم الحركة؟
@@ -1779,7 +1897,7 @@ function Quiz() {
   let html = bar(cfg.title, cfg.back, `<span class="pill">${screen.q + 1} من ${cfg.questions.length}</span>`);
   html += `<div class="progress"><i style="width:${pct}%"></i></div>`;
   html += hint(cfg.mode === "test" ? "test" : Q.hint);
-  html += `<div class="ask">${Q.ask}<button class="speak ${Q.ask.includes("👂") ? "" : "small"}" id="rep" aria-label="أعد الصوت">🔊</button></div>`;
+  html += `<div class="ask">${Q.ask}<button class="speak ${Q.ask.includes("askic") ? "" : "small"}" id="rep" aria-label="أعد الصوت">${ic("speaker")}</button></div>`;
   const cols = Q.cols || (Q.opts.length === 3 ? 3 : 2);
   html += `<div class="opts ${cols === 3 ? "three" : ""}" id="opts">${Q.opts.map((o, i) =>
     `<button class="opt ${o.cls}" data-i="${i}">${o.html}</button>`).join("")}</div>`;
@@ -1842,7 +1960,7 @@ function Balloons() {
   const colors = ["#d9485f","#2a5fd0","#17804f","#f08a24","#8e44ad","#d6336c"];
   let html = bar("لعبة البالونات", "lesson", `<span class="pill">${screen.r + 1} من ${screen.rounds.length}</span>`);
   html += hint("pop");
-  html += `<div class="ask" style="min-height:90px"><button class="speak" id="rep" aria-label="أعد الصوت">🔊</button>
+  html += `<div class="ask" style="min-height:90px"><button class="speak" id="rep" aria-label="أعد الصوت">${ic("speaker")}</button>
     <span class="pill" id="need">🎈 × 2</span></div>`;
   html += `<div class="sky" id="sky">${items.map((l, k) => {
     const left = 4 + (k % 6) * 15.5;
@@ -1872,6 +1990,54 @@ function Balloons() {
       sfx("bad"); b.classList.add("nope"); setTimeout(() => b.classList.remove("nope"), 500); ask();
     }
   });
+}
+
+/* --- إنجازاتي: الشهادات والأوسمة والتقدّم في كل درس --- */
+function achieveStats() {
+  let stars = 0, steps = 0, stepsAll = 0, passed = 0, perfect = 0, games = 0, stagesDone = 0;
+  const lessons = [];
+  for (let n = 1; n <= AVAILABLE; n++) {
+    const L = LP(n), st = stepsOf(n), d = st.filter(s => stepDone(s, n)).length;
+    stars += starsFor(L.best); steps += d; stepsAll += st.length;
+    if (lessonPassed(n)) passed++; if (L.best >= 10) perfect++;
+    games += (L.games || []).filter(Boolean).length; stagesDone += (L.stages || []).filter(Boolean).length;
+    lessons.push({ n, done: d, all: st.length, stars: starsFor(L.best), best: L.best, passed: lessonPassed(n) || !!TEACHER });
+  }
+  const lv = levelsDone(), hwOk = hwList().filter(hwDone).length;
+  const badges = [
+    { ic: "check", t: "الخطوة الأولى", d: "أنهيت أول مرحلة", ok: stagesDone >= 1 },
+    { ic: "listen", t: "أذن صاغية", d: "فزت في أول لعبة", ok: games >= 1 },
+    { ic: "medal", t: "الشهادة الأولى", d: "نجحت في أول اختبار", ok: passed >= 1 },
+    { ic: "star", t: "العلامة الكاملة", d: "10 من 10 في اختبار", ok: perfect >= 1 },
+    { ic: "star", t: "جامع النجوم", d: "جمعت 10 نجوم", ok: stars >= 10 },
+    { ic: "pen", t: "قارئ الحركات", d: "أنهيت درس الحركات", ok: lessonPassed(4) },
+    { ic: "task", t: "التلميذ المجتهد", d: "أنجزت واجباً من معلمك", ok: hwOk >= 1 },
+    { ic: "trophy", t: "ختم المستوى", d: "أنهيت مستوى كاملاً", ok: lv.length >= 1 }
+  ];
+  if (TEACHER) badges.forEach(b => b.ok = true);
+  return { stars, steps, stepsAll, passed, lessons, lv, badges, certs: (TEACHER ? AVAILABLE : passed) + lv.length };
+}
+function Achieve() {
+  const A = achieveStats();
+  let html = bar("إنجازاتي", "home") + teacherBanner();
+  const pct = A.stepsAll ? Math.round(A.steps / A.stepsAll * 100) : 0;
+  html += `<div class="achhero"><div class="trophy3d" aria-hidden="true">${ic("trophy")}</div>
+    <div><small>إنجازات</small><b>${esc(P.name)}</b><span class="achbar"><i style="width:${pct}%"></i></span><small>أتممتَ ${A.steps} من ${A.stepsAll} خطوة (${pct}%)</small></div></div>`;
+  html += `<div class="achstats">
+    <div><b>${A.stars}</b><span>${ic("star")} نجمة</span></div>
+    <div><b>${A.passed}<small>/${LESSONS.length}</small></b><span>درساً</span></div>
+    <div><b>${A.certs}</b><span>${ic("medal")} شهادة</span></div></div>`;
+  html += `<h2 class="achh">الأوسمة</h2><div class="badges">${A.badges.map(b => `<div class="bdg ${b.ok ? "ok" : ""}" title="${b.d}"><span class="bic">${ic(b.ok ? b.ic : "lock")}</span><b>${b.t}</b><small>${b.d}</small></div>`).join("")}</div>`;
+  html += `<h2 class="achh">الشهادات</h2>`;
+  const lv = A.lv.map(V => `<button class="certbtn level" data-level="${V.n}">${ic("trophy")} <span><b>شهادة ختم المستوى ${ORDINALS[V.n - 1]}</b><small>${V.title}</small></span></button>`).join("");
+  const ls = A.lessons.filter(l => l.passed).map(l => `<button class="certbtn" data-cert="${l.n - 1}">${ic("medal")} <span><b>شهادة الدرس ${ORDINALS[l.n - 1]}</b><small>${LESSONS[l.n - 1]}</small></span></button>`).join("");
+  html += lv || ls ? `<div class="certs">${lv}${ls}</div>` : `<p class="note">لا شهادات بعد. أنهِ اختبار الدرس الأول (8 من 10) لتحصل على شهادتك الأولى!</p>`;
+  html += `<h2 class="achh">تقدّمي في الدروس</h2><div class="lprog">${A.lessons.map(l => `<div class="lp ${l.passed ? "ok" : ""}">
+    <span class="num">${l.n}</span><span class="tx"><b>${LESSONS[l.n - 1]}</b><span class="achbar"><i style="width:${Math.round(l.done / l.all * 100)}%"></i></span>
+    <small>${l.done} من ${l.all} خطوات${l.best ? ` · أفضل نتيجة ${l.best}/10` : ""}</small></span>
+    <span class="st-stars">${ic("star", l.stars >= 1 ? "" : "off")}${ic("star", l.stars >= 2 ? "" : "off")}${ic("star", l.stars >= 3 ? "" : "off")}</span></div>`).join("")}</div>`;
+  html += credit();
+  $app.innerHTML = html;
 }
 
 /* --- الشهادة --- */
@@ -1932,18 +2098,26 @@ function Result() {
     title = "أحسنت!"; msg = cfg.mode === "practice" ? "أنهيت هذه المرحلة." : "أنهيت اللعبة.";
   }
   let html = `<div class="result">
-    <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}">⭐</span>`).join("")}</div>
+    <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}" style="--d:${.25 + k * .35}s">⭐</span>`).join("")}</div>
     <h2>${title}</h2>
     ${cfg.mode !== "game" || cfg.game === 0 ? `<div class="score">${score} من ${total}</div>` : ""}
     <p>${msg}</p>
     <button class="go" data-go="lesson">متابعة ⬅</button>
     ${cfg.mode === "test" && !pass ? `<button class="go gold" id="retry">🔁 أعد الاختبار</button>` : ""}
-    ${cfg.mode === "test" && pass ? `<button class="go gold" data-cert="${(cfg.lesson || CUR) - 1}">🏅 استلم شهادتك</button>` : ""}
+    ${cfg.mode === "test" && pass ? `<button class="go gold" data-cert="${(cfg.lesson || CUR) - 1}">${ic("medal")} استلم شهادتك</button>` : ""}
   </div>`;
   $app.innerHTML = html;
-  if (pass) { sfx("win"); confetti(); setTimeout(() => sayPrompt("great"), 500); }
+  for (let k = 0; k < stars; k++) setTimeout(() => sfx("star", k), 250 + k * 350);
+  if (pass) { setTimeout(() => sfx("win"), 250 + stars * 350); confetti(); setTimeout(() => sayPrompt("great"), 500); }
   else { setTimeout(() => sayPrompt("again"), 300); }
   const rt = document.getElementById("retry"); if (rt) rt.onclick = () => startLessonTest(cfg.lesson || CUR);
+  // وسام جديد؟
+  if (!TEACHER && P) {
+    DB.badgesSeen = DB.badgesSeen || {};
+    const got = achieveStats().badges.filter(b => b.ok).map(b => b.t), seen = DB.badgesSeen[P.id] || [];
+    const fresh = got.filter(t => seen.indexOf(t) < 0);
+    if (fresh.length) { DB.badgesSeen[P.id] = got; save(); setTimeout(() => { sfx("badge"); toast("🎖️ وسام جديد: " + fresh.join("، ") + " — تجده في «إنجازاتي»"); }, 1900); }
+  }
 }
 
 function startListenGame() {
