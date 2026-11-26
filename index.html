@@ -941,10 +941,12 @@ function play(file, text) {
     if (!file || missing.has(file)) return tts(text).then(res);
     const a = new Audio(file); cur = a;
     let done = false;
+    // الملف غير موجود أو تالف فقط ← صوت آلي. أما مقاطعة التشغيل (ضغط سريع على حرف آخر) أو منع المتصفح
+    // فلا تُعدّ فقداناً للملف، وإلا صار الحرف بالصوت الآلي طوال الجلسة
     const fail = () => { if (done) return; done = true; missing.add(file); tts(text).then(res); };
     a.onended = () => { if (!done) { done = true; res(); } };
-    a.onerror = fail;
-    a.play().catch(fail);
+    a.onerror = () => { if (a.error && a.error.code !== 1) fail(); else if (!done) { done = true; res(); } };
+    a.play().catch(e => { if (done) return; if (e && (e.name === "AbortError" || e.name === "NotAllowedError")) { done = true; res(); } else fail(); });
   });
 }
 // تشغيل ملف صوتي فقط (بلا صوت آلي): يعيد true إن اشتغل الملف
