@@ -27,8 +27,8 @@ const ROUTES = {
   "ف": [[[190,142],[180,112],[160,102],[138,125],[160,150],[190,142],[197,170],[100,190],[45,136]]],
   "ق": [[[161,134],[155,105],[137,93],[112,120],[131,139],[161,134],[164,160],[104,190],[74,138]]],
   "م": [[[90,74],[117,54],[150,95],[82,118],[86,180],[80,197]]],
-  "ه": [[[141,88],[138,130],[132,158],[175,171],[192,150],[170,98],[141,88],[110,92],[90,130],[106,158],[49,158]]],
-  "و": [[[166,118],[162,95],[126,58],[93,100],[122,127],[166,118],[168,140],[106,185],[73,176]]],
+  "ه": [[[141,88],[170,98],[192,150],[175,171],[132,158],[138,120],[141,88],[110,92],[90,130],[106,158],[49,158]]],
+  "و": [[[166,118],[122,127],[93,100],[126,58],[162,95],[166,118],[168,140],[106,185],[73,176]]],
   "ي": [[[167,56],[155,51],[120,90],[160,113],[168,120],[105,155],[72,104]]],
   "ء": [[[150,91],[126,66],[71,105],[70,130],[93,161]], [[172,153],[93,161],[52,183]]]
 };
@@ -206,6 +206,18 @@ const toPath = (line) => {
   const keep = line.filter((_, i) => i % 3 === 0 || i === line.length - 1);
   return keep.map((p, i) => `${i ? "L" : "M"}${p % S} ${(p / S) | 0}`).join(" ");
 };
+// الخط مقسّماً قطعاً صغيرة، لكل قطعة عرض فرشاة بقدر سماكة الحرف في موضعها
+// (فرشاة واحدة عريضة كانت تكشف أجزاءً مجاورة قبل أن يصل إليها القلم، كما في ه و)
+function toStroke(line, dist) {
+  const n = line.length, CH = 8, chunks = [];
+  for (let a = 0; a < n - 1; a += CH) {
+    const b = Math.min(n - 1, a + CH), seg = line.slice(a, b + 1);
+    let r = 0; for (let i = Math.max(0, a - 3); i <= Math.min(n - 1, b + 3); i++) r = Math.max(r, dist[line[i]]);
+    chunks.push({ d: seg.map((p, i) => `${i ? "L" : "M"}${p % S} ${(p / S) | 0}`).join(" "), w: Math.ceil(r * 2 + 4), f0: a / (n - 1), f1: b / (n - 1) });
+  }
+  return { d: toPath(line), chunks };
+}
+const whole = (d, r) => ({ d, chunks: [{ d, w: Math.ceil(r * 2 + 5), f0: 0, f1: 1 }] });
 
 /* ---------- تحليل الحرف: الصورة، والخطوط بالترتيب، وعرض فرشاة الكشف ---------- */
 const cache = {};
@@ -228,7 +240,7 @@ async function analyze(ch) {
       const m = MARKS[ch], inBox = c.px.some(p => Math.abs(p % S - m[0][0]) < 14 && Math.abs(((p / S) | 0) - m[0][1]) < 14);
       if (inBox) { let r = 0; c.px.forEach(p => { r = Math.max(r, dist[p]); });
         const line = m.map(([x, y]) => y * S + x);
-        return { dot: false, r, strokes: [m.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ")], len: line.length * 8 }; }
+        return { dot: false, r, strokes: [whole(m.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" "), r)], len: line.length * 8 }; }
     }
     const set = new Set(c.px.filter(p => skel[p]));
     if (!c.dot) prune(skel, set, 12);
@@ -237,12 +249,12 @@ async function analyze(ch) {
       // النقطة: ضربة قصيرة من يمينها إلى يسارها
       const xs = c.px.map(p => p % S), x1 = Math.max(...xs), x0 = Math.min(...xs), cy = Math.round(c.cy);
       c.px.forEach(p => { r = Math.max(r, dist[p]); });
-      return { dot: true, r, strokes: [`M${x1} ${cy} L${x0} ${cy}`], len: x1 - x0 + 4 };
+      return { dot: true, r, strokes: [whole(`M${x1} ${cy} L${x0} ${cy}`, r)], len: x1 - x0 + 4 };
     }
     const k = START_K[ch] != null ? START_K[ch] : .5;
     const lines = (c === body && ROUTES[ch] && routed(skel, set, ROUTES[ch])) || simpleRoute(skel, set, k)
       || strokesOf(skel, set, k, FROM_HEAD.indexOf(ch) >= 0);
-    return { dot: false, r, strokes: lines.map(toPath), len: lines.reduce((s, l) => s + l.length, 0) };
+    return { dot: false, r, strokes: lines.map(l => toStroke(l, dist)), len: lines.reduce((s, l) => s + l.length, 0) };
   });
   return cache[ch] = { url, parts };
 }
@@ -255,30 +267,31 @@ async function play(box, ch, opts) {
   stop(); opts = opts || {};
   const [A, info] = await Promise.all([loadAnime(), analyze(ch)]);
   const id = "wm" + (++uid);
-  const brush = (p) => Math.ceil(p.r * 2 + 5);
   box.innerHTML = `<svg viewBox="0 0 ${S} ${S}" class="wr-svg" role="img" aria-label="طريقة كتابة الحرف ${ch}">
     <defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${S}" height="${S}"><rect width="${S}" height="${S}" fill="#000"/>
-      ${info.parts.map((p, i) => p.strokes.map(d => `<path class="wr-m" data-part="${i}" d="${d}" fill="none" stroke="#fff" stroke-width="${brush(p)}" stroke-linecap="round" stroke-linejoin="round"/>`).join("")).join("")}
+      ${info.parts.map(p => p.strokes.map(st => st.chunks.map(c => `<path class="wr-m" d="${c.d}" fill="none" stroke="#fff" stroke-width="${c.w}" stroke-linecap="round" stroke-linejoin="round"/>`).join("")).join("")).join("")}
       <rect class="wr-all" width="${S}" height="${S}" fill="#fff" opacity="0"/></mask></defs>
     <image href="${info.url}" width="${S}" height="${S}" opacity=".13"/>
     <image href="${info.url}" width="${S}" height="${S}" mask="url(#${id})"/>
-    ${info.parts.map(p => p.strokes.map(d => `<path class="wr-g" d="${d}" fill="none" stroke="none"/>`).join("")).join("")}
+    ${info.parts.map(p => p.strokes.map(st => `<path class="wr-g" d="${st.d}" fill="none" stroke="none"/>`).join("")).join("")}
     <circle class="wr-pen" r="7" cx="0" cy="0" fill="#ffd23f" stroke="#c79600" stroke-width="2" opacity="0"/></svg>`;
   const masks = [...box.querySelectorAll(".wr-m")], guides = [...box.querySelectorAll(".wr-g")], pen = box.querySelector(".wr-pen"), all = box.querySelector(".wr-all");
   // الكتابة هي محتوى الدرس ويطلبها الطفل بنفسه، فتعمل دائماً؛ ومع «تقليل الحركة» تكون بإيقاع ثابت هادئ
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const { createTimeline, svg } = A;
   const tl = createTimeline({ autoplay: true, onComplete: () => { if (current && current.tl === tl) current = null; opts.onDone && opts.onDone(); } });
-  let t = 250, k = 0;
+  let t = 250, k = 0, mi = 0;
   info.parts.forEach((p, pi) => {
-    p.strokes.forEach((d, si) => {
-      const m = masks[k], g = guides[k]; k++;
+    p.strokes.forEach((st, si) => {
+      const g = guides[k]; k++;
       const len = Math.max(20, g.getTotalLength());
-      const dur = Math.round(Math.min(1600, Math.max(p.dot ? 260 : 380, len * 7)));
+      const dur = Math.round(Math.min(2400, Math.max(p.dot ? 260 : 380, len * 7)));
       const mp = svg.createMotionPath(g);
       tl.add(pen, { opacity: 1, duration: 1, onBegin: () => opts.onStroke && opts.onStroke(p.dot) }, t)
-        .add(svg.createDrawable(m), { draw: ["0 0", "0 1"], duration: dur, ease: calm ? "linear" : p.dot ? "outQuad" : "inOutSine" }, t)
-        .add(pen, { translateX: mp.translateX, translateY: mp.translateY, duration: dur, ease: calm ? "linear" : p.dot ? "outQuad" : "inOutSine" }, t);
+        .add(pen, { translateX: mp.translateX, translateY: mp.translateY, duration: dur, ease: "linear" }, t);
+      // القطع تُكشف واحدة بعد الأخرى مع مرور القلم عليها
+      st.chunks.forEach(c => { const m = masks[mi++];
+        tl.add(svg.createDrawable(m), { draw: ["0 0", "0 1"], duration: Math.max(16, Math.round(dur * (c.f1 - c.f0))), ease: "linear" }, t + Math.round(dur * c.f0)); });
       t += dur + (si < p.strokes.length - 1 ? 60 : p.dot ? 220 : 380);
     });
   });

@@ -134,6 +134,13 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .hero p { margin: 0; line-height: 1.5; }
 .hero .mark { width: 64px; height: 64px; flex: none; border-radius: 16px; box-shadow: 0 0 0 2px #ffffff33; }
 .storybtn { font-size: .92rem; margin-top: 2px; padding: 0; }
+.hero { flex-wrap: wrap; }
+.hero p { flex: 1; min-width: 0; }
+.herobtns { flex-basis: 100%; display: flex; gap: 8px; }
+.hbtn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 10px; border-radius: 14px;
+  background: #ffffff1f; color: #fff; font-weight: 700; font-size: .95rem; text-decoration: none; box-shadow: inset 0 0 0 2px #ffffff33, 0 3px 0 #0003; }
+.hbtn .ic { width: 20px; height: 20px; color: var(--gold); }
+.hbtn:active { transform: translateY(2px); }
 .hero b { font-family: var(--f-title); font-weight: 400; font-size: 1.5rem; }
 .map { display: flex; flex-direction: column; gap: 4px; padding-block: 6px; }
 .station { display: flex; align-items: center; gap: 14px; }
@@ -443,9 +450,17 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
 .achstats b small { font-size: .9rem; color: #8a8db8; }
 .achstats span { font-size: .9rem; display: inline-flex; gap: 4px; align-items: center; }
 .achh { font-family: var(--f-title); font-weight: 400; font-size: 1.4rem; margin: 10px 0 0; color: var(--green); }
-.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.badges { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 10px; margin: 0 -2px; scrollbar-width: none; }
+.badges::-webkit-scrollbar { display: none; }
+.badges .bdg { flex: 0 0 112px; scroll-snap-align: start; }
+.bdg b { font-size: .9rem; line-height: 1.3; }
+.achh .cnt { font-family: var(--f-ui, inherit); font-size: .95rem; background: var(--gold); color: #1b1d45; border-radius: 99px; padding: 2px 10px; vertical-align: middle; }
+.bgrp { margin: 6px 0 -2px; font-size: 1rem; color: #4a4d7a; display: flex; gap: 6px; align-items: baseline; }
+.bgrp small { color: #8a8db8; font-weight: 700; }
+.bgrp .swipe { margin-inline-start: auto; font-size: .78rem; color: #8a8db8; font-weight: 600; }
+.achbar.mini { width: 80%; height: 7px; margin-top: 4px; }
 .bdg { background: var(--card); border-radius: 18px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: 0 4px 0 #d5d7ee; color: #9a9cc0; }
-.bdg .bic { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #ecedf7; margin-bottom: 4px; }
+.bdg .bic { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: #ecedf7; margin-bottom: 4px; }
 .bdg .bic .ic { width: 30px; height: 30px; }
 .bdg small { font-size: .78rem; line-height: 1.35; }
 .bdg.ok { color: #1b1d45; }
@@ -543,24 +558,74 @@ body.scene .result { background: #ffffffd9; border-radius: 28px; padding: 26px 1
   .confetti { display: none; }
 }
 
-/* ===== عمق ثلاثي الأبعاد (CSS): إضاءة من الأعلى، حواف سفلية، وظلال ناعمة ===== */
-.go, .opt, .icon-btn, .tnode, .node, .speak, .certbtn, .achcard { position: relative; }
-.go { background-image: linear-gradient(180deg, #ffffff26, #ffffff00 55%, #0000001a); text-shadow: 0 1px 0 #0003; }
-.go.go.gold { background-image: linear-gradient(180deg, #fff8, #fff0 55%, #0000000f); text-shadow: none; }
-.icon-btn { background-image: linear-gradient(180deg, #fff, #f1f2fb); box-shadow: 0 3px 0 #d5d7ee, 0 8px 14px -8px #23266b55; }
-.opt { background-image: linear-gradient(180deg, #fff 60%, #f3f4fb); box-shadow: 0 6px 0 #d5d7ee, 0 14px 20px -12px #23266b55; }
-.trail .node, .trail .tnode { background-image: radial-gradient(circle at 34% 28%, #ffffff40, #ffffff00 45%), radial-gradient(circle at 50% 120%, #0003, #0000 60%); }
-.trail .node.open, .trail .tnode.open { background-image: radial-gradient(circle at 34% 28%, #fffc, #fff0 45%), radial-gradient(circle at 50% 120%, #0002, #0000 60%); }
-.speak { background-image: radial-gradient(circle at 34% 26%, #ffffff40, #fff0 46%), radial-gradient(circle at 50% 125%, #0004, #0000 60%); }
+/* ===== طابع «الألعاب»: قطع مجسّمة لامعة بألوان حلوى، وحركة نابضة عند اللمس ===== */
+:root { --c1: #cfe9ff; --c1d: #6fb0e8; --c2: #d4f5e2; --c2d: #5cc192; --c3: #ffe2cc; --c3d: #f19a5e; --c4: #eadfff; --c4d: #9f84e8; }
+.go, .opt, .icon-btn, .tnode, .node, .speak, .certbtn, .achcard, .chip, .arrow, .hbtn { position: relative; -webkit-tap-highlight-color: transparent; }
+/* لمعة علوية: نصف بيضاوي شفاف أعلى القطعة */
+.go::before, .opt::before, .node::before, .tnode::before, .speak::before, .chip::before, .bdg.ok .bic::before {
+  content: ""; position: absolute; left: 12%; right: 12%; top: 6%; height: 38%; border-radius: 999px;
+  background: linear-gradient(180deg, #ffffffb0, #ffffff00); pointer-events: none; }
+.opt::before { top: 4%; height: 26%; left: 10%; right: 10%; }
+.node::before, .tnode::before, .speak::before { left: 28%; right: 28%; top: 8%; height: 22%; background: linear-gradient(180deg, #ffffff4d, #ffffff00); }
+.node.open::before, .tnode.open::before { background: linear-gradient(180deg, #ffffffcc, #ffffff00); }
+.chip::before { top: 5%; height: 34%; }
+.bdg.ok .bic { position: relative; }
+/* الأزرار الكبيرة: حافة سفلية سميكة وضغطة مرنة */
+.go { padding: 15px 30px; box-shadow: 0 7px 0 var(--green-dark), 0 14px 18px -8px #15174a99; text-shadow: 0 2px 0 #0003; }
+.go.gold { box-shadow: 0 7px 0 #d9a800, 0 14px 18px -8px #a77f0099; text-shadow: none; }
+.go:active, .opt:active, .chip:active, .arrow:active, .icon-btn:active, .certbtn:active, .achcard:active { transform: translateY(4px) scale(.97); }
+.go:active { box-shadow: 0 3px 0 var(--green-dark); } .go.gold:active { box-shadow: 0 3px 0 #d9a800; }
+.icon-btn { background: linear-gradient(180deg, #fff, #eef0fb); box-shadow: 0 4px 0 #cfd2ec, 0 10px 14px -8px #23266b66; }
+/* خيارات الأسئلة: بلاطات ملوّنة، لكل موضع لونه */
+.opt { --o: var(--c1); --od: var(--c1d); background: linear-gradient(180deg, #fff 0%, var(--o) 100%); border: 0;
+  box-shadow: inset 0 0 0 4px #ffffffb3, 0 8px 0 var(--od), 0 18px 22px -10px #23266b55; color: #1b1d45;
+  text-shadow: 0 3px 0 #fff, 0 5px 0 #ffffff80; }
+.opts .opt:nth-child(4n+2) { --o: var(--c2); --od: var(--c2d); }
+.opts .opt:nth-child(4n+3) { --o: var(--c3); --od: var(--c3d); }
+.opts .opt:nth-child(4n+4) { --o: var(--c4); --od: var(--c4d); }
+body.scene .opt { box-shadow: inset 0 0 0 4px #ffffffb3, 0 8px 0 var(--od), 0 20px 24px -10px #7d5c3f66; margin-bottom: 8px; }
+.opt.right, body.scene .opt.right { --o: #c9f2d6; --od: #2f9e63; animation: yay .5s cubic-bezier(.3,1.6,.5,1); box-shadow: inset 0 0 0 4px #fff, 0 8px 0 #2f9e63, 0 0 0 7px #ffd23faa, 0 18px 26px -8px #2f9e6388; }
+.opt.wrong, body.scene .opt.wrong { --o: #ffd9d6; --od: #d9534f; animation: shake .4s; }
+@keyframes yay { 0% { transform: scale(1); } 40% { transform: scale(1.12) rotate(-3deg); } 100% { transform: scale(1); } }
+/* كرات المحطات: كرة لامعة، والحالية تنبض بهالة صفراء */
+.trail .node, .trail .tnode { background-image: radial-gradient(circle at 50% 120%, #0004, #0000 60%); font-family: var(--f-title); font-weight: 400; }
+.trail .node { font-size: 1.9rem; }
+.trail .node.open, .trail .tnode.open { box-shadow: 0 6px 0 #d9a800, 0 0 0 8px #ffd23f55, 0 0 0 16px #ffd23f22; animation: bob 2.2s ease-in-out infinite, halo 2.2s ease-in-out infinite; }
+@keyframes halo { 50% { box-shadow: 0 6px 0 #d9a800, 0 0 0 12px #ffd23f44, 0 0 0 24px #ffd23f11; } }
+.trail .node.done, .trail .tnode.done { box-shadow: 0 6px 0 var(--green-dark), 0 0 0 4px #ffd23f; }
+/* زر الصوت: كرة لامعة بحلقات */
+.speak { background-image: radial-gradient(circle at 50% 125%, #0005, #0000 60%); box-shadow: 0 7px 0 #15174a, 0 0 0 8px #ffd23f66, 0 16px 22px -6px #15174a88; }
+.speak:active { transform: translateY(4px) scale(.96); }
+.speak .ic { filter: drop-shadow(0 2px 0 #0004); }
+/* حروف الشريط السفلي: حبّات حلوى ملوّنة */
+.strip .chip { border: 0; background: linear-gradient(180deg, #fff, var(--c1)); box-shadow: 0 5px 0 var(--c1d), 0 10px 12px -6px #23266b55; }
+.strip .chip:nth-child(4n+2) { background: linear-gradient(180deg, #fff, var(--c2)); box-shadow: 0 5px 0 var(--c2d), 0 10px 12px -6px #23266b55; }
+.strip .chip:nth-child(4n+3) { background: linear-gradient(180deg, #fff, var(--c3)); box-shadow: 0 5px 0 var(--c3d), 0 10px 12px -6px #23266b55; }
+.strip .chip:nth-child(4n+4) { background: linear-gradient(180deg, #fff, var(--c4)); box-shadow: 0 5px 0 var(--c4d), 0 10px 12px -6px #23266b55; }
+.strip .chip.cur, body.scene .strip .chip.cur { background: linear-gradient(180deg, #fff3b0, var(--gold)); box-shadow: 0 5px 0 #d9a800, 0 0 0 4px #fff, 0 0 0 8px #ffd23f88; transform: translateY(-5px) scale(1.08); }
+.strip .chip.seen::after { content: ""; position: absolute; top: -4px; inset-inline-end: -4px; width: 14px; height: 14px; border-radius: 50%; background: #2f9e63; box-shadow: 0 0 0 2px #fff; }
+body.scene .chip { border-radius: 16px; }
+/* بطاقة الحرف: إطار ملوّن ونقاط لامعة */
 .card-letter { box-shadow: 0 10px 0 #e4e1d6, 0 26px 40px -18px #23266b66; }
-.card-letter .glyph { text-shadow: 0 2px 0 #3b3f9a, 0 4px 0 #1b1d45, 0 10px 14px #23266b40; }
-.card-letter .glyph.heavy { text-shadow: 0 2px 0 #e0545f, 0 4px 0 #a3222c, 0 10px 14px #a3222c40; }
-.certbtn, .achcard { box-shadow: 0 5px 0 #e0bd3a, 0 14px 22px -12px #a77f0088; }
-.certbtn.level { box-shadow: 0 5px 0 #15174a, 0 14px 22px -12px #15174aaa; }
+.card-letter .glyph { color: #23266b; text-shadow: 0 3px 0 #5a5fc4, 0 6px 0 #2e3190, 0 14px 18px #23266b40; }
+.card-letter .glyph.heavy { color: #d33a45; text-shadow: 0 3px 0 #f07a82, 0 6px 0 #a3222c, 0 14px 18px #a3222c40; }
+body.scene .card-letter { background: #fff;
+  box-shadow: inset 0 0 0 6px #ffffff, inset 0 0 0 9px #ffe58a, 0 10px 0 #e8d3a8, 0 18px 30px #9b765333; }
+/* أسهم التنقل */
+.arrow { background: linear-gradient(180deg, #fff, #f3eee3); box-shadow: 0 5px 0 #d8c8a8, 0 10px 14px -8px #7d5c3f88; color: var(--green); }
+/* البطاقات الذهبية */
+.certbtn, .achcard { box-shadow: 0 6px 0 #e0bd3a, 0 16px 22px -12px #a77f0088; }
+.certbtn.level { box-shadow: 0 6px 0 #15174a, 0 16px 22px -12px #15174aaa; }
+/* نجوم النتيجة: نجوم مجسّمة كبيرة */
+.stars { display: flex; gap: 6px; justify-content: center; align-items: flex-end; }
+.stars span .ic { width: 78px; height: 78px; filter: drop-shadow(0 5px 0 #c79600) drop-shadow(0 10px 10px #a77f0055); }
+.stars span:nth-child(2) .ic { width: 100px; height: 100px; }
+.stars .off .ic { filter: grayscale(1) drop-shadow(0 4px 0 #bbb); }
 @media (hover: hover) {
-  .opt:hover, .certbtn:hover, .achcard:hover, .go:hover { transform: translateY(-2px); }
-  .opt, .certbtn, .achcard, .go { transition: transform .15s ease; }
+  .opt:hover, .certbtn:hover, .achcard:hover, .go:hover, .chip:hover { transform: translateY(-3px); }
+  .opt, .certbtn, .achcard, .go, .chip { transition: transform .15s ease, box-shadow .15s ease; }
 }
+@media (prefers-reduced-motion: reduce) { .trail .node.open, .trail .tnode.open, .opt.right { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -1008,7 +1073,7 @@ function distractors(L, n, pool) {
 }
 function hint(key) {
   if (DB.lang === "ar" || !HINTS[DB.lang] || !HINTS[DB.lang][key]) return "";
-  return `<div class="hint">ℹ️ ${HINTS[DB.lang][key]}</div>`;
+  return `<div class="hint">${ic("info")} ${HINTS[DB.lang][key]}</div>`;
 }
 function markTTS() { const n = document.getElementById("ttsnote"); if (n) n.hidden = false; }
 function toast(msg) {
@@ -1101,6 +1166,8 @@ function progressPct() {
 }
 function report(activity, score, total, silent, answers) {
   if (!P || TEACHER) return;
+  // أيام التدريب (لأوسمة المواظبة)، على هذا الجهاز
+  if (!silent) { const day = new Date().toISOString().slice(0, 10); P.days = P.days || []; if (P.days.indexOf(day) < 0) { P.days.push(day); P.days = P.days.slice(-400); } }
   if (silent) DB.queue = DB.queue.filter(ev => !(ev.silent && ev.sid === P.id));
   DB.queue.push({ silent: !!silent, answers: Array.isArray(answers) ? answers.slice(0, 30) : undefined,
     sid: P.id, name: P.name, group: P.group || "", username: P.username || "", lesson: CUR, activity,
@@ -1307,7 +1374,7 @@ function Login() {
     </form>`;
   html += `<p class="note">ليس عندك اسم مستخدم؟ يسجّلك معلم الحلقة أو المدير، ثم يعطيك بطاقة الدخول.</p>
     ${teacherSession() ? `<a class="go small ghost backbtn" href="teacher.html">↩ العودة إلى سجل المعلم</a>` : `<button class="linkbtn" id="tlogin">👩‍🏫 دخول المعلم</button>`}
-    <a class="linkbtn" href="about.html">🏠 الصفحة التعريفية للموقع</a></div></div>` + credit();
+    <a class="linkbtn" href="about.html">${ic("info")} تعرّف على رحلة الحروف</a></div></div>` + credit();
   $app.innerHTML = html;
   const tl = document.getElementById("tlogin"); if (tl) tl.onclick = () => go("tlogin");
   $app.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => { screen.remove = b.dataset.remove; render(); flush().then(() => { if (screen.name === "login" && screen.remove) render(); }); });
@@ -1422,7 +1489,7 @@ const teacherBanner = () => TEACHER ? `<div class="tbanner"><span>👩‍🏫 و
   <span class="tb-actions">${CFG.backendUrl ? `<a href="teacher.html">📋 سجل الطلاب</a>` : ""}<button id="texit">خروج</button></span></div>` : "";
 
 const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span>
-  <a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
+  <a href="about.html">${ic("info")} عن الموقع · About</a></footer>`;
 const offlineNote = () => navigator.onLine ? "" : `<div class="offline">📴 أنت غير متصل بالإنترنت. الدروس تعمل كالمعتاد، ويُرسل التقدّم إلى المعلم عند عودة الاتصال.</div>`;
 window.addEventListener("offline", () => { if (["home", "login"].includes(screen.name)) render(); });
 window.addEventListener("online", () => { if (["home", "login"].includes(screen.name)) render(); });
@@ -1540,7 +1607,8 @@ function Home() {
      <button class="icon-btn" id="signout" aria-label="${P.temp ? "خروج" : "تغيير الطالب"}" title="${P.temp ? "خروج" : "تغيير الطالب"}">${P.temp ? ic("exit") : ic("user")}</button>`);
   html += teacherBanner() + offlineNote() + hint("home");
   html += `<div class="homegrid"><aside class="side">`;
-  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.<br><button class="linkbtn storybtn" id="story">${ic("play")} شاهد قصة الرحلة</button></p></div>`;
+  html += `<div class="hero"><img class="mark" src="icons/rehla.svg" alt="" width="64" height="64"><p><b>أهلاً بك يا ${esc(P.name)}!</b><br>اتبع الطريق محطةً محطة حتى تقرأ القرآن.</p>
+    <div class="herobtns"><button class="hbtn" id="story">${ic("play")} قصة الرحلة</button><a class="hbtn" href="about.html">${ic("info")} عن الموقع</a></div></div>`;
   if (!TEACHER) html += `<div class="codecard ${screen.fresh ? "fresh" : ""}"><span>👤 اسم المستخدم</span><b>${esc(P.username)}</b>
     <small>${P.pending && CFG.backendUrl ? "⏳ سيُثبَّت عند الاتصال بالإنترنت، وقد يُضاف إليه رقم إن كان مستعملاً." :
       screen.renamed ? `«${esc(screen.renamed)}» مستعمل من طالب آخر، فصار اسم المستخدم «${esc(P.username)}». اكتبه واحفظه.` :
@@ -1554,7 +1622,7 @@ function Home() {
         ${ok ? "" : `<span class="goarrow">ابدأ ⬅</span>`}</button>`; }).join("")}</div>`;
   const A = achieveStats();
   html += `<button class="achcard" data-go="achieve"><span class="achic">${ic("trophy")}</span><span class="tx"><b>إنجازاتي وشهاداتي</b>
-    <small>${A.certs} ${A.certs === 1 ? "شهادة" : "شهادات"} · ${A.badges.filter(b => b.ok).length} من ${A.badges.length} أوسمة · ${A.stars} نجمة</small></span><span class="goarrow">افتح ⬅</span></button>`;
+    <small>${A.certs} ${A.certs === 1 ? "شهادة" : "شهادات"} · ${A.badges.filter(b => b.ok).length} من ${A.badges.length} وساماً · ${A.stars} نجمة</small></span><span class="goarrow">افتح ⬅</span></button>`;
   html += `</aside><section class="mapcol" aria-label="خريطة الدروس">`;
   let curL = LESSONS.findIndex((_, i) => lessonOpen(i + 1) && !lessonPassed(i + 1));
   if (curL < 0) curL = LESSONS.length;
@@ -2003,16 +2071,21 @@ function achieveStats() {
     games += (L.games || []).filter(Boolean).length; stagesDone += (L.stages || []).filter(Boolean).length;
     lessons.push({ n, done: d, all: st.length, stars: starsFor(L.best), best: L.best, passed: lessonPassed(n) || !!TEACHER });
   }
-  const lv = levelsDone(), hwOk = hwList().filter(hwDone).length;
+  const lv = levelsDone(), hwOk = hwList().filter(hwDone).length, days = (P.days || []).length;
+  const perfects = lessons.filter(l => l.best >= 10).length;
+  // الأوسمة في مجموعات، وتزيد تلقائياً مع كل درس جديد
+  const B = (g, ic, t, d, ok, have, need) => ({ g, ic, t, d, ok, have, need });
   const badges = [
-    { ic: "check", t: "الخطوة الأولى", d: "أنهيت أول مرحلة", ok: stagesDone >= 1 },
-    { ic: "listen", t: "أذن صاغية", d: "فزت في أول لعبة", ok: games >= 1 },
-    { ic: "medal", t: "الشهادة الأولى", d: "نجحت في أول اختبار", ok: passed >= 1 },
-    { ic: "star", t: "العلامة الكاملة", d: "10 من 10 في اختبار", ok: perfect >= 1 },
-    { ic: "star", t: "جامع النجوم", d: "جمعت 10 نجوم", ok: stars >= 10 },
-    { ic: "pen", t: "قارئ الحركات", d: "أنهيت درس الحركات", ok: lessonPassed(4) },
-    { ic: "task", t: "التلميذ المجتهد", d: "أنجزت واجباً من معلمك", ok: hwOk >= 1 },
-    { ic: "trophy", t: "ختم المستوى", d: "أنهيت مستوى كاملاً", ok: lv.length >= 1 }
+    B("البداية", "check", "الخطوة الأولى", "أنهيت أول مرحلة", stagesDone >= 1),
+    B("البداية", "listen", "أذن صاغية", "فزت في أول لعبة", games >= 1),
+    B("البداية", "medal", "الشهادة الأولى", "نجحت في أول اختبار", passed >= 1),
+    ...LESSONS.map((name, i) => B("الدروس", i + 1 <= AVAILABLE ? "medal" : "lock", "بطل الدرس " + ORDINALS[i], name, lessonPassed(i + 1))),
+    ...Certificate.LEVELS.map(V => B("المستويات", "trophy", "ختم المستوى " + ORDINALS[V.n - 1], V.title, lv.some(x => x.n === V.n))),
+    ...[5, 10, 20, 30, 45].map(n => B("النجوم", "star", n + " نجمة", "اجمع " + n + " نجمة من الاختبارات", stars >= n, stars, n)),
+    ...[1, 3, 5, 10].map(n => B("العلامة الكاملة", "star", n === 1 ? "العلامة الكاملة" : "كامل × " + n, n === 1 ? "10 من 10 في اختبار" : "10 من 10 في " + n + " اختبارات", perfects >= n, perfects, n)),
+    ...[1, 5, 10, 20].map(n => B("الألعاب", "balloon", n === 1 ? "اللاعب الصغير" : "فزت في " + n + " ألعاب", n === 1 ? "فزت في أول لعبة" : "أنهِ " + n + " ألعاب", games >= n, games, n)),
+    ...[1, 3, 5].map(n => B("الواجبات", "task", n === 1 ? "التلميذ المجتهد" : n + " واجبات", n === 1 ? "أنجزت واجباً من معلمك" : "أنجزت " + n + " واجبات", hwOk >= n, hwOk, n)),
+    ...[3, 7, 15, 30].map(n => B("المواظبة", "play", n + " أيام", "تدرّبت في " + n + " أيام مختلفة", days >= n, days, n))
   ];
   if (TEACHER) badges.forEach(b => b.ok = true);
   return { stars, steps, stepsAll, passed, lessons, lv, badges, certs: (TEACHER ? AVAILABLE : passed) + lv.length };
@@ -2027,7 +2100,14 @@ function Achieve() {
     <div><b>${A.stars}</b><span>${ic("star")} نجمة</span></div>
     <div><b>${A.passed}<small>/${LESSONS.length}</small></b><span>درساً</span></div>
     <div><b>${A.certs}</b><span>${ic("medal")} شهادة</span></div></div>`;
-  html += `<h2 class="achh">الأوسمة</h2><div class="badges">${A.badges.map(b => `<div class="bdg ${b.ok ? "ok" : ""}" title="${b.d}"><span class="bic">${ic(b.ok ? b.ic : "lock")}</span><b>${b.t}</b><small>${b.d}</small></div>`).join("")}</div>`;
+  const got = A.badges.filter(b => b.ok).length;
+  html += `<h2 class="achh">الأوسمة <span class="cnt">${got} من ${A.badges.length}</span></h2>`;
+  [...new Set(A.badges.map(b => b.g))].forEach(g => {
+    const bs = A.badges.filter(b => b.g === g);
+    html += `<h3 class="bgrp">${g} <small>${bs.filter(b => b.ok).length}/${bs.length}</small>${bs.length > 3 ? `<span class="swipe">اسحب ←</span>` : ""}</h3><div class="badges">${bs.map(b => `<div class="bdg ${b.ok ? "ok" : ""}" title="${b.d}">
+      <span class="bic">${ic(b.ok ? b.ic : "lock")}</span><b>${b.t}</b><small>${b.d}</small>
+      ${!b.ok && b.need > 1 && b.have ? `<span class="achbar mini"><i style="width:${Math.min(100, Math.round(b.have / b.need * 100))}%"></i></span>` : ""}</div>`).join("")}</div>`;
+  });
   html += `<h2 class="achh">الشهادات</h2>`;
   const lv = A.lv.map(V => `<button class="certbtn level" data-level="${V.n}">${ic("trophy")} <span><b>شهادة ختم المستوى ${ORDINALS[V.n - 1]}</b><small>${V.title}</small></span></button>`).join("");
   const ls = A.lessons.filter(l => l.passed).map(l => `<button class="certbtn" data-cert="${l.n - 1}">${ic("medal")} <span><b>شهادة الدرس ${ORDINALS[l.n - 1]}</b><small>${LESSONS[l.n - 1]}</small></span></button>`).join("");
@@ -2098,7 +2178,7 @@ function Result() {
     title = "أحسنت!"; msg = cfg.mode === "practice" ? "أنهيت هذه المرحلة." : "أنهيت اللعبة.";
   }
   let html = `<div class="result">
-    <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}" style="--d:${.25 + k * .35}s">⭐</span>`).join("")}</div>
+    <div class="stars">${[0,1,2].map(k => `<span class="${k < stars ? "" : "off"}" style="--d:${.25 + k * .35}s">${ic("star")}</span>`).join("")}</div>
     <h2>${title}</h2>
     ${cfg.mode !== "game" || cfg.game === 0 ? `<div class="score">${score} من ${total}</div>` : ""}
     <p>${msg}</p>
@@ -2116,7 +2196,7 @@ function Result() {
     DB.badgesSeen = DB.badgesSeen || {};
     const got = achieveStats().badges.filter(b => b.ok).map(b => b.t), seen = DB.badgesSeen[P.id] || [];
     const fresh = got.filter(t => seen.indexOf(t) < 0);
-    if (fresh.length) { DB.badgesSeen[P.id] = got; save(); setTimeout(() => { sfx("badge"); toast("🎖️ وسام جديد: " + fresh.join("، ") + " — تجده في «إنجازاتي»"); }, 1900); }
+    if (fresh.length) { DB.badgesSeen[P.id] = got; save(); setTimeout(() => { sfx("badge"); toast((fresh.length > 1 ? "🎖️ أوسمة جديدة: " : "🎖️ وسام جديد: ") + fresh.slice(0, 2).join("، ") + (fresh.length > 2 ? " وغيرها" : "") + " — تجدها في «إنجازاتي»"); }, 1900); }
   }
 }
 

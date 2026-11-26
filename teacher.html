@@ -345,7 +345,7 @@ function render() {
   ({ students: bindStudents, hw: bindHw, voices: bindVoices, weekly: bindWeekly, stats: bindStats, audit: bindAudit, teachers: bindTeachers, groups: bindGroups, account: bindAccount })[UI.tab]();
 }
 
-const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">ℹ️ عن الموقع · About</a></footer>`;
+const credit = () => `<footer class="credit"><span>من إنشاء م. كريم عادل اللوح</span><span dir="ltr">Created by Eng. Kareem Adel Allouh</span><a href="about.html">عن الموقع · About</a></footer>`;
 function renderLogin() {
   root.innerHTML = `<form class="panel login" id="lf"><h1>سجل المعلم</h1>
     <label for="un">اسم المستخدم</label><input id="un" autocomplete="username" dir="ltr" required>
